@@ -11,7 +11,7 @@ import DoctorModel from "@/app/model/Doctor.model";
 const billingSchema = z.object({
   invoiceId: z.string().nonempty("Invoice Id is required"),
   patientId: z.string().nonempty("Patient Id is required"),
-  patientUserId: z.string().nonempty("Patient User Id is required"),
+  patientModelId: z.string().nonempty("Patient Model Id is required"),
   patientName: z.string().nonempty("Patient Name is required"),
   contactNumber: z.string().nonempty("Contact Number is required"),
   date: z.string().nonempty("Date is required"),
@@ -30,7 +30,6 @@ const billingSchema = z.object({
   email: z.string().optional(),
   gender: z.string().nonempty("Gender is required"),
 });
-
 
 export async function POST(request: Request) {
   try {
@@ -76,7 +75,7 @@ export async function POST(request: Request) {
     // Create a new billing document
     const billing = await Billing.create({
       invoiceId: data.invoiceId, // or you can let the default generator work
-      patientId: data.patientUserId,
+      patientId: data.patientModelId,
       doctorId: doctorId,
       clinicId: clinicId,
       date: new Date(data.date),

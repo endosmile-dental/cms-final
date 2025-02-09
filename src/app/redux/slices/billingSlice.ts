@@ -77,7 +77,7 @@ export const fetchBillings = createAsyncThunk(
   "billing/fetchBillings",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("/api/billing/getAll");
+      const res = await fetch("/api/doctor/billing/getAll");
       if (!res.ok) {
         const errorData = await res.json();
         return rejectWithValue(errorData.error);

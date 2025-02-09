@@ -9,6 +9,7 @@ import DashboardTable from "@/app/dashboard/ui/DashboardTable";
 import { Syringe, User, Clock, AlertTriangle } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { fetchPatients, selectPatients } from "@/app/redux/slices/patientSlice";
+import { fetchBillings } from "@/app/redux/slices/billingSlice";
 
 // Redux hooks and patient slice
 
@@ -26,7 +27,9 @@ export default function DoctorDashboard() {
   useEffect(() => {
     // Dispatch the thunk to fetch all patients when the component mounts
     dispatch(fetchPatients());
+    dispatch(fetchBillings());
   }, [dispatch]);
+  
 
   useEffect(() => {
     if (patients) {

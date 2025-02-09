@@ -71,6 +71,7 @@ export default function PatientRecords() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const billings = useAppSelector(selectBillings);
+  const patients = useAppSelector(selectPatients);
 
   // State for search input text and suggestion list
   const [searchInput, setSearchInput] = useState("");
@@ -78,7 +79,7 @@ export default function PatientRecords() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const [patientUserId, setPatientUserId] = useState("");
+  const [patientModelId, setPatientModelId] = useState("");
   const [isPatientSelected, setIsPatientSelected] = useState(false);
 
   // Initialize treatments state (for dynamic fields)
@@ -113,7 +114,7 @@ export default function PatientRecords() {
       setIsLoading(true);
       sessionStorage.setItem("formData", JSON.stringify(data));
       // Optionally, set a loading state here if using a state variable.
-      const dataWithUserId = { ...data, patientUserId: patientUserId };
+      const dataWithUserId = { ...data, patientModelId: patientModelId };
       // Make the API call to your billing endpoint
       console.log("Submitting billing data:", dataWithUserId);
 
@@ -218,13 +219,14 @@ export default function PatientRecords() {
   };
 
   // When a suggestion is clicked, set the form values accordingly
-  const handleSelectSuggestion = (patient: typeof patients) => {
+  const handleSelectSuggestion = (patient: (typeof patients)[0]) => {
     setIsPatientSelected(true);
     // Set the search input to the selected patient's name or id
     setSearchInput(patient.fullName);
     console.log("patient", patient);
+    console.log("billings", billings);
 
-    setPatientUserId(patient.userId);
+    setPatientModelId(patient._id);
 
     // Get all the previous treatments for the invoice
 
@@ -240,6 +242,35 @@ export default function PatientRecords() {
     const generatedInvoiceId = `${patient.PatientId}-${randomNumber}`;
     form.setValue("invoiceId", generatedInvoiceId);
     // return `${patientId} - ${randomNumber}`;
+
+    // Now, filter the Redux billings array to get the bills for this patient.
+    // We assume that billing.patientId (a string) matches patient._id (also as a string)
+    // and optionally that billing.invoiceId starts with patient.PatientId.
+    console.log(patient._id);
+
+    const filteredBillings = billings.filter(
+      (bill) =>
+        bill.patientId === patient._id &&
+        bill.invoiceId.startsWith(patient.PatientId)
+    );
+
+    console.log("filteredBillings", filteredBillings);
+
+    // Sort by createdAt descending (most recent first) and take the first three records.
+    const latestThreeBillings = filteredBillings
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 3);
+
+    console.log("Latest 3 billings for patient:", latestThreeBillings);
+
+    // Store the latest three billing records in sessionStorage so the invoice page can access them
+    sessionStorage.setItem(
+      "lastThreeBillings",
+      JSON.stringify(latestThreeBillings)
+    );
   };
 
   useEffect(() => {
