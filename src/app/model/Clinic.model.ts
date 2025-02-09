@@ -1,9 +1,8 @@
 import mongoose, { Document, model, Schema } from "mongoose";
-import { nanoid } from "nanoid";
 
 // Define interfaces for TypeScript type safety
 interface IClinic extends Document {
-  clinicId: string;
+  clientAdminId: mongoose.Types.ObjectId; // Reference to the User model
   name: string;
   registrationNumber: string;
   email: string;
@@ -13,9 +12,9 @@ interface IClinic extends Document {
     city: string;
     state: string;
     postalCode: string;
-    country: string;
   };
   authorizedDoctors: mongoose.Types.ObjectId[];
+  clientAdmin?: mongoose.Types.ObjectId; // Reference to a single client admin user
   services: {
     serviceName: string;
     price: number;
@@ -51,11 +50,10 @@ interface IClinic extends Document {
 // Define the schema
 const clinicSchema: Schema<IClinic> = new Schema(
   {
-    clinicId: {
-      type: String,
-      required: true,
-      unique: true,
-      default: () => nanoid(),
+    clientAdminId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "clientAdminModel", // Model name to reference
+      required: true, // Make this field mandatory
     },
     // Basic Clinic Information
     name: {
@@ -84,7 +82,6 @@ const clinicSchema: Schema<IClinic> = new Schema(
       city: { type: String, required: true },
       state: { type: String, required: true },
       postalCode: { type: String, required: true },
-      country: { type: String, required: true },
     },
 
     // Authorized Doctors (References Doctor Model)
@@ -95,43 +92,49 @@ const clinicSchema: Schema<IClinic> = new Schema(
       },
     ],
 
+    // Client Admin (Reference to the clientAdmin model; accept one per clinic)
+    clientAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "clientAdmin",
+    },
+
     // Services Offered
     services: [
       {
-        serviceName: { type: String, required: true },
-        price: { type: Number, required: true },
+        serviceName: { type: String },
+        price: { type: Number },
         description: { type: String },
-        isActive: { type: Boolean, default: true },
+        isActive: { type: Boolean },
       },
     ],
 
     // Business Hours
     businessHours: [
       {
-        day: { type: String, required: true },
-        openTime: { type: String, required: true },
-        closeTime: { type: String, required: true },
+        day: { type: String },
+        openTime: { type: String },
+        closeTime: { type: String },
       },
     ],
 
     // Subscription Plan
     subscriptionPlan: {
-      planName: { type: String, required: true },
-      startDate: { type: Date, required: true },
-      endDate: { type: Date, required: true },
-      price: { type: Number, required: true },
-      isActive: { type: Boolean, default: true },
+      planName: { type: String },
+      startDate: { type: Date },
+      endDate: { type: Date },
+      price: { type: Number },
+      isActive: { type: Boolean },
     },
 
     // Appointment Policy
     appointmentPolicy: {
-      maxAppointmentsPerDay: { type: Number, required: true },
+      maxAppointmentsPerDay: { type: Number },
       cancellationNoticeHours: { type: Number, default: 24 },
     },
 
     // Payment Details
     paymentDetails: {
-      paymentMethod: { type: String, required: true },
+      paymentMethod: { type: String },
       totalPaid: { type: Number, default: 0 },
       lastPaymentDate: { type: Date },
     },

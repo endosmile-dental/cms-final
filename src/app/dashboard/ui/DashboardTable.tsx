@@ -1,27 +1,50 @@
+"use client";
+
+import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-const activities = [
-  { user: "John Doe", action: "Created an appointment", time: "2 hrs ago" },
-  { user: "Jane Smith", action: "Updated profile", time: "5 hrs ago" },
-  { user: "Michael Lee", action: "Made a payment", time: "1 day ago" },
-];
+export interface TableData {
+  patient: string;
+  contact: string;
+  gender: "Male" | "Female" | "Other";
+  dob: string;
+}
 
-export default function DashboardTable() {
+interface DashboardTableProps {
+  data: TableData[];
+}
+
+export default function DashboardTable({ data }: DashboardTableProps) {
   return (
     <Card className="p-4">
       <CardHeader>
-        <CardTitle>Recent Activities</CardTitle>
+        <CardTitle>Recent Patient Registrations</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-4">
-          {activities.map((activity, index) => (
-            <li key={index} className="flex justify-between border-b pb-2">
-              <span>{activity.user}</span>
-              <span>{activity.action}</span>
-              <span className="text-gray-500">{activity.time}</span>
-            </li>
-          ))}
-        </ul>
+        {data.length > 0 ? (
+          <table className="w-full text-center">
+            <thead>
+              <tr>
+                <th className="py-2">Patient</th>
+                <th className="py-2">Contact</th>
+                <th className="py-2">Gender</th>
+                <th className="py-2">DOB</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, index) => (
+                <tr key={index} className="border-b">
+                  <td className="py-2">{row.patient}</td>
+                  <td className="py-2">{row.contact}</td>
+                  <td className="py-2">{row.gender}</td>
+                  <td className="py-2">{row.dob}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>No patient data available.</p>
+        )}
       </CardContent>
     </Card>
   );

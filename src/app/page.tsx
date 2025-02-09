@@ -35,29 +35,9 @@ export default async function Home() {
     );
   }
 
-  // ✅ Redirect user to their respective dashboard
-  switch (session.user.role) {
-    case "SuperAdmin":
-      redirect("/dashboard/pages/superadmin");
-      break;
-    case "Admin":
-      redirect("/dashboard/pages/admin");
-      break;
-    case "Doctor":
-      redirect("/dashboard/pages/doctor");
-      break;
-    case "Receptionist":
-      redirect("/dashboard/pages/receptionist");
-      break;
-    case "clientAdmin":
-      redirect("/dashboard/pages/client-admin");
-      break;
-    case "Patient":
-      redirect("/dashboard/pages/patient");
-      break;
-    default:
-      redirect("/error");
-  }
+  // ✅ Redirect user to their respective dashboard according to their role
+
+  redirect(`/dashboard/pages/${session.user.role}`);
 
   return null; // 🚀 Redirecting means no need to render anything here
 }

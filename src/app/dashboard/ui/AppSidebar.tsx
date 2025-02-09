@@ -10,60 +10,129 @@ import {
   Home,
   Users,
   Settings,
-  LogOut,
   LineChart,
   Calendar,
   Hospital,
+  Stethoscope,
+  ClipboardList,
+  UserCog,
+  Receipt,
 } from "lucide-react";
 import { SignOut } from "@/app/components/auth/signout-button";
+import { useSession } from "next-auth/react";
 
-const menuItems = [
-  { name: "Dashboard", icon: <Home size={20} />, path: "/dashboard" },
-  { name: "Manage Users", icon: <Users size={20} />, path: "/dashboard/users" },
+// Define all possible menu items
+const allMenuItems = [
   {
-    name: "Manage Clinic",
+    name: "Dashboard",
+    icon: <Home size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}`,
+    roles: [
+      "SuperAdmin",
+      "Admin",
+      "clientAdmin",
+      "Doctor",
+      "Receptionist",
+      "Patient",
+    ],
+  },
+  {
+    name: "Manage Users",
+    icon: <Users size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/manageUsers`,
+    roles: ["SuperAdmin", "Admin", "clientAdmin"],
+  },
+  {
+    name: "Manage Clinics",
     icon: <Hospital size={20} />,
-    path: "/dashboard/manage-clinic",
+    path: (role: string) => `/dashboard/pages/${role}/manageClinic`,
+    roles: ["SuperAdmin", "clientAdmin"],
   },
   {
     name: "Analytics",
     icon: <LineChart size={20} />,
     path: "/dashboard/analytics",
+    roles: ["SuperAdmin", "clientAdmin", "Admin"],
   },
   {
     name: "Appointments",
     icon: <Calendar size={20} />,
-    path: "/dashboard/appointments",
+    path: (role: string) => `/dashboard/pages/${role}/appointments`,
+    roles: ["Doctor", "Receptionist", "Admin", "Patient"],
+  },
+  {
+    name: "Patient Records",
+    icon: <ClipboardList size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/patientRecords`,
+    roles: ["Doctor", "Receptionist"],
+  },
+  {
+    name: "Patient Billing",
+    icon: <Receipt size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/patientBilling`,
+    roles: ["Doctor"],
   },
   {
     name: "Settings",
     icon: <Settings size={20} />,
     path: "/dashboard/settings",
+    roles: ["SuperAdmin", "Admin", "clientAdmin"],
+  },
+  {
+    name: "Doctor Portal",
+    icon: <Stethoscope size={20} />,
+    path: "/dashboard/doctor",
+    roles: ["Doctor"],
+  },
+  {
+    name: "Admin Console",
+    icon: <UserCog size={20} />,
+    path: "/dashboard/admin",
+    roles: ["Admin"],
   },
 ];
 
 export function AppSidebar() {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role || "Patient";
+
+  // Filter menu items based on user role
+  const filteredMenuItems = allMenuItems.filter((item) =>
+    item.roles.includes(userRole)
+  );
+
   return (
-    <Sidebar className="min-h-screen">
-      <SidebarHeader>
-        <h2 className="text-xl font-semibold">SuperAdmin</h2>
+    <Sidebar className="min-h-screen bg-white border-r border-gray-200">
+      <SidebarHeader className="p-4">
+        <h2 className="text-sm font-semibold capitalize text-gray-700">
+          {userRole}
+        </h2>
+        <h3 className="text-xl font-semibold text-gray-900">
+          {session?.user?.name || "Guest"}
+        </h3>
       </SidebarHeader>
 
-      <SidebarContent>
-        {menuItems.map((item, index) => (
-          <SidebarGroup key={index}>
-            <Link
-              href={item.path}
-              className="flex items-center gap-3 p-2 hover:bg-gray-200 rounded"
-            >
-              {item.icon}
-              {item.name}
-            </Link>
-          </SidebarGroup>
-        ))}
+      <SidebarContent className="p-2">
+        {filteredMenuItems.map((item, index) => {
+          // Compute the URL if the path is a function
+          const path =
+            typeof item.path === "function" ? item.path(userRole) : item.path;
+
+          return (
+            <SidebarGroup key={index} className="mb-1">
+              <Link
+                href={path}
+                className="flex items-center gap-3 p-2 text-gray-800 hover:bg-gray-200 rounded"
+              >
+                {item.icon}
+                {item.name}
+              </Link>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="p-4 border-t border-gray-200">
         <SignOut />
       </SidebarFooter>
     </Sidebar>

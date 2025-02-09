@@ -3,9 +3,8 @@ import { nanoid } from "nanoid";
 
 // Main Admin Interface extending mongoose.Document
 interface IAdmin extends Document {
+  userId: mongoose.Types.ObjectId; // Reference to the User model
   permissions: Map<string, boolean>;
-
-  adminId: string;
   fullName: string;
   contactNumber: string;
   address?: {
@@ -36,12 +35,10 @@ const adminSchema: Schema<IAdmin> = new Schema(
         ["canViewReports", true],
       ]),
     },
-
-    adminId: {
-      type: String,
-      required: true,
-      unique: true,
-      default: () => nanoid(),
+    userId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "UserModel", // Model name to reference
+      required: true, // Make this field mandatory
     },
     fullName: {
       type: String,

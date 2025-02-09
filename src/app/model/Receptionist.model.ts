@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 
 // ✅ Define the Receptionist Interface
 interface IReceptionist extends Document {
+  userId: mongoose.Types.ObjectId; // Reference to the User model
   permissions: Map<string, boolean>;
   receptionistId: string;
   fullName: string;
@@ -27,6 +28,11 @@ interface IReceptionist extends Document {
 // ✅ Define the Receptionist Schema
 const receptionistSchema: Schema<IReceptionist> = new mongoose.Schema(
   {
+    userId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "UserModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
     permissions: {
       type: Map,
       of: Boolean,

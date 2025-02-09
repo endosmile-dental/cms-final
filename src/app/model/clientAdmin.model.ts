@@ -3,9 +3,8 @@ import { nanoid } from "nanoid";
 
 // Main Admin Interface extending mongoose.Document
 export interface IClientAdmin extends Document {
+  userId: mongoose.Types.ObjectId; // Reference to the User model
   permissions: Map<string, boolean>;
-
-  clientAdminId: string;
   fullName: string;
   contactNumber: string;
   address?: {
@@ -22,6 +21,11 @@ export interface IClientAdmin extends Document {
 
 const clientAdminSchema: Schema<IClientAdmin> = new Schema(
   {
+    userId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "UserModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
     permissions: {
       type: Map,
       of: Boolean,
@@ -35,13 +39,6 @@ const clientAdminSchema: Schema<IClientAdmin> = new Schema(
         ["canManagePayments", true],
         ["canViewReports", true],
       ]),
-    },
-
-    clientAdminId: {
-      type: String,
-      required: true,
-      unique: true,
-      default: nanoid(),
     },
     fullName: {
       type: String,

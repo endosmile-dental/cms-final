@@ -6,8 +6,10 @@ export default function DashboardCalendar() {
   return (
     <Card className="p-4">
       <CardHeader className="flex justify-between">
-        <CardTitle>Appointments</CardTitle>
-        <Calendar size={24} />
+        <CardTitle className="flex items-center gap-x-3 px-5">
+          <Calendar size={24} />
+          Appointments
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <CalendarUI />

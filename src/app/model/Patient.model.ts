@@ -4,9 +4,11 @@ import { nanoid } from "nanoid";
 // ================== Patient Model ==================
 
 interface IPatient extends Document {
+  userId: mongoose.Types.ObjectId; // Reference to the User model
+  DoctorId: mongoose.Types.ObjectId; // Reference to the User model
+  ClinicId: mongoose.Types.ObjectId; // Reference to the User model
+  PatientId: string;
   permissions: Map<string, boolean>;
-
-  patientId: string;
   fullName: string;
   contactNumber: string;
   gender: "Male" | "Female" | "Other";
@@ -19,21 +21,33 @@ interface IPatient extends Document {
   };
   medicalHistory?: string[];
   currentMedications?: string[];
-  emergencyContact: {
+  emergencyContact?: {
     name: string;
     phone: string;
     relationship: string;
   };
-  assignedDoctor: Schema.Types.ObjectId;
 }
 
 const PatientSchema: Schema<IPatient> = new Schema(
   {
-    patientId: {
+    userId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "UserModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
+    DoctorId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "DoctorModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
+    ClinicId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "ClinicModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
+    PatientId: {
       type: String,
       required: true,
-      unique: true,
-      default: () => nanoid(),
     },
     fullName: { type: String, required: true },
     contactNumber: { type: String, required: true },
@@ -48,28 +62,23 @@ const PatientSchema: Schema<IPatient> = new Schema(
     medicalHistory: [{ type: String }],
     currentMedications: [{ type: String }],
     emergencyContact: {
-      fullName: { type: String, required: true },
-      contactNumber: { type: String, required: true },
-      relationship: { type: String, required: true },
+      fullName: { type: String },
+      contactNumber: { type: String },
+      relationship: { type: String },
     },
     permissions: {
       type: Map,
       of: Boolean,
       default: new Map([
-        ["canAddClinic", true],
-        ["canEditClinic", true],
-        ["canDeleteClinic", true],
-        ["canAddDoctor", true],
-        ["canEditDoctor", true],
-        ["canDeleteDoctor", true],
-        ["canManagePayments", true],
-        ["canViewReports", true],
+        ["canAddClinic", false],
+        ["canEditClinic", false],
+        ["canDeleteClinic", false],
+        ["canAddDoctor", false],
+        ["canEditDoctor", false],
+        ["canDeleteDoctor", false],
+        ["canManagePayments", false],
+        ["canViewReports", false],
       ]),
-    },
-    assignedDoctor: {
-      type: Schema.Types.ObjectId,
-      ref: "Doctor",
-      required: true,
     },
   },
   { timestamps: true }

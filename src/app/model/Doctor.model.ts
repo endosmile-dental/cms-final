@@ -8,7 +8,8 @@ interface IWorkingHour {
 }
 
 interface IDoctor extends Document {
-  doctorId: string;
+  userId: mongoose.Types.ObjectId; // Reference to the User model
+  clinicId: mongoose.Types.ObjectId; // Reference to the Clinic model
   fullName: string;
   specialization: string;
   specializationDetails?: string;
@@ -24,22 +25,22 @@ interface IDoctor extends Document {
   gender?: "Male" | "Female" | "Other";
   rating?: number;
   workingHours: IWorkingHour[];
-  appointments?: Schema.Types.ObjectId[];
-  patients?: Schema.Types.ObjectId[];
-  clinic: Schema.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-
   permissions: Map<string, boolean>;
 }
 
 const DoctorSchema: Schema<IDoctor> = new Schema(
   {
-    doctorId: {
-      type: String,
-      required: true,
-      unique: true,
-      default: () => nanoid(),
+    userId: {
+      type: Schema.Types.ObjectId, // Reference to the User model
+      ref: "UserModel", // Model name to reference
+      required: true, // Make this field mandatory
+    },
+    clinicId: {
+      type: Schema.Types.ObjectId, // Reference to the Clinic model
+      ref: "ClinicModel", // Model name to reference
+      required: true, // Make this field mandatory
     },
     fullName: { type: String, required: true },
     specialization: { type: String, required: true },
@@ -71,14 +72,11 @@ const DoctorSchema: Schema<IDoctor> = new Schema(
     rating: { type: Number, min: 1, max: 5 },
     workingHours: [
       {
-        day: { type: String, required: true },
-        startTime: { type: String, required: true },
-        endTime: { type: String, required: true },
+        day: { type: String },
+        startTime: { type: String },
+        endTime: { type: String },
       },
     ],
-    appointments: [{ type: Schema.Types.ObjectId, ref: "Appointment" }],
-    patients: [{ type: Schema.Types.ObjectId, ref: "Patient" }],
-    clinic: { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
   },
   { timestamps: true }
 );
