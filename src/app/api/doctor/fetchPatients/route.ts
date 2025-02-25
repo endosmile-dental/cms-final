@@ -6,12 +6,19 @@ export async function GET() {
   try {
     dbConnect();
     // Fetch all patients from the database
-    const patients = await PatientModel.find().select(
-      "-permissions -__v"
-    );
+    const patients = await PatientModel.find().select("-permissions -__v");
     return NextResponse.json({ patients });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching patients:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error fetching patients:", error: error.message },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json(
+      { message: "Unknown error occurred" },
+      { status: 500 }
+    );
   }
 }

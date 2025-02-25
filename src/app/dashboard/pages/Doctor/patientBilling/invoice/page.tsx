@@ -12,7 +12,7 @@ const Invoice = () => {
 
   const storedBillings = sessionStorage.getItem("lastThreeBillings");
   const lastThreeBillings = storedBillings ? JSON.parse(storedBillings) : [];
-  
+
   const [dataAvailable, setDataAvailable] = useState<boolean>(false);
 
   const [patientName, setPatientName] = useState<string>("NA");
@@ -93,6 +93,10 @@ const Invoice = () => {
       });
     }
   };
+
+  useEffect(() => {
+    console.log("lastThreeBillings", lastThreeBillings);
+  }, [lastThreeBillings]);
 
   return (
     <>

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import mongoose from "mongoose";
 import dbConnect from "@/app/utils/dbConnect";
 import Billing from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
@@ -91,11 +90,17 @@ export async function POST(request: Request) {
       { message: "Billing created successfully", billing },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating billing:", error);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error creating billing:", error: error.message },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { error: error.message || "An error occurred during billing creation" },
-      { status: 400 }
+      { message: "Unknown error occurred" },
+      { status: 500 }
     );
   }
 }

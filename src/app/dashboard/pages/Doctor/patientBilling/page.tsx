@@ -9,7 +9,7 @@ import * as z from "zod";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, UserPlus } from "lucide-react";
+import { Search } from "lucide-react";
 
 // Import shadcn/ui Form components
 import {
@@ -23,7 +23,6 @@ import {
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useSession } from "next-auth/react";
-import { Patrick_Hand } from "next/font/google";
 import { createBilling, selectBillings } from "@/app/redux/slices/billingSlice";
 import Loading from "@/app/components/loading/Loading";
 import SelectPatientMessage from "@/app/components/SelectPatientMessage";
@@ -135,9 +134,17 @@ export default function PatientRecords() {
       } else {
         console.error("Error creating billing:", resultAction.payload);
       }
-    } catch (error: any) {
-      console.error("Error creating billing:", error.message || error);
-      // Optionally: setFormError(error.message || "An unexpected error occurred");
+    } catch (error: unknown) {
+      console.error("Error creating billing:", error);
+
+      if (error instanceof Error) {
+        console.error("Error creating billing:", error.message);
+        // Optionally set a form error
+        // setFormError(error.message || "An unexpected error occurred");
+      } else {
+        console.error("An unexpected error occurred");
+        // setFormError("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
       setIsPatientSelected(false);
@@ -161,7 +168,7 @@ export default function PatientRecords() {
     const newTreatments = [...treatments];
     newTreatments[index].treatment = value;
     setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.treatment` as any, value);
+    form.setValue(`treatments.${index}.treatment` as const, value);
   };
 
   // Update price field
@@ -172,7 +179,7 @@ export default function PatientRecords() {
     const newTreatments = [...treatments];
     newTreatments[index].price = e.target.value;
     setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.price` as any, e.target.value);
+    form.setValue(`treatments.${index}.price` as const, e.target.value);
   };
 
   // Update quantity field
@@ -183,7 +190,7 @@ export default function PatientRecords() {
     const newTreatments = [...treatments];
     newTreatments[index].quantity = e.target.value;
     setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.quantity` as any, e.target.value);
+    form.setValue(`treatments.${index}.quantity` as const, e.target.value);
   };
 
   // If the first two characters are "ES" followed by a digit,
@@ -225,6 +232,7 @@ export default function PatientRecords() {
     setSearchInput(patient.fullName);
     console.log("patient", patient);
     console.log("billings", billings);
+    console.log(searchInput);
 
     setPatientModelId(patient._id);
 

@@ -15,8 +15,17 @@ export async function GET() {
 
     // Return the billing records as JSON.
     return NextResponse.json({ billings });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error fetching billings:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error fetching billings:", error: error.message },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json(
+      { message: "Unknown error occurred" },
+      { status: 500 }
+    );
   }
 }
