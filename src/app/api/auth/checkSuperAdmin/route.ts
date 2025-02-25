@@ -1,8 +1,8 @@
 // app/api/auth/checkSuperAdmin/route.ts
 import { getSuperAdminStatus } from "@/app/utils/globalStore";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const superAdminExists = await getSuperAdminStatus();
     return NextResponse.json({ superAdminExists });

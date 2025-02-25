@@ -46,10 +46,17 @@ export async function POST(request: Request) {
       { message: "Clinic created successfully", clinic: newClinic },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating clinic:", error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error creating clinic", error: error.message },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { message: "Error creating clinic", error: error.message },
+      { message: "Unknown error occurred" },
       { status: 500 }
     );
   }

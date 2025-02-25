@@ -101,11 +101,17 @@ export async function POST(request: Request) {
       { message: "Patient registered successfully", patient: newPatient },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in addPatient route:", error);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error in adding patient route:", error: error.message },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { error: error.message || "An error occurred during registration" },
-      { status: 400 }
+      { message: "Unknown error occurred" },
+      { status: 500 }
     );
   }
 }

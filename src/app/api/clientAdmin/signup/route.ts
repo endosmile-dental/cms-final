@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import dbConnect from "@/app/utils/dbConnect";
 import UserModel from "@/app/model/User.model";
 import clientAdminModel from "@/app/model/clientAdmin.model";
@@ -46,10 +45,16 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error during client admin signup:", error);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error during client admin signup:", error: error.message },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { message: "Server error", error: error.message },
+      { message: "Unknown error occurred" },
       { status: 500 }
     );
   }

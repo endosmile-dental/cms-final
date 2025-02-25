@@ -84,10 +84,16 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating doctor:", error);
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error creating doctor", error: error.message },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
-      { message: "Error creating doctor", error: error.message },
+      { message: "Unknown error occurred" },
       { status: 500 }
     );
   }

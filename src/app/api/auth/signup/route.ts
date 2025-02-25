@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import dbConnect from "../../../utils/dbConnect";
 import { setSuperAdminStatus } from "../../../utils/globalStore";
 import UserModel from "@/app/model/User.model";
