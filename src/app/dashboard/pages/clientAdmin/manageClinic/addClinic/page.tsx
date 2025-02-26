@@ -46,7 +46,6 @@ const addClinicSchema = z.object({
 type AddClinicFormValues = z.infer<typeof addClinicSchema>;
 
 export default function AddClinicForm() {
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,9 +95,11 @@ export default function AddClinicForm() {
       // Handle success (e.g., show a success message or redirect)
       console.log("Clinic registered successfully");
       form.reset();
-    } catch (err: any) {
-      console.error("Error registering clinic:", err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error registering clinic:", error.message);
+        setError(error.message || "An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }
