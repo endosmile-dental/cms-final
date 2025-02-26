@@ -42,7 +42,7 @@ const initialState: BillingState = {
 };
 
 interface CreateBillingArgs {
-  billingData: any;
+  billingData: unknown;
   doctorId: string;
 }
 
