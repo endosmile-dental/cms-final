@@ -5,7 +5,7 @@ import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCalendar from "../../ui/DashboardCalendar";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
 import DashboardChart from "../../ui/DashboardChart";
-import DashboardTable from "../../ui/DashboardTable";
+import DashboardTable, { TableData } from "../../ui/DashboardTable";
 
 export default function ClientAdminDashboard() {
   // Define your stats array with data relevant for a Client Admin
@@ -30,6 +30,27 @@ export default function ClientAdminDashboard() {
     },
   ];
 
+  const tableData: TableData[] = [
+      { 
+        patient: "John Doe", 
+        contact: "+91 9876543210", 
+        gender: "Male", 
+        dob: "1990-05-15" 
+      },
+      { 
+        patient: "Jane Smith", 
+        contact: "+91 8765432109", 
+        gender: "Female", 
+        dob: "1985-08-22" 
+      },
+      { 
+        patient: "Mike Johnson", 
+        contact: "+91 7654321098", 
+        gender: "Male", 
+        dob: "1992-11-30" 
+      },
+    ];
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -43,7 +64,7 @@ export default function ClientAdminDashboard() {
         </div>
 
         {/* Recent Activities Table */}
-        <DashboardTable />
+        <DashboardTable data={tableData}/>
       </div>
     </DashboardLayout>
   );
