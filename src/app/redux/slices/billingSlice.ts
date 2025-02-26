@@ -42,7 +42,7 @@ const initialState: BillingState = {
 };
 
 interface CreateBillingArgs {
-  billingData: Omit<BillingRecord, "_id" | "createdAt" | "updatedAt">;
+  billingData: any;
   doctorId: string;
 }
 
