@@ -287,7 +287,7 @@ export default function PatientRecords() {
     const generatedInvoiceId = `ES${randomNumber}-${randomNumber}`;
     form.setValue("invoiceId", generatedInvoiceId);
     // return `${patientId} - ${randomNumber}`;
-  }, []);
+  }, [form]);
 
   return (
     <DashboardLayout>
