@@ -78,11 +78,11 @@ export default function Signup() {
 
       // ✅ Redirect to Sign In page after successful signup
       router.push("/api/auth/signin");
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        console.error("An unexpected error occured");
+        console.error("An unexpected error occurred");
       }
     } finally {
       setLoading(false);

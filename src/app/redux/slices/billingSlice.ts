@@ -42,7 +42,7 @@ const initialState: BillingState = {
 };
 
 interface CreateBillingArgs {
-  billingData: any; // Adjust this type according to your form data structure
+  billingData: Omit<BillingRecord, "_id" | "createdAt" | "updatedAt">;
   doctorId: string;
 }
 
