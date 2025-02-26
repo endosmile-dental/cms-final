@@ -78,8 +78,12 @@ export default function Signup() {
 
       // ✅ Redirect to Sign In page after successful signup
       router.push("/api/auth/signin");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error: any) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        console.error("An unexpected error occured");
+      }
     } finally {
       setLoading(false);
     }
@@ -88,9 +92,7 @@ export default function Signup() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-md rounded-lg p-6 w-96">
-        <h2 className="text-2xl font-semibold text-center mb-4">
-          Signup Page
-        </h2>
+        <h2 className="text-2xl font-semibold text-center mb-4">Signup Page</h2>
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

@@ -90,8 +90,8 @@ export const fetchBillings = createAsyncThunk(
       const data = await res.json();
       // Assuming the API returns { billings: BillingRecord[] }
       return data.billings as BillingRecord[];
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error);
     }
   }
 );

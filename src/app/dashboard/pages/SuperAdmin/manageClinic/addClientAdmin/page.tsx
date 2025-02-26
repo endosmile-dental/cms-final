@@ -100,6 +100,7 @@ export default function AddClientAdminForm() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <h1 className="text-3xl font-bold">Client Admin Registration Form</h1>
+        <p>{error}</p>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}

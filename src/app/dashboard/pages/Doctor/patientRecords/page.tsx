@@ -18,11 +18,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import {
-  selectPatients,
-  Patient,
-} from "@/app/redux/slices/patientSlice";
-import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
+import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
+import { useAppSelector } from "@/app/redux/store/hooks";
 import SelectPatientMessage from "@/app/components/SelectPatientMessage";
 
 export default function PatientRecords() {
