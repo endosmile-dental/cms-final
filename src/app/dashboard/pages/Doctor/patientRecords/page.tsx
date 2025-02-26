@@ -3,7 +3,7 @@
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
-import DashboardTable from "@/app/dashboard/ui/DashboardTable";
+// import DashboardTable from "@/app/dashboard/ui/DashboardTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +16,9 @@ import {
   Search,
   UserPlus,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
-  fetchPatients,
   selectPatients,
   Patient,
 } from "@/app/redux/slices/patientSlice";
@@ -35,7 +34,7 @@ export default function PatientRecords() {
 
   // Redux: get patients from store (ensure this returns an array of Patient)
   const patients = useAppSelector(selectPatients);
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
 
   // Example health metrics cards (static demo values)
   const stats: Stat[] = [

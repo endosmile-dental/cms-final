@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, model } from "mongoose";
-import { nanoid } from "nanoid";
 
 interface IWorkingHour {
   day: string;

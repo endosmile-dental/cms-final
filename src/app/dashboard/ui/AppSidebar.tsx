@@ -18,11 +18,9 @@ import {
   ClipboardList,
   UserCog,
   Receipt,
-  Menu,
 } from "lucide-react";
 import { SignOut } from "@/app/components/auth/signout-button";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 
 // Define all possible menu items
 const allMenuItems = [

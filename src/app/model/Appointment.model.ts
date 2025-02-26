@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, model } from "mongoose";
-import { nanoid } from "nanoid";
 
 // ================== Appointment Model ==================
 interface IAppointment extends Document {
@@ -15,12 +14,6 @@ interface IAppointment extends Document {
 
 const AppointmentSchema: Schema<IAppointment> = new Schema(
   {
-    appointmentId: {
-      type: String,
-      required: true,
-      unique: true,
-      default: () => nanoid(),
-    },
     doctor: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
     patient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
     appointmentDate: { type: Date, required: true },

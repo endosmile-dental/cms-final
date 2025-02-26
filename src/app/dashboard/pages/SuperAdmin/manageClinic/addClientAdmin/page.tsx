@@ -81,9 +81,16 @@ export default function AddClientAdminForm() {
       console.log("Signup successful");
       // Optionally reset the form
       form.reset();
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "An unexpected error occurred.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Error adding clientAdmin:", error.message);
+        setError(error.message || "An unexpected error occurred");
+        // Optionally set a form error
+        // setFormError(error.message || "An unexpected error occurred");
+      } else {
+        console.error("An unexpected error occurred");
+        // setFormError("An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
     }

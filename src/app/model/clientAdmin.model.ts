@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, model } from "mongoose";
-import { nanoid } from "nanoid";
 
 // Main Admin Interface extending mongoose.Document
 export interface IClientAdmin extends Document {

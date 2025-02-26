@@ -102,7 +102,7 @@ export default function ErrorPage() {
             Oops! Something went wrong.
           </h1>
           <p className="text-gray-600">
-            We encountered an unexpected issue. Don't worry, you can try
+            We encountered an unexpected issue. Don&apos;t worry, you can try
             refreshing the page or contact the administrator.
           </p>
         </div>

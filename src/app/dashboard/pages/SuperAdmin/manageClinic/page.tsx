@@ -8,7 +8,6 @@ import {
   Stethoscope,
   Clock,
   User,
-  Settings,
   AlertOctagon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

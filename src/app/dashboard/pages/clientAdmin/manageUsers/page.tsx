@@ -44,7 +44,7 @@ const staticUsers = [
 ];
 
 export default function ManageUsers() {
-  const [users, setUsers] = useState(staticUsers);
+  // const [users, setUsers] = useState(staticUsers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
 
@@ -107,7 +107,7 @@ export default function ManageUsers() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {staticUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.id}</TableCell>
                 <TableCell>{user.fullName}</TableCell>

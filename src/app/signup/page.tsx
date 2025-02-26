@@ -14,7 +14,6 @@ export default function Signup() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<SignupForm>();
 
@@ -34,8 +33,16 @@ export default function Signup() {
           // If SuperAdmin exists, redirect to sign in
           router.push("/api/auth/signin");
         }
-      } catch (err) {
-        console.error("Error checking SuperAdmin status:", err);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error("Error checking superAdmin status:", error.message);
+          setError(error.message || "An unexpected error occurred");
+          // Optionally set a form error
+          // setFormError(error.message || "An unexpected error occurred");
+        } else {
+          console.error("An unexpected error occurred");
+          // setFormError("An unexpected error occurred");
+        }
       }
     };
 

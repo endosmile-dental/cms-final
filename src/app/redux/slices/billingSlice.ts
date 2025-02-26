@@ -66,8 +66,13 @@ export const createBilling = createAsyncThunk(
 
       const data = await response.json();
       return data.billing as BillingRecord;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      } else {
+        console.error("An unexpected error occurred");
+        // setFormError("An unexpected error occurred");
+      }
     }
   }
 );

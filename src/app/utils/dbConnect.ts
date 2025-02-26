@@ -9,7 +9,7 @@ const dbConnect = async () => {
   }
 
   try {
-    const db = await mongoose.connect(process.env.MONGODB_URI || "");
+    // const db = await mongoose.connect(process.env.MONGODB_URI || "");
     console.log("MongoDB connected");
 
     // ✅ Check if SuperAdmin exists on first startup

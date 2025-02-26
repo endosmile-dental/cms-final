@@ -121,9 +121,18 @@ export default function PatientRegistrationForm() {
         // Redirect to the patient records page on success.
         router.push("/dashboard/pages/Doctor/patientRecords");
       }
-    } catch (error: any) {
-      setFormError(error.message || "An unexpected error occurred");
+    } catch (error: unknown) {
       console.error("Error registering patient:", error);
+
+      if (error instanceof Error) {
+        console.error("Error registering patient:", error.message);
+        setFormError(error.message || "An unexpected error occurred");
+        // Optionally set a form error
+        // setFormError(error.message || "An unexpected error occurred");
+      } else {
+        console.error("An unexpected error occurred");
+        // setFormError("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
