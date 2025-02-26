@@ -10,8 +10,8 @@ const Invoice = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const storedBillings = sessionStorage.getItem("lastThreeBillings");
-  const lastThreeBillings = storedBillings ? JSON.parse(storedBillings) : [];
+  // const storedBillings = sessionStorage.getItem("lastThreeBillings");
+  // const lastThreeBillings = storedBillings ? JSON.parse(storedBillings) : [];
 
   const [dataAvailable, setDataAvailable] = useState<boolean>(false);
 
@@ -94,9 +94,6 @@ const Invoice = () => {
     }
   };
 
-  useEffect(() => {
-    console.log("lastThreeBillings", lastThreeBillings);
-  }, [lastThreeBillings]);
 
   return (
     <>
