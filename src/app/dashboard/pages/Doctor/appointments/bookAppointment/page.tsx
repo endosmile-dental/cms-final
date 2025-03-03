@@ -147,7 +147,6 @@ export default function BookAppointmentForm({
           setShowError(true);
         }
       } catch (error) {
-        setErrorMessage("An error occurred while creating the appointment.");
         setShowError(true);
       }
     },
