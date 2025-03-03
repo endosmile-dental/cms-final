@@ -4,10 +4,7 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Import shadcn/ui Card components
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// Import shadcn/ui Table components
 import {
   Table,
   TableBody,
@@ -18,94 +15,59 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Edit, Trash } from "lucide-react";
-
-export type Appointment = {
-  id: string;
-  patientName: string;
-  appointmentDate: string; // ISO date string, e.g. "2025-02-10"
-  time: string; // e.g. "10:00 AM"
-  type: string; // e.g. "Consultation", "Follow-up", etc.
-  status: "Pending" | "Completed" | "Cancelled";
-};
+import { BookPlus, Calendar, Edit, Trash } from "lucide-react";
+import Link from "next/link";
+import { format } from "date-fns";
+import { useAppSelector } from "@/app/redux/store/hooks";
+import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import { selectPatients } from "@/app/redux/slices/patientSlice";
 
 export default function DoctorAppointments() {
-  // State for appointments (replace with real API calls in production)
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  // State for search input
+  const appointments = useAppSelector(selectAppointments);
+  const patients = useAppSelector(selectPatients);
+
+  // Local state for search input
   const [search, setSearch] = useState("");
 
-  // Simulate fetching appointments on mount.
-  // For demonstration, we include both upcoming and past appointments.
-  useEffect(() => {
-    const dummyAppointments: Appointment[] = [
-      {
-        id: "1",
-        patientName: "John Doe",
-        appointmentDate: "2025-02-10", // upcoming
-        time: "10:00 AM",
-        type: "Consultation",
-        status: "Pending",
-      },
-      {
-        id: "2",
-        patientName: "Jane Smith",
-        appointmentDate: "2025-02-11", // upcoming
-        time: "11:30 AM",
-        type: "Follow-up",
-        status: "Completed",
-      },
-      {
-        id: "3",
-        patientName: "Bob Johnson",
-        appointmentDate: "2023-10-05", // past
-        time: "02:00 PM",
-        type: "Check-up",
-        status: "Cancelled",
-      },
-      {
-        id: "4",
-        patientName: "Alice Brown",
-        appointmentDate: "2023-09-30", // past
-        time: "09:00 AM",
-        type: "Consultation",
-        status: "Completed",
-      },
-    ];
-    setAppointments(dummyAppointments);
-  }, []);
+  // Filter appointments based on search input (by patient name or appointment ID)
+  const filteredAppointments = appointments.filter((appointment) => {
+    // Look up the patient from the patients store.
+    const patientInfo = patients.find((p) => p._id === appointment.patient);
+    // Use the patient's full name if available.
+    const patientName = patientInfo ? patientInfo.fullName : "";
+    return (
+      patientName.toLowerCase().includes(search.toLowerCase()) ||
+      appointment._id.includes(search)
+    );
+  });
 
-  // Filter appointments based on search (by patient name or appointment ID)
-  const filteredAppointments = appointments.filter(
-    (appointment) =>
-      appointment.patientName.toLowerCase().includes(search.toLowerCase()) ||
-      appointment.id.includes(search)
-  );
-
-  // Get today's date (using local date)
+  // Get today's date
   const today = new Date();
 
-  // Split filtered appointments into upcoming and past appointments.
+  // Split appointments into upcoming and past appointments based on appointmentDate.
   const upcomingAppointments = filteredAppointments.filter((appointment) => {
-    // Create a Date object from the appointment date.
-    const appointmentDate = new Date(appointment.appointmentDate);
-    // Include appointments that are today or in the future.
-    return appointmentDate >= today;
+    const appDate = new Date(appointment.appointmentDate);
+    return appDate >= today;
   });
 
   const pastAppointments = filteredAppointments.filter((appointment) => {
-    const appointmentDate = new Date(appointment.appointmentDate);
-    // Include appointments that are before today.
-    return appointmentDate < today;
+    const appDate = new Date(appointment.appointmentDate);
+    return appDate < today;
   });
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Top Section: Page Title and Search/Filter Controls */}
+        {/* Top Section: Title, Add Button, Search & Filter */}
         <div className="flex flex-col md:flex-row justify-between items-center">
           <h1 className="text-3xl font-bold">Appointments</h1>
           <div className="flex items-center space-x-2 mt-4 md:mt-0">
+            <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
+              <Button variant="default">
+                <BookPlus size={16} className="mr-2" />
+                Add New
+              </Button>
+            </Link>
             <Input
               type="text"
               placeholder="Search appointments..."
@@ -122,7 +84,7 @@ export default function DoctorAppointments() {
 
         <Separator />
 
-        {/* Upcoming Appointments Card */}
+        {/* Upcoming Appointments */}
         <Card>
           <CardHeader>
             <CardTitle>Upcoming Appointments</CardTitle>
@@ -133,7 +95,7 @@ export default function DoctorAppointments() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-1/12">ID</TableHead>
-                    <TableHead className="w-3/12">Patient Name</TableHead>
+                    <TableHead className="w-3/12">Patient</TableHead>
                     <TableHead className="w-2/12">Date</TableHead>
                     <TableHead className="w-2/12">Time</TableHead>
                     <TableHead className="w-2/12">Type</TableHead>
@@ -143,26 +105,40 @@ export default function DoctorAppointments() {
                 </TableHeader>
                 <TableBody>
                   {upcomingAppointments.length > 0 ? (
-                    upcomingAppointments.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>{appointment.id}</TableCell>
-                        <TableCell>{appointment.patientName}</TableCell>
-                        <TableCell>{appointment.appointmentDate}</TableCell>
-                        <TableCell>{appointment.time}</TableCell>
-                        <TableCell>{appointment.type}</TableCell>
-                        <TableCell>{appointment.status}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit size={16} />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    upcomingAppointments.map((appointment) => {
+                      const appDate = new Date(appointment.appointmentDate);
+                      const dateStr = format(appDate, "yyyy-MM-dd");
+                      const timeStr = format(appDate, "hh:mm a");
+                      const patientInfo = patients.find(
+                        (p) => p._id === appointment.patient
+                      );
+                      const displayName = patientInfo
+                        ? `${patientInfo.fullName}`
+                        : "Unknown Patient";
+                      const patientId = patientInfo
+                        ? `${patientInfo.PatientId}`
+                        : "No Patient ID";
+                      return (
+                        <TableRow key={appointment._id}>
+                          <TableCell>{patientId}</TableCell>
+                          <TableCell>{displayName}</TableCell>
+                          <TableCell>{dateStr}</TableCell>
+                          <TableCell>{timeStr}</TableCell>
+                          <TableCell>{appointment.consultationType}</TableCell>
+                          <TableCell>{appointment.status}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button variant="ghost" size="sm">
+                                <Edit size={16} />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center">
@@ -180,7 +156,7 @@ export default function DoctorAppointments() {
           </CardContent>
         </Card>
 
-        {/* Previous (Past) Appointments Card */}
+        {/* Past Appointments */}
         <Card>
           <CardHeader>
             <CardTitle>Past Appointments</CardTitle>
@@ -191,7 +167,7 @@ export default function DoctorAppointments() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-1/12">ID</TableHead>
-                    <TableHead className="w-3/12">Patient Name</TableHead>
+                    <TableHead className="w-3/12">Patient</TableHead>
                     <TableHead className="w-2/12">Date</TableHead>
                     <TableHead className="w-2/12">Time</TableHead>
                     <TableHead className="w-2/12">Type</TableHead>
@@ -201,26 +177,40 @@ export default function DoctorAppointments() {
                 </TableHeader>
                 <TableBody>
                   {pastAppointments.length > 0 ? (
-                    pastAppointments.map((appointment) => (
-                      <TableRow key={appointment.id}>
-                        <TableCell>{appointment.id}</TableCell>
-                        <TableCell>{appointment.patientName}</TableCell>
-                        <TableCell>{appointment.appointmentDate}</TableCell>
-                        <TableCell>{appointment.time}</TableCell>
-                        <TableCell>{appointment.type}</TableCell>
-                        <TableCell>{appointment.status}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Edit size={16} />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <Trash size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    pastAppointments.map((appointment) => {
+                      const appDate = new Date(appointment.appointmentDate);
+                      const dateStr = format(appDate, "yyyy-MM-dd");
+                      const timeStr = format(appDate, "hh:mm a");
+                      const patientInfo = patients.find(
+                        (p) => p._id === appointment.patient
+                      );
+                      const displayName = patientInfo
+                        ? `${patientInfo.fullName} (${patientInfo.PatientId})`
+                        : "Unknown Patient";
+                      const patientId = patientInfo
+                        ? `${patientInfo.PatientId}`
+                        : "No Patient ID";
+                      return (
+                        <TableRow key={appointment._id}>
+                          <TableCell>{patientId}</TableCell>
+                          <TableCell>{displayName}</TableCell>
+                          <TableCell>{dateStr}</TableCell>
+                          <TableCell>{timeStr}</TableCell>
+                          <TableCell>{appointment.consultationType}</TableCell>
+                          <TableCell>{appointment.status}</TableCell>
+                          <TableCell>
+                            <div className="flex space-x-2">
+                              <Button variant="ghost" size="sm">
+                                <Edit size={16} />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center">

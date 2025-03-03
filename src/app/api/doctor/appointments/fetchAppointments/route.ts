@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import PatientModel from "@/app/model/Patient.model";
-import DoctorModel from "@/app/model/Doctor.model";
 import dbConnect from "@/app/utils/dbConnect";
+import AppointmentModel from "@/app/model/Appointment.model";
+import DoctorModel from "@/app/model/Doctor.model";
 
 export async function GET(request: Request) {
   try {
     await dbConnect();
 
-    // Extract doctorUserId from headers instead of query parameters.
+    // Retrieve the doctorUserId from the custom header.
     const doctorUserId = request.headers.get("x-doctor-user-id");
 
     if (!doctorUserId) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    // Retrieve the doctor document using the doctor.userId field.
+    // Find the doctor document using the doctor.userId field.
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
     if (!doctor) {
       return NextResponse.json(
@@ -26,17 +26,15 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch patients associated with the doctor's _id.
-    const patients = await PatientModel.find({ DoctorId: doctor._id }).select(
-      "-permissions -__v"
-    );
+    // Fetch appointments associated with the doctor's _id.
+    const appointments = await AppointmentModel.find({ doctor: doctor._id });
 
-    return NextResponse.json({ patients });
+    return NextResponse.json({ appointments });
   } catch (error: unknown) {
-    console.error("Error fetching patients:", error);
+    console.error("Error fetching appointments:", error);
     if (error instanceof Error) {
       return NextResponse.json(
-        { message: "Error fetching patients:", error: error.message },
+        { message: "Error fetching appointments", error: error.message },
         { status: 500 }
       );
     }

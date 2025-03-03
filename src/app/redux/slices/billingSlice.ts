@@ -71,18 +71,23 @@ export const createBilling = createAsyncThunk(
         return rejectWithValue(error.message);
       } else {
         console.error("An unexpected error occurred");
-        // setFormError("An unexpected error occurred");
       }
     }
   }
 );
 
-// Async thunk to fetch billing records from your API route.
+// Async thunk to fetch billing records for a specific doctor.
 export const fetchBillings = createAsyncThunk(
   "billing/fetchBillings",
-  async (_, { rejectWithValue }) => {
+  async (doctorUserId: string, { rejectWithValue }) => {
     try {
-      const res = await fetch("/api/doctor/billing/getAll");
+      // Send the doctorId in a custom header instead of as a query parameter.
+      const res = await fetch(`/api/doctor/billing/getAll`, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-doctor-user-id": doctorUserId,
+        },
+      });
       if (!res.ok) {
         const errorData = await res.json();
         return rejectWithValue(errorData.error);

@@ -9,19 +9,25 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { month: "Jan", users: 100 },
-  { month: "Feb", users: 200 },
-  { month: "Mar", users: 300 },
-  { month: "Apr", users: 500 },
-  { month: "May", users: 700 },
-];
+interface DashboardChartProps {
+  title?: string;
+  data?: Array<Record<string, any>>;
+}
 
-export default function DashboardChart() {
+export default function DashboardChart({
+  title = "User Growth",
+  data = [
+    { month: "Jan", users: 100 },
+    { month: "Feb", users: 200 },
+    { month: "Mar", users: 300 },
+    { month: "Apr", users: 500 },
+    { month: "May", users: 700 },
+  ],
+}: DashboardChartProps) {
   return (
     <Card className="p-4">
       <CardHeader>
-        <CardTitle>User Growth</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300} className="-ml-10">
