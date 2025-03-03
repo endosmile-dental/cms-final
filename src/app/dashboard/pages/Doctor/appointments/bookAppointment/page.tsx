@@ -34,6 +34,13 @@ interface BookAppointmentFormProps {
   onCancel?: () => void;
 }
 
+// Define an interface for a Patient
+interface Patient {
+  _id: string;
+  fullName: string;
+  PatientId: string;
+}
+
 export default function BookAppointmentForm({
   onCancel = () => {},
 }: BookAppointmentFormProps) {
@@ -56,15 +63,21 @@ export default function BookAppointmentForm({
   const dispatch = useAppDispatch();
 
   // Derive suggestions based on current query
-  const filteredSuggestions = useMemo(() => {
+  const filteredSuggestions: Patient[] = useMemo(() => {
     return patientQuery.length > 0
       ? patients.filter(
-          (p: any) =>
+          (p: Patient) =>
             p.fullName.toLowerCase().includes(patientQuery.toLowerCase()) ||
             p.PatientId.includes(patientQuery)
         )
       : [];
   }, [patientQuery, patients]);
+
+  const handleSelectPatient = useCallback((patient: Patient) => {
+    setPatientQuery(`${patient.fullName} (${patient.PatientId})`);
+    setAppointmentData((prev) => ({ ...prev, patient: patient._id }));
+    setVerifiedPatient(true);
+  }, []);
 
   const handlePatientChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,12 +88,6 @@ export default function BookAppointmentForm({
     },
     []
   );
-
-  const handleSelectPatient = useCallback((patient: any) => {
-    setPatientQuery(`${patient.fullName} (${patient.PatientId})`);
-    setAppointmentData((prev) => ({ ...prev, patient: patient._id }));
-    setVerifiedPatient(true);
-  }, []);
 
   const handleSelectChange = useCallback((name: string, value: string) => {
     setAppointmentData((prev) => ({ ...prev, [name]: value }));
@@ -177,7 +184,7 @@ export default function BookAppointmentForm({
               role="listbox"
               aria-label="Patient Suggestions"
             >
-              {filteredSuggestions.map((p: any) => (
+              {filteredSuggestions.map((p: Patient) => (
                 <li
                   key={p._id}
                   className="p-2 cursor-pointer hover:bg-gray-200"

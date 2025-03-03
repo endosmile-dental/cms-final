@@ -9,9 +9,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+interface DataPoint {
+  month: string;
+  users: number;
+}
+
 interface DashboardChartProps {
   title?: string;
-  data?: Array<Record<string, any>>;
+  data?: DataPoint[];
 }
 
 export default function DashboardChart({
