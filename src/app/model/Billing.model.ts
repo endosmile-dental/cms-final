@@ -12,7 +12,7 @@ export interface ITreatment {
 export interface IBilling extends Document {
   invoiceId: string;
   patientId: mongoose.Types.ObjectId; // Reference to Patient model
-  doctorId: mongoose.Types.ObjectId; // Reference to Doctor model
+  doctorId: mongoose.Types.ObjectId; // Reference to Doctor User Id. Doctor User Id
   clinicId: mongoose.Types.ObjectId; // Reference to Clinic model
   date: Date;
   treatments: ITreatment[];

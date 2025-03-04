@@ -30,12 +30,12 @@ export default function DashboardChart({
   ],
 }: DashboardChartProps) {
   return (
-    <Card className="p-4">
+    <Card className="p-2 flex flex-col justify-center items-start">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300} className="-ml-10">
+      <CardContent className="w-full flex">
+        <ResponsiveContainer width="100%" height={300} className="-ml-8 mt-4">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />

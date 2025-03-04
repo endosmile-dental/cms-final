@@ -17,18 +17,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // Retrieve the doctor document using the doctor.userId field.
-    const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
-      return NextResponse.json(
-        { message: "Doctor not found" },
-        { status: 404 }
-      );
-    }
-
-    // Fetch billing records associated with the doctor's _id.
-    const billings = await BillingModel.find({ doctorId: doctor._id });
-
+    // Fetch billing records associated with the doctor's User id.
+    const billings = await BillingModel.find({ doctorId: doctorUserId });
     return NextResponse.json({ billings });
   } catch (error: unknown) {
     console.error("Error fetching billings:", error);

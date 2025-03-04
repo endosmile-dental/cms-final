@@ -4,17 +4,20 @@ import React, { useEffect, useState, useMemo } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
+import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import DashboardCalendar from "@/app/dashboard/ui/DashboardCalendar";
 import DashboardTable from "@/app/dashboard/ui/DashboardTable";
 import { Syringe, User, Clock, AlertTriangle } from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
 import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import { selectBillings } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
 
 export default function DoctorDashboard() {
   const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
+  const billings = useAppSelector(selectBillings);
   const [tableData, setTableData] = useState<
     {
       patient: string;
@@ -134,23 +137,46 @@ export default function DoctorDashboard() {
     return Object.values(summary);
   }, [appointments]);
 
+  // Compute pie chart data from billings by aggregating treatment counts.
+  const pieData = useMemo(() => {
+    if (!billings || billings.length === 0) return [];
+    const treatmentCounts: Record<string, number> = {};
+    billings.forEach((billing) => {
+      if (billing.treatments && Array.isArray(billing.treatments)) {
+        billing.treatments.forEach((treatment: any) => {
+          const treatmentName = treatment.treatment;
+          treatmentCounts[treatmentName] =
+            (treatmentCounts[treatmentName] || 0) + (treatment.quantity || 1);
+        });
+      }
+    });
+    return Object.entries(treatmentCounts).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  }, [billings]);
+
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-3 space-y-4">
         <DashboardCards stats={stats} />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DashboardChart
             title="Monthly Patient Registrations"
             data={chartData}
           />
+          <DashboardPieChart title="Treatments Taken" data={pieData} />
+        </div>
+        <div className="w-full flex gap-x-4">
           <DashboardCalendar
             title="Appointments"
             appointmentSummary={appointmentSummary}
           />
+          <div className="w-full">
+            <DashboardTable data={tableData} />
+          </div>
         </div>
-
-        <DashboardTable data={tableData} />
       </div>
     </DashboardLayout>
   );

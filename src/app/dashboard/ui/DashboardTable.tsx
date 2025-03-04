@@ -7,7 +7,6 @@ export interface TableData {
   patient: string;
   contact: string;
   gender: "Male" | "Female" | "Other";
-  dob: string;
   registeredAt: string;
 }
 
@@ -29,7 +28,6 @@ export default function DashboardTable({ data }: DashboardTableProps) {
                 <th className="py-2">Patient</th>
                 <th className="py-2">Contact</th>
                 <th className="py-2">Gender</th>
-                <th className="py-2">DOB</th>
                 <th className="py-2">Registration</th>
               </tr>
             </thead>
@@ -39,7 +37,6 @@ export default function DashboardTable({ data }: DashboardTableProps) {
                   <td className="py-2">{row.patient}</td>
                   <td className="py-2">{row.contact}</td>
                   <td className="py-2">{row.gender}</td>
-                  <td className="py-2">{row.dob}</td>
                   <td className="py-2">{row.registeredAt}</td>
                 </tr>
               ))}
