@@ -6,7 +6,7 @@ interface IAppointment extends Document {
   clinic: mongoose.Types.ObjectId;
   appointmentDate: Date;
   status: "Scheduled" | "Completed" | "Cancelled";
-  consultationType: "In-Person" | "Online";
+  consultationType: "New" | "Follow-up";
   notes?: string;
   createdBy: mongoose.Types.ObjectId;
   rescheduledAt?: Date;
@@ -28,7 +28,7 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
     },
     consultationType: {
       type: String,
-      enum: ["In-Person", "Online"],
+      enum: ["New", "Follow-up"],
       required: true,
     },
     notes: { type: String },

@@ -47,7 +47,7 @@ export default function BookAppointmentForm({
   const [appointmentData, setAppointmentData] = useState({
     patient: "",
     appointmentDate: new Date(),
-    consultationType: "In-Person",
+    consultationType: "New",
     notes: "",
   });
 
@@ -129,8 +129,8 @@ export default function BookAppointmentForm({
         appointmentDate: getLocalISOString(appointmentData.appointmentDate),
         status: "Scheduled" as const,
         consultationType: appointmentData.consultationType as
-          | "In-Person"
-          | "Online",
+          | "New"
+          | "Follow-up",
         notes: appointmentData.notes,
         createdBy: session?.user?.id, // Replace with the actual creator's ID if needed
       };
@@ -228,8 +228,8 @@ export default function BookAppointmentForm({
               <SelectValue placeholder="Select Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="In-Person">In-Person</SelectItem>
-              <SelectItem value="Online">Online</SelectItem>
+              <SelectItem value="New">New</SelectItem>
+              <SelectItem value="Follow-up">Follow-up</SelectItem>
             </SelectContent>
           </Select>
         </div>

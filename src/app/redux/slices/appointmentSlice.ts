@@ -9,7 +9,7 @@ export interface Appointment {
   clinic?: string;
   appointmentDate: string;
   status: "Scheduled" | "Completed" | "Cancelled";
-  consultationType: "In-Person" | "Online";
+  consultationType: "New" | "Follow-up";
   notes?: string;
   createdBy: string | undefined;
   rescheduledAt?: string;

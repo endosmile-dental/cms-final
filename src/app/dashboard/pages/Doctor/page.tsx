@@ -21,6 +21,7 @@ export default function DoctorDashboard() {
       contact: string;
       gender: "Male" | "Female" | "Other";
       dob: string;
+      registeredAt: string;
     }[]
   >([]);
 
@@ -45,10 +46,14 @@ export default function DoctorDashboard() {
             "en-US",
             options
           ),
+          registeredAt: new Date(patient.createdAt).toLocaleDateString(
+            "en-US",
+            options
+          ),
         }));
       setTableData(patientsTableData);
     }
-  }, [patients, appointments]);
+  }, [patients]);
 
   const stats: Stat[] = [
     {
@@ -106,11 +111,27 @@ export default function DoctorDashboard() {
     }));
   }, [patients]);
 
-  // Compute an array of appointment dates from appointments.
-  const appointmentDates = useMemo(() => {
-    return appointments.map(
-      (appointment) => new Date(appointment.appointmentDate)
-    );
+  // Compute a summary of appointments by date including consultation type breakdown.
+  const appointmentSummary = useMemo(() => {
+    if (!appointments || appointments.length === 0) return [];
+    const summary: Record<
+      string,
+      { date: Date; count: number; new: number; followUp: number }
+    > = {};
+    appointments.forEach((appointment) => {
+      const date = new Date(appointment.appointmentDate);
+      const dateKey = format(date, "yyyy-MM-dd");
+      if (!summary[dateKey]) {
+        summary[dateKey] = { date, count: 0, new: 0, followUp: 0 };
+      }
+      summary[dateKey].count++;
+      if (appointment.consultationType === "New") {
+        summary[dateKey].new++;
+      } else if (appointment.consultationType === "Follow-up") {
+        summary[dateKey].followUp++;
+      }
+    });
+    return Object.values(summary);
   }, [appointments]);
 
   return (
@@ -125,7 +146,7 @@ export default function DoctorDashboard() {
           />
           <DashboardCalendar
             title="Appointments"
-            selectedDates={appointmentDates}
+            appointmentSummary={appointmentSummary}
           />
         </div>
 
