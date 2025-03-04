@@ -14,6 +14,12 @@ import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
 import { selectBillings } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
 
+// Define a type for a treatment
+interface BillingTreatment {
+  treatment: string;
+  quantity?: number;
+}
+
 export default function DoctorDashboard() {
   const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
@@ -143,7 +149,7 @@ export default function DoctorDashboard() {
     const treatmentCounts: Record<string, number> = {};
     billings.forEach((billing) => {
       if (billing.treatments && Array.isArray(billing.treatments)) {
-        billing.treatments.forEach((treatment: any) => {
+        billing.treatments.forEach((treatment: BillingTreatment) => {
           const treatmentName = treatment.treatment;
           treatmentCounts[treatmentName] =
             (treatmentCounts[treatmentName] || 0) + (treatment.quantity || 1);

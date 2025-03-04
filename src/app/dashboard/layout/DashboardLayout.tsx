@@ -5,7 +5,10 @@ import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { fetchPatients, selectPatients } from "@/app/redux/slices/patientSlice";
 import { fetchBillings, selectBillings } from "@/app/redux/slices/billingSlice";
-import { fetchAppointments, selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import {
+  fetchAppointments,
+  selectAppointments,
+} from "@/app/redux/slices/appointmentSlice";
 
 export default function DashboardLayout({
   children,
@@ -30,7 +33,7 @@ export default function DashboardLayout({
       if (!appointments || appointments.length === 0)
         dispatch(fetchAppointments(session?.user.id));
     }
-  }, [dispatch, session?.user?.role]); // Depend on role & existing data
+  }, [dispatch, session?.user?.role, appointments, billings, patients]); // Depend on role & existing data
 
   return (
     <SidebarProvider>
