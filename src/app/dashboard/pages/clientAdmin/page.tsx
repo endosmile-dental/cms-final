@@ -35,19 +35,19 @@ export default function ClientAdminDashboard() {
         patient: "John Doe", 
         contact: "+91 9876543210", 
         gender: "Male", 
-        dob: "1990-05-15" 
+        registeredAt: "1990-05-15" 
       },
       { 
         patient: "Jane Smith", 
         contact: "+91 8765432109", 
         gender: "Female", 
-        dob: "1985-08-22" 
+        registeredAt: "1985-08-22" 
       },
       { 
         patient: "Mike Johnson", 
         contact: "+91 7654321098", 
         gender: "Male", 
-        dob: "1992-11-30" 
+        registeredAt: "1992-11-30" 
       },
     ];
 
