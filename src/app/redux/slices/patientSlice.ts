@@ -4,6 +4,7 @@ import { RootState } from "../store/store";
 
 // Define a type for a Patient (adjust to match your model)
 export interface Patient {
+  email: string | undefined;
   _id: string; // Mongoose-generated Document ID
   userId: string; // Reference to the User model
   DoctorId: string; // Reference to the Doctor model

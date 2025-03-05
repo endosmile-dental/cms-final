@@ -15,6 +15,8 @@ import {
   AlertOctagon,
   Search,
   UserPlus,
+  MapPin,
+  Mail,
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -94,6 +96,8 @@ export default function PatientRecords() {
 
   // When a patient suggestion is selected, store the entire patient object.
   const handleSelectSuggestion = (patient: Patient) => {
+    console.log("patient", patient);
+
     setSelectedPatient(patient);
     setSearchInput(patient.fullName);
     setSuggestions([]);
@@ -174,21 +178,56 @@ export default function PatientRecords() {
             {/* Vital Signs & Medical Info */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <DashboardChart />
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <AlertOctagon className="text-red-500" size={20} />
-                  Emergency Contacts
-                </h2>
-                <ul className="space-y-3">
-                  <li className="flex justify-between items-center p-2 bg-red-50 rounded">
-                    <span>Mary Johnson (Spouse)</span>
-                    <span className="text-red-600">+1 (555) 123-4567</span>
-                  </li>
-                  <li className="flex justify-between items-center p-2 bg-red-50 rounded">
-                    <span>David Smith (Brother)</span>
-                    <span className="text-red-600">+1 (555) 987-6543</span>
-                  </li>
-                </ul>
+              <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
+                {/* Patient Info - Email */}
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Mail className="text-blue-500" size={20} />
+                    Email
+                  </h2>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                      <span>{selectedPatient?.email || "NA"}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Patient Info - Address */}
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="text-green-500" size={20} />
+                    Address
+                  </h2>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between items-center p-2 bg-green-50 rounded">
+                      {selectedPatient?.address?.street},{" "}
+                      {selectedPatient?.address?.city},{" "}
+                      {selectedPatient?.address?.state} -{" "}
+                      {selectedPatient?.address?.postalCode}
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <AlertOctagon className="text-red-500" size={20} />
+                    Emergency Contacts
+                  </h2>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between items-center p-2 text-red-600 bg-red-50 rounded">
+                      <span>
+                        {selectedPatient?.emergencyContact?.fullName || "NA"}
+                      </span>
+                      <span>
+                        {selectedPatient?.emergencyContact?.contactNumber ||
+                          "NA"}
+                      </span>
+                      <span>
+                        {selectedPatient?.emergencyContact?.relationship ||
+                          "NA"}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 

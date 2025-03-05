@@ -14,10 +14,17 @@ export default async function Home() {
 
   if (!isSuperAdminCreated) {
     return (
-      <div className="flex flex-col items-center p-4">
-        <h1 className="text-xl font-semibold">Setup SuperAdmin</h1>
+      <div className="w-full h-screen bg-[url('/signin.png')] flex flex-col gap-5 items-center justify-center bg-cover bg-center">
+        <h1 className="text-6xl font-sans font-semibold">
+          <span className="text-orange-500">"Smart,</span>
+          <span className="text-white">Simple,</span>
+          <span className="text-green-600">and Secure"</span>
+        </h1>
+        <h2 className="text-2xl tracking-wide font-sans font-medium text-white">
+          The Future of Dental Practice Management!
+        </h2>
         <Link href="/signup">
-          <button className="px-4 py-2 bg-blue-500 text-white rounded">
+          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg tracking-wide outline-2 transition-all hover:bg-transparent hover:outline-2 hover:text-blue-600 hover:font-bold hover:outline-blue-600 hover:outline">
             Create SuperAdmin
           </button>
         </Link>

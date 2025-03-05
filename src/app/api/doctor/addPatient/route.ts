@@ -77,6 +77,7 @@ export async function POST(request: Request) {
       PatientId: newPatientId,
       ClinicId: doctor.clinicId, // Assumes the doctor document contains a ClinicId field
       fullName: data.fullName,
+      email: data.email,
       contactNumber: data.contactNumber,
       gender: data.gender,
       dateOfBirth: new Date(data.dateOfBirth),

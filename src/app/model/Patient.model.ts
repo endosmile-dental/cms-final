@@ -9,6 +9,7 @@ interface IPatient extends Document {
   PatientId: string;
   permissions: Map<string, boolean>;
   fullName: string;
+  email: string;
   contactNumber: string;
   gender: "Male" | "Female" | "Other";
   dateOfBirth: Date;
@@ -52,6 +53,7 @@ const PatientSchema: Schema<IPatient> = new Schema(
     contactNumber: { type: String, required: true },
     gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
     dateOfBirth: { type: Date, required: true },
+    email: { type: String },
     address: {
       street: { type: String },
       city: { type: String },

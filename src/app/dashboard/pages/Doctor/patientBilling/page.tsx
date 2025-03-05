@@ -231,8 +231,7 @@ export default function PatientRecords() {
     // Set the search input to the selected patient's name or id
     setSearchInput(patient.fullName);
     console.log("patient", patient);
-    console.log("billings", billings);
-    console.log(searchInput);
+    // console.log("billings", billings);
 
     setPatientModelId(patient._id);
 
@@ -245,6 +244,13 @@ export default function PatientRecords() {
     form.setValue("contactNumber", patient.contactNumber);
     form.setValue("patientId", patient.PatientId);
     form.setValue("gender", patient.gender);
+    form.setValue("email", patient.email);
+    // Convert the address object to a string and set it in the form
+    if (patient.address) {
+      const { street, city, state, postalCode } = patient.address;
+      const formattedAddress = `${street}, ${city}, ${state} - ${postalCode}`;
+      form.setValue("address", formattedAddress);
+    }
     // Generate a random 6-digit number (from 100000 to 999999)
     const randomNumber = Math.floor(Math.random() * 900000) + 100000;
     const generatedInvoiceId = `${patient.PatientId}-${randomNumber}`;
@@ -254,7 +260,6 @@ export default function PatientRecords() {
     // Now, filter the Redux billings array to get the bills for this patient.
     // We assume that billing.patientId (a string) matches patient._id (also as a string)
     // and optionally that billing.invoiceId starts with patient.PatientId.
-    console.log(patient._id);
 
     const filteredBillings = billings.filter(
       (bill) =>
@@ -262,7 +267,7 @@ export default function PatientRecords() {
         bill.invoiceId.startsWith(patient.PatientId)
     );
 
-    console.log("filteredBillings", filteredBillings);
+    // console.log("filteredBillings", filteredBillings);
 
     // Sort by createdAt descending (most recent first) and take the first three records.
     const latestThreeBillings = filteredBillings

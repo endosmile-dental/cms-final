@@ -33,7 +33,7 @@ export default function DashboardLayout({
       if (!appointments || appointments.length === 0)
         dispatch(fetchAppointments(session?.user.id));
     }
-  }, [dispatch, session?.user?.role, appointments, billings, patients]); // Depend on role & existing data
+  }, [dispatch, session?.user?.role]); // Depend on role & existing data
 
   return (
     <SidebarProvider>

@@ -21,30 +21,32 @@ export default function DashboardTable({ data }: DashboardTableProps) {
         <CardTitle>Recent Patient Registrations</CardTitle>
       </CardHeader>
       <CardContent>
-        {data.length > 0 ? (
-          <table className="w-full text-center">
-            <thead>
-              <tr>
-                <th className="py-2">Patient</th>
-                <th className="py-2">Contact</th>
-                <th className="py-2">Gender</th>
-                <th className="py-2">Registration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row, index) => (
-                <tr key={index} className="border-b">
-                  <td className="py-2">{row.patient}</td>
-                  <td className="py-2">{row.contact}</td>
-                  <td className="py-2">{row.gender}</td>
-                  <td className="py-2">{row.registeredAt}</td>
+        <div className="overflow-x-auto">
+          {data.length > 0 ? (
+            <table className="w-full text-center">
+              <thead>
+                <tr>
+                  <th className="py-2">Patient</th>
+                  <th className="py-2">Contact</th>
+                  <th className="py-2">Gender</th>
+                  <th className="py-2">Registration</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No patient data available.</p>
-        )}
+              </thead>
+              <tbody>
+                {data.map((row, index) => (
+                  <tr key={index} className="border-b">
+                    <td className="py-2">{row.patient}</td>
+                    <td className="py-2">{row.contact}</td>
+                    <td className="py-2">{row.gender}</td>
+                    <td className="py-2">{row.registeredAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No patient data available.</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -68,25 +68,25 @@ export default function DoctorDashboard() {
     {
       title: "Total Patients",
       value: patients?.length?.toString() || "N/A",
-      icon: <User size={24} />,
+      icon: <User size={24} color="white" />,
       color: "bg-green-500",
     },
     {
       title: "Total Appointments",
       value: appointments?.length?.toString() || "N/A",
-      icon: <Syringe size={24} />,
+      icon: <Syringe size={24} color="white" />,
       color: "bg-blue-500",
     },
     {
       title: "Upcoming Follow-ups",
       value: "5",
-      icon: <Clock size={24} />,
+      icon: <Clock size={24} color="white" />,
       color: "bg-orange-500",
     },
     {
       title: "Pending Consultations",
       value: "2",
-      icon: <AlertTriangle size={24} />,
+      icon: <AlertTriangle size={24} color="white" />,
       color: "bg-red-500",
     },
   ];
@@ -174,7 +174,7 @@ export default function DoctorDashboard() {
           />
           <DashboardPieChart title="Treatments Taken" data={pieData} />
         </div>
-        <div className="w-full flex gap-x-4">
+        <div className="w-full flex flex-col md:flex-row gap-y-4 md:gap-x-4">
           <DashboardCalendar
             title="Appointments"
             appointmentSummary={appointmentSummary}
