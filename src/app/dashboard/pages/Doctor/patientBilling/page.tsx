@@ -311,6 +311,7 @@ export default function PatientRecords() {
                 <Input
                   type="text"
                   placeholder="Search patients..."
+                  value={searchInput}
                   onChange={handleSearchChange} // (simulate selection)
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />

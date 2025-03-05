@@ -16,9 +16,9 @@ export default async function Home() {
     return (
       <div className="w-full h-screen bg-[url('/signin.png')] flex flex-col gap-5 items-center justify-center bg-cover bg-center">
         <h1 className="text-6xl font-sans font-semibold">
-          <span className="text-orange-500">"Smart,</span>
+          <span className="text-orange-500">&quot;Smart,</span>
           <span className="text-white">Simple,</span>
-          <span className="text-green-600">and Secure"</span>
+          <span className="text-green-600">and Secure&quot;</span>
         </h1>
         <h2 className="text-2xl tracking-wide font-sans font-medium text-white">
           The Future of Dental Practice Management!
