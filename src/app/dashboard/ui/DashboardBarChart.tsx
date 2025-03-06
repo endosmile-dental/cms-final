@@ -18,11 +18,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface DataPoint {
+  [key: string]: number | string;
+}
+
 interface BarChartProps {
   data: {
-    monthly: Array<Record<string, any>>;
-    weekly: Array<Record<string, any>>;
-    yearly: Array<Record<string, any>>;
+    monthly: DataPoint[];
+    weekly: DataPoint[];
+    yearly: DataPoint[];
   };
   config: ChartConfig;
   xDataKey?: string;
@@ -45,8 +49,9 @@ export function DashboardBarChart({
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Appointment Statistics</h2>
         <Select
-          onValueChange={(value) => setTimeFrame(value as any)}
-          defaultValue={timeFrame}
+          onValueChange={(value: "monthly" | "weekly" | "yearly") =>
+            setTimeFrame(value)
+          }
         >
           <SelectTrigger className="w-[120px]">
             <SelectValue />
