@@ -23,11 +23,6 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  // Log summary data when it changes.
-  React.useEffect(() => {
-    console.log("Calendar summary data:", summary);
-  }, [summary]);
-
   return (
     <DayPicker
       defaultMonth={new Date("2025-03-01")} // For testing: display March 2025.

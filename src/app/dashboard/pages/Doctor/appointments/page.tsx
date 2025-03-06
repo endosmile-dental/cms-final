@@ -97,7 +97,7 @@ export default function DoctorAppointments() {
                     <TableHead className="w-1/12">ID</TableHead>
                     <TableHead className="w-3/12">Patient</TableHead>
                     <TableHead className="w-2/12">Date</TableHead>
-                    <TableHead className="w-2/12">Time</TableHead>
+                    <TableHead className="w-2/12">Contact</TableHead>
                     <TableHead className="w-2/12">Type</TableHead>
                     <TableHead className="w-1/12">Status</TableHead>
                     <TableHead className="w-1/12">Actions</TableHead>
@@ -108,22 +108,25 @@ export default function DoctorAppointments() {
                     upcomingAppointments.map((appointment) => {
                       const appDate = new Date(appointment.appointmentDate);
                       const dateStr = format(appDate, "yyyy-MM-dd");
-                      const timeStr = format(appDate, "hh:mm a");
                       const patientInfo = patients.find(
                         (p) => p._id === appointment.patient
                       );
                       const displayName = patientInfo
                         ? `${patientInfo.fullName}`
-                        : "Unknown Patient";
+                        : "NA";
                       const patientId = patientInfo
                         ? `${patientInfo.PatientId}`
-                        : "No Patient ID";
+                        : "NA";
+                      const contactNumber = patientInfo
+                        ? `${patientInfo.contactNumber}`
+                        : "NA";
+
                       return (
                         <TableRow key={appointment._id}>
                           <TableCell>{patientId}</TableCell>
                           <TableCell>{displayName}</TableCell>
                           <TableCell>{dateStr}</TableCell>
-                          <TableCell>{timeStr}</TableCell>
+                          <TableCell>{contactNumber}</TableCell>
                           <TableCell>{appointment.consultationType}</TableCell>
                           <TableCell>{appointment.status}</TableCell>
                           <TableCell>
@@ -169,7 +172,7 @@ export default function DoctorAppointments() {
                     <TableHead className="w-1/12">ID</TableHead>
                     <TableHead className="w-3/12">Patient</TableHead>
                     <TableHead className="w-2/12">Date</TableHead>
-                    <TableHead className="w-2/12">Time</TableHead>
+                    <TableHead className="w-2/12">Contact</TableHead>
                     <TableHead className="w-2/12">Type</TableHead>
                     <TableHead className="w-1/12">Status</TableHead>
                     <TableHead className="w-1/12">Actions</TableHead>
@@ -180,22 +183,24 @@ export default function DoctorAppointments() {
                     pastAppointments.map((appointment) => {
                       const appDate = new Date(appointment.appointmentDate);
                       const dateStr = format(appDate, "yyyy-MM-dd");
-                      const timeStr = format(appDate, "hh:mm a");
                       const patientInfo = patients.find(
                         (p) => p._id === appointment.patient
                       );
                       const displayName = patientInfo
                         ? `${patientInfo.fullName} (${patientInfo.PatientId})`
-                        : "Unknown Patient";
+                        : "NA";
                       const patientId = patientInfo
                         ? `${patientInfo.PatientId}`
-                        : "No Patient ID";
+                        : "NA";
+                      const contactNumber = patientInfo
+                        ? `${patientInfo.contactNumber}`
+                        : "NA";
                       return (
                         <TableRow key={appointment._id}>
                           <TableCell>{patientId}</TableCell>
                           <TableCell>{displayName}</TableCell>
                           <TableCell>{dateStr}</TableCell>
-                          <TableCell>{timeStr}</TableCell>
+                          <TableCell>{contactNumber}</TableCell>
                           <TableCell>{appointment.consultationType}</TableCell>
                           <TableCell>{appointment.status}</TableCell>
                           <TableCell>

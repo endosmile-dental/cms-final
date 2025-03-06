@@ -42,24 +42,28 @@ export default function PatientRecords() {
       value: "2",
       icon: <Stethoscope size={24} />,
       color: "bg-blue-500",
+      LinkURL: "",
     },
     {
       title: "Active Medications",
       value: "5",
       icon: <Pill size={24} />,
       color: "bg-purple-500",
+      LinkURL: "",
     },
     {
       title: "Known Allergies",
       value: "3",
       icon: <FlaskConical size={24} />,
       color: "bg-red-500",
+      LinkURL: "",
     },
     {
       title: "Last BMI",
       value: "24.3",
       icon: <ClipboardList size={24} />,
       color: "bg-green-500",
+      LinkURL: "",
     },
   ];
 
