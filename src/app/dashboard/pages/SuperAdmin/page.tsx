@@ -8,55 +8,56 @@ import DashboardChart from "../../ui/DashboardChart";
 import DashboardTable, { TableData } from "../../ui/DashboardTable";
 
 export default function SuperAdminDashboard() {
-
-   // Define your stats array here
-   const stats: Stat[] = [
+  // Define your stats array here
+  const stats: Stat[] = [
     {
       title: "Total Users",
       value: "1,245",
       icon: <Users size={24} />,
       color: "bg-blue-500",
+      LinkURL: "",
     },
     {
       title: "Appointments",
       value: "345",
       icon: <Calendar size={24} />,
       color: "bg-green-500",
+      LinkURL: "",
     },
     {
       title: "Revenue",
       value: "$12,340",
       icon: <BarChart size={24} />,
       color: "bg-yellow-500",
+      LinkURL: "",
     },
   ];
 
   const tableData: TableData[] = [
-    { 
-      patient: "John Doe", 
-      contact: "+91 9876543210", 
-      gender: "Male", 
-      registeredAt: "1990-05-15" 
+    {
+      patient: "John Doe",
+      contact: "+91 9876543210",
+      gender: "Male",
+      registeredAt: "1990-05-15",
     },
-    { 
-      patient: "Jane Smith", 
-      contact: "+91 8765432109", 
-      gender: "Female", 
-      registeredAt: "1985-08-22" 
+    {
+      patient: "Jane Smith",
+      contact: "+91 8765432109",
+      gender: "Female",
+      registeredAt: "1985-08-22",
     },
-    { 
-      patient: "Mike Johnson", 
-      contact: "+91 7654321098", 
-      gender: "Male", 
-      registeredAt: "1992-11-30" 
+    {
+      patient: "Mike Johnson",
+      contact: "+91 7654321098",
+      gender: "Male",
+      registeredAt: "1992-11-30",
     },
   ];
   return (
     <DashboardLayout>
-      
       <div className="p-6 space-y-6">
         {/* 🔹 Top Metrics Cards */}
-        <DashboardCards stats={stats}/>
+        <DashboardCards stats={stats} />
 
         {/* 🔹 Charts & Calendar */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
