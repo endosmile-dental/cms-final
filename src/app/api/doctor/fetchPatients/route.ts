@@ -9,7 +9,8 @@ export async function GET(request: Request) {
 
     // Extract doctorUserId from headers instead of query parameters.
     const doctorUserId = request.headers.get("x-doctor-user-id");
-
+    console.log("doctorUserId",doctorUserId);
+    
     if (!doctorUserId) {
       return NextResponse.json(
         { message: "Doctor user id not provided" },

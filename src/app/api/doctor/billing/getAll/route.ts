@@ -19,8 +19,6 @@ export async function GET(request: Request) {
     // Fetch billing records associated with the found doctor's _id.
     const billings = await BillingModel.find({ doctorId: doctorUserId });
 
-    console.log("all billings", billings);
-
     return NextResponse.json({ billings });
   } catch (error: unknown) {
     console.error("Error fetching billings:", error);
