@@ -27,6 +27,12 @@ export default function DoctorDashboard() {
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
 
+  useEffect(() => {
+    if (billings) {
+      console.log("all billings", billings);
+    }
+  }, [billings]);
+
   const [tableData, setTableData] = useState<
     {
       patient: string;

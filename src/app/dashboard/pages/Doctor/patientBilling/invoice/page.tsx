@@ -3,15 +3,12 @@
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
-import { Treatment } from "../page"; // From Patient Billing Form
+import { Treatment } from "@/app/redux/slices/billingSlice";
 
 const Invoice = () => {
   // Reference to the content you want to convert to PDF
   const contentRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
-  // const storedBillings = sessionStorage.getItem("lastThreeBillings");
-  // const lastThreeBillings = storedBillings ? JSON.parse(storedBillings) : [];
 
   const [dataAvailable, setDataAvailable] = useState<boolean>(false);
 
@@ -23,12 +20,17 @@ const Invoice = () => {
   const [date, setDate] = useState<string>("NA");
   const [contactNumber, setContactNumber] = useState<string>("NA");
   const [address, setAddress] = useState<string>("NA");
-  const [amountRecieved, setAmountRecieved] = useState<string>("0");
+  // Rename amountRecieved to amountReceived for consistency.
+  const [amountReceived, setAmountReceived] = useState<string>("0");
   const [modeOfPayment, setModeOfPayment] = useState<string>("NA");
   const [advance, setAdvance] = useState<string>("0");
   const [discount, setDiscount] = useState<string>("0");
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [grandTotal, setGrandTotal] = useState<string>("0");
+
+  // Helper function to safely calculate numbers and return string.
+  const safeNumberToString = (num: number) =>
+    isNaN(num) ? "0" : num.toString();
 
   useEffect(() => {
     const formData = sessionStorage.getItem("formData");
@@ -38,36 +40,33 @@ const Invoice = () => {
       const dataObject = JSON.parse(formData);
       console.log("dataObject", dataObject);
 
-      setPatientName(dataObject.patientName);
-      setPatientId(dataObject.patientId);
-      setInvoiceId(dataObject.invoiceId);
-      setGender(dataObject.gender);
-      setDate(dataObject.date);
-      setEmail(dataObject.email);
-      setContactNumber(dataObject.contactNumber);
-      setAddress(dataObject.address);
-      setTreatments(dataObject.treatments);
-      setAdvance(dataObject.advance);
-      setDiscount(dataObject.discount);
-      setModeOfPayment(dataObject.modeOfPayment);
-      setAmountRecieved(dataObject.amountRecieved);
+      setPatientName(dataObject.patientName || "NA");
+      setPatientId(dataObject.patientId || "NA");
+      setInvoiceId(dataObject.invoiceId || "NA");
+      setGender(dataObject.gender || "NA");
+      setDate(dataObject.date || "NA");
+      setEmail(dataObject.email || "NA");
+      setContactNumber(dataObject.contactNumber || "NA");
+      setAddress(dataObject.address || "NA");
+      // Use the correctly spelled field from session storage.
+      setAmountReceived(dataObject.amountReceived || "0");
+      setModeOfPayment(dataObject.modeOfPayment || "NA");
+      setAdvance(dataObject.advance || "0");
+      setDiscount(dataObject.discount || "0");
+      setTreatments(dataObject.treatments || []);
 
-      const treatments = dataObject.treatments;
-      // Calculate totalAmount
-      const totalAmount = treatments.reduce(
+      const treatmentsData = dataObject.treatments || [];
+      // Calculate grand total from treatments
+      const totalAmount = treatmentsData.reduce(
         (total: number, treatment: Treatment) => {
-          const quantity = Number(treatment.quantity); // Convert quantity to number
-          const price = Number(treatment.price); // Convert price to number
-          console.log(quantity, price);
-
-          return total + quantity * price; // Add the total cost of the treatment
+          const quantity = Number(treatment.quantity) || 0;
+          const price = Number(treatment.price) || 0;
+          return total + quantity * price;
         },
         0
-      ); // Start with a total of 0
-
+      );
       console.log("totalAmount", totalAmount);
-
-      setGrandTotal(totalAmount.toString());
+      setGrandTotal(safeNumberToString(totalAmount));
     }
   }, []);
 
@@ -83,8 +82,7 @@ const Invoice = () => {
         callback: function (doc) {
           if (buttonRef.current) buttonRef.current.style.display = "block";
           doc.autoPrint();
-          doc.output("dataurlnewwindow"); // This opens the PDF in a new window
-          // Show the print button again after generating the PDF
+          doc.output("dataurlnewwindow"); // Opens the PDF in a new window
         },
         x: 10,
         y: 10,
@@ -93,7 +91,6 @@ const Invoice = () => {
       });
     }
   };
-
 
   return (
     <>
@@ -207,17 +204,21 @@ const Invoice = () => {
               <li>Discount:</li>
               <li>Advance:</li>
               <li>Net Payable:</li>
-              <li>Amount Recieved:</li>
+              <li>Amount Received:</li>
               <li>Balance Amount:</li>
             </ul>
             <ul className="flex flex-col justify-start">
               <li>{grandTotal}</li>
               <li>{discount || "0"}</li>
               <li>{advance || "0"}</li>
-              <li>{Number(grandTotal) - Number(discount)}</li>
-              <li>{amountRecieved}</li>
               <li>
-                {Number(grandTotal) - Number(discount) - Number(amountRecieved)}
+                {safeNumberToString(Number(grandTotal) - Number(discount))}
+              </li>
+              <li>{amountReceived}</li>
+              <li>
+                {safeNumberToString(
+                  Number(grandTotal) - Number(discount) - Number(amountReceived)
+                )}
               </li>
             </ul>
           </div>
@@ -241,7 +242,7 @@ const Invoice = () => {
                   <td className="px-4 py-2">1</td>
                   <td className="px-4 py-2">{date}</td>
                   <td className="px-4 py-2">{modeOfPayment}</td>
-                  <td className="px-4 py-2">{amountRecieved}</td>
+                  <td className="px-4 py-2">{amountReceived}</td>
                 </tr>
               </tbody>
             </table>

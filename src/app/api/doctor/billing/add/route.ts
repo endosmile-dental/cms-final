@@ -1,47 +1,33 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import dbConnect from "@/app/utils/dbConnect";
 import Billing from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
-// Optionally, import Doctor model if you want to fetch ClinicId from it.
-// import Doctor from "@/app/model/Doctor.model";
+import { zodBillingSchema } from "@/schemas/zodBillingSchema";
 
-// Define a Zod schema for the billing form data
-const billingSchema = z.object({
-  invoiceId: z.string().nonempty("Invoice Id is required"),
-  patientId: z.string().nonempty("Patient Id is required"),
-  patientModelId: z.string().nonempty("Patient Model Id is required"),
-  patientName: z.string().nonempty("Patient Name is required"),
-  contactNumber: z.string().nonempty("Contact Number is required"),
-  date: z.string().nonempty("Date is required"),
-  treatments: z.array(
-    z.object({
-      treatment: z.string().nonempty("Treatment is required"),
-      price: z.string().nonempty("Price is required"),
-      quantity: z.string().nonempty("Quantity is required"),
-    })
-  ),
-  discount: z.string().optional(),
-  advance: z.string().optional(),
-  amountRecieved: z.string().nonempty("Amount Received is required"),
-  modeOfPayment: z.string().nonempty("Mode of Payment is required"),
-  address: z.string().optional(),
-  email: z.string().optional(),
-  gender: z.string().nonempty("Gender is required"),
-});
-
+/**
+ * POST route handler for creating a new billing record.
+ *
+ * This function:
+ * - Establishes a database connection.
+ * - Parses and validates the request body using zodBillingSchema.
+ * - Retrieves the doctor's record (to get the clinicId) using a custom header "x-doctor-id".
+ * - Creates a new billing document. The Billing model's pre-save middleware will
+ *   compute financial fields (such as amountBeforeDiscount, totalAmount, and amountDue).
+ *
+ * @param request Request object containing billing data in JSON format.
+ * @returns A NextResponse with a success message and the created billing record, or an error message.
+ */
 export async function POST(request: Request) {
   try {
-    // Ensure database connection is established.
+    // Establish a database connection.
     await dbConnect();
 
-    // Parse and validate the request body
+    // Parse and validate the request body using the Zod schema.
     const body = await request.json();
-    const data = billingSchema.parse(body);
+    const data = zodBillingSchema.parse(body);
+    console.log("Parsed Billing Data:", data);
 
-    console.log("DATA", data);
-
-    // Retrieve doctorId from a custom header (or from session)
+    // Retrieve doctorId from a custom header (or session).
     const doctorId = request.headers.get("x-doctor-id");
     if (!doctorId) {
       return NextResponse.json(
@@ -50,40 +36,31 @@ export async function POST(request: Request) {
       );
     }
 
-    // Optionally, retrieve the doctor's ClinicId from the Doctor model.
-    // For example:
+    // Retrieve the doctor's record to extract the associated clinicId.
     const doctor = await DoctorModel.findOne({ userId: doctorId });
     if (!doctor) {
       return NextResponse.json({ error: "Doctor not found." }, { status: 404 });
     }
     const clinicId = doctor.clinicId;
 
-    // For this example, we'll assume a dummy clinicId.
-    // const clinicId = "67a245dc2a37ab4cb3d61318"; // Replace with actual logic
-
-    // Convert string numbers from form data to actual numbers
-    const treatments = data.treatments.map((t) => ({
-      treatment: t.treatment,
-      price: Number(t.price),
-      quantity: Number(t.quantity),
-    }));
-    const discount = data.discount ? Number(data.discount) : 0;
-    const advance = data.advance ? Number(data.advance) : 0;
-    const amountReceived = Number(data.amountRecieved);
-
-    // Create a new billing document
+    // Create a new billing document.
+    // Dummy values are passed for computed fields to satisfy Mongoose's required constraints.
+    // The pre-save middleware in the Billing model will recalculate these values.
     const billing = await Billing.create({
-      invoiceId: data.invoiceId, // or you can let the default generator work
-      patientId: data.patientModelId,
+      invoiceId: data.invoiceId,
+      patientId: data.patientId,
       doctorId: doctorId,
       clinicId: clinicId,
       date: new Date(data.date),
-      treatments: treatments,
-      discount: discount,
-      advance: advance,
-      amountReceived: amountReceived,
+      treatments: data.treatments,
+      discount: data.discount,
+      advance: data.advance,
+      amountReceived: data.amountReceived,
       modeOfPayment: data.modeOfPayment,
       address: data.address,
+      amountBeforeDiscount: 0,
+      totalAmount: 0,
+      amountDue: 0,
     });
 
     return NextResponse.json(
@@ -92,9 +69,15 @@ export async function POST(request: Request) {
     );
   } catch (error: unknown) {
     console.error("Error creating billing:", error);
-    if (error instanceof Error) {
+    if (error instanceof Error && "issues" in error) {
+      // Handles Zod validation errors with detailed messages.
       return NextResponse.json(
-        { message: "Error creating billing:", error: error.message },
+        { message: "Validation error", errors: (error as any).issues },
+        { status: 400 }
+      );
+    } else if (error instanceof Error) {
+      return NextResponse.json(
+        { message: "Error creating billing", error: error.message },
         { status: 500 }
       );
     }

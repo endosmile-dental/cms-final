@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { z } from "zod";
 
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -26,45 +26,12 @@ import { useSession } from "next-auth/react";
 import { createBilling, selectBillings } from "@/app/redux/slices/billingSlice";
 import Loading from "@/app/components/loading/Loading";
 import SelectPatientMessage from "@/app/components/SelectPatientMessage";
+import { zodBillingSchema } from "@/schemas/zodBillingSchema";
 
-// Define the Treatment type
-export type Treatment = {
-  treatment: string;
-  price: string;
-  quantity: string;
-};
+// Import the centralized Zod schema for billing form validation.
 
-// Define the validation schema with Zod
-const formSchema = z.object({
-  patientName: z
-    .string()
-    .nonempty("Patient Name is required")
-    .max(100, "Patient Name cannot exceed 100 characters"),
-  contactNumber: z
-    .string()
-    .max(10, "Contact Number should not exceed 10 digits")
-    .optional(),
-  patientId: z.string().nonempty("Patient ID is required"),
-  invoiceId: z.string().nonempty("Invoice ID is required"),
-  date: z.string().nonempty("Date is required"),
-  gender: z.string().nonempty("Gender is required"),
-  email: z.string().optional(),
-  treatments: z.array(
-    z.object({
-      treatment: z.string().nonempty("Treatment is required"),
-      price: z.string().nonempty("Price is required"),
-      quantity: z.string().nonempty("Quantity is required"),
-    })
-  ),
-  discount: z.string().optional(),
-  advance: z.string().optional(),
-  amountRecieved: z.string().nonempty("Amount Received is required"),
-  modeOfPayment: z.string().nonempty("Mode of Payment is required"),
-  address: z.string().optional(),
-});
-
-// Infer the form values from the schema
-type FormValues = z.infer<typeof formSchema>;
+// Infer form values from the imported schema.
+type FormValues = z.infer<typeof zodBillingSchema>;
 
 export default function PatientRecords() {
   const router = useRouter();
@@ -72,23 +39,22 @@ export default function PatientRecords() {
   const billings = useAppSelector(selectBillings);
   const patients = useAppSelector(selectPatients);
 
-  // State for search input text and suggestion list
+  // State for search input and suggestions.
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
-
   const [isLoading, setIsLoading] = useState(false);
-
   const [patientModelId, setPatientModelId] = useState("");
   const [isPatientSelected, setIsPatientSelected] = useState(false);
 
-  // Initialize treatments state (for dynamic fields)
-  const [treatments, setTreatments] = useState<Treatment[]>([
-    { treatment: "", price: "", quantity: "" },
+  // Manage dynamic treatments array state.
+  // Note: Use number for price and quantity
+  const [treatments, setTreatments] = useState([
+    { treatment: "", price: 0, quantity: 0 },
   ]);
 
-  // Initialize react-hook-form with the zod resolver
+  // Initialize react-hook-form using the centralized Zod schema.
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(zodBillingSchema),
     defaultValues: {
       patientName: "",
       contactNumber: "",
@@ -98,9 +64,9 @@ export default function PatientRecords() {
       gender: "",
       email: "",
       treatments: treatments,
-      discount: "",
-      advance: "",
-      amountRecieved: "",
+      discount: 0,
+      advance: 0,
+      amountReceived: 0,
       modeOfPayment: "",
       address: "",
     },
@@ -111,14 +77,15 @@ export default function PatientRecords() {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     try {
       setIsLoading(true);
+      // Store form data in sessionStorage if needed.
       sessionStorage.setItem("formData", JSON.stringify(data));
-      // Optionally, set a loading state here if using a state variable.
+
+      // Append patientModelId from state into form data.
       const dataWithUserId = { ...data, patientModelId: patientModelId };
-      // Make the API call to your billing endpoint
+
       console.log("Submitting billing data:", dataWithUserId);
 
-      // Dispatch the createBilling thunk.
-      // We pass an object containing the billing data and the doctor ID.
+      // Dispatch the createBilling thunk with the billing data and doctor ID.
       const resultAction = await dispatch(
         createBilling({
           billingData: dataWithUserId,
@@ -128,42 +95,29 @@ export default function PatientRecords() {
 
       if (createBilling.fulfilled.match(resultAction)) {
         console.log("Billing created successfully", resultAction.payload);
-
-        // Redirect to the invoice page on success.
         router.push("/dashboard/pages/Doctor/patientBilling/invoice");
       } else {
         console.error("Error creating billing:", resultAction.payload);
       }
     } catch (error: unknown) {
       console.error("Error creating billing:", error);
-
-      if (error instanceof Error) {
-        console.error("Error creating billing:", error.message);
-        // Optionally set a form error
-        // setFormError(error.message || "An unexpected error occurred");
-      } else {
-        console.error("An unexpected error occurred");
-        // setFormError("An unexpected error occurred");
-      }
     } finally {
       setIsLoading(false);
       setIsPatientSelected(false);
-
-      // Optionally, clear the loading state here.
     }
   };
 
-  // Add new treatment field
+  // Add a new treatment field.
   const handleAddField = () => {
     const newTreatments = [
       ...treatments,
-      { treatment: "", price: "", quantity: "" },
+      { treatment: "", price: 0, quantity: 0 },
     ];
     setTreatments(newTreatments);
     form.setValue("treatments", newTreatments);
   };
 
-  // Update treatment field
+  // Update treatment field.
   const handleTreatmentChange = (index: number, value: string) => {
     const newTreatments = [...treatments];
     newTreatments[index].treatment = value;
@@ -171,30 +125,31 @@ export default function PatientRecords() {
     form.setValue(`treatments.${index}.treatment` as const, value);
   };
 
-  // Update price field
+  // Update price field. Convert the input to a number.
   const handlePriceChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const value = Number(e.target.value);
     const newTreatments = [...treatments];
-    newTreatments[index].price = e.target.value;
+    newTreatments[index].price = value;
     setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.price` as const, e.target.value);
+    form.setValue(`treatments.${index}.price` as const, value);
   };
 
-  // Update quantity field
+  // Update quantity field. Convert the input to a number.
   const handleQuantityChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    const value = Number(e.target.value);
     const newTreatments = [...treatments];
-    newTreatments[index].quantity = e.target.value;
+    newTreatments[index].quantity = value;
     setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.quantity` as const, e.target.value);
+    form.setValue(`treatments.${index}.quantity` as const, value);
   };
 
-  // If the first two characters are "ES" followed by a digit,
-  // search by patientId; otherwise, search by patientName.
+  // Handle patient search.
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchInput(value);
@@ -205,81 +160,58 @@ export default function PatientRecords() {
     }
 
     let filteredPatients;
-
     if (
       (value.slice(0, 2).toUpperCase() === "ES" &&
         /\d/.test(value.charAt(2))) ||
       /\d/.test(value.charAt(0))
     ) {
-      // Search by patientId (case-insensitive)
       filteredPatients = patients.filter((patient) =>
         patient.PatientId.toLowerCase().includes(value.toLowerCase())
       );
     } else {
-      // Search by patientName (case-insensitive)
       filteredPatients = patients.filter((patient) =>
         patient.fullName.toLowerCase().includes(value.toLowerCase())
       );
     }
-
     setSuggestions(filteredPatients);
   };
 
-  // When a suggestion is clicked, set the form values accordingly
-  const handleSelectSuggestion = (patient: (typeof patients)[0]) => {
+  // When a patient is selected, populate the form fields.
+  const handleSelectSuggestion = (patient: Patient) => {
     setIsPatientSelected(true);
-    // Set the search input to the selected patient's name or id
     setSearchInput(patient.fullName);
-    console.log("patient", patient);
-    // console.log("billings", billings);
-
     setPatientModelId(patient._id);
-
-    // Get all the previous treatments for the invoice
-
-    // Clear suggestions
     setSuggestions([]);
-    // Enable the form and set the patient fields
+
     form.setValue("patientName", patient.fullName);
     form.setValue("contactNumber", patient.contactNumber);
     form.setValue("patientId", patient.PatientId);
     form.setValue("gender", patient.gender);
     form.setValue("email", patient.email);
-    // Convert the address object to a string and set it in the form
+
     if (patient.address) {
       const { street, city, state, postalCode } = patient.address;
       const formattedAddress = `${street}, ${city}, ${state} - ${postalCode}`;
       form.setValue("address", formattedAddress);
     }
-    // Generate a random 6-digit number (from 100000 to 999999)
+    // Generate invoice ID using patient ID and random number.
     const randomNumber = Math.floor(Math.random() * 900000) + 100000;
     const generatedInvoiceId = `${patient.PatientId}-${randomNumber}`;
     form.setValue("invoiceId", generatedInvoiceId);
-    // return `${patientId} - ${randomNumber}`;
 
-    // Now, filter the Redux billings array to get the bills for this patient.
-    // We assume that billing.patientId (a string) matches patient._id (also as a string)
-    // and optionally that billing.invoiceId starts with patient.PatientId.
-
+    // Retrieve the latest three billing records for this patient.
     const filteredBillings = billings.filter(
       (bill) =>
         bill.patientId === patient._id &&
         bill.invoiceId.startsWith(patient.PatientId)
     );
-
-    // console.log("filteredBillings", filteredBillings);
-
-    // Sort by createdAt descending (most recent first) and take the first three records.
     const latestThreeBillings = filteredBillings
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       .slice(0, 3);
-
     console.log("Latest 3 billings for patient:", latestThreeBillings);
-
-    // Store the latest three billing records in sessionStorage so the invoice page can access them
     sessionStorage.setItem(
       "lastThreeBillings",
       JSON.stringify(latestThreeBillings)
@@ -287,11 +219,10 @@ export default function PatientRecords() {
   };
 
   useEffect(() => {
-    // Generate a random 6-digit number (from 100000 to 999999)
+    // Generate a random invoice ID on mount.
     const randomNumber = Math.floor(Math.random() * 900000) + 100000;
     const generatedInvoiceId = `ES${randomNumber}-${randomNumber}`;
     form.setValue("invoiceId", generatedInvoiceId);
-    // return `${patientId} - ${randomNumber}`;
   }, [form]);
 
   return (
@@ -301,7 +232,7 @@ export default function PatientRecords() {
           <Loading />
         ) : (
           <>
-            {/* Top Section: Search & New Bill Button */}
+            {/* Search Section */}
             <div className="w-full flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm">
               <div className="relative w-full">
                 <Search
@@ -312,10 +243,9 @@ export default function PatientRecords() {
                   type="text"
                   placeholder="Search patients..."
                   value={searchInput}
-                  onChange={handleSearchChange} // (simulate selection)
+                  onChange={handleSearchChange}
                   className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {/* Dropdown suggestions */}
                 {suggestions.length > 0 && (
                   <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((patient, index) => (
@@ -330,21 +260,11 @@ export default function PatientRecords() {
                   </ul>
                 )}
               </div>
-              {/* <Button
-                onClick={() => {
-                  // Optionally clear suggestions if needed
-                  setSuggestions([]);
-                }}
-                className="mt-3 md:mt-0 md:ml-4 flex items-center gap-2"
-              >
-                <UserPlus size={18} />
-                New Bill
-              </Button> */}
             </div>
 
             {isPatientSelected ? (
               <div>
-                {/* Registration Form */}
+                {/* Billing Form */}
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onSubmit)}
@@ -363,7 +283,7 @@ export default function PatientRecords() {
                           <FormLabel>Patient Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Enter your first name"
+                              placeholder="Enter patient name"
                               {...field}
                             />
                           </FormControl>
@@ -391,38 +311,35 @@ export default function PatientRecords() {
                       )}
                     />
 
-                    {/* Patient ID & Generate Button */}
-                    <div className="mb-4 flex flex-col sm:flex-row sm:items-end gap-2">
-                      <FormField
-                        control={form.control}
-                        name="patientId"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Patient ID</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Patient ID" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    {/* Patient ID */}
+                    <FormField
+                      control={form.control}
+                      name="patientId"
+                      render={({ field }) => (
+                        <FormItem className="mb-4">
+                          <FormLabel>Patient ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Patient ID" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    <div className="mb-4 flex flex-col sm:flex-row sm:items-end gap-2">
-                      <FormField
-                        control={form.control}
-                        name="invoiceId"
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel>Invoice ID</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Invoice ID" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    {/* Invoice ID */}
+                    <FormField
+                      control={form.control}
+                      name="invoiceId"
+                      render={({ field }) => (
+                        <FormItem className="mb-4">
+                          <FormLabel>Invoice ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Invoice ID" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     {/* Date */}
                     <FormField
@@ -451,7 +368,7 @@ export default function PatientRecords() {
                               {...field}
                               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                             >
-                              <option value="">Select your gender</option>
+                              <option value="">Select gender</option>
                               <option value="Male">Male</option>
                               <option value="Female">Female</option>
                               <option value="Other">Other</option>
@@ -472,7 +389,7 @@ export default function PatientRecords() {
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="Enter your email"
+                              placeholder="Enter email"
                               {...field}
                             />
                           </FormControl>
@@ -491,7 +408,6 @@ export default function PatientRecords() {
                           key={index}
                           className="flex flex-col sm:flex-row items-center gap-2 mb-4"
                         >
-                          {/* Treatment Input with Datalist */}
                           <div className="flex-1">
                             <input
                               list="treatment-options"
@@ -542,7 +458,6 @@ export default function PatientRecords() {
                               <option value="Professional Teeth Whitening with Kit" />
                             </datalist>
                           </div>
-                          {/* Quantity Input */}
                           <div className="w-full sm:w-1/4">
                             <input
                               type="number"
@@ -552,17 +467,15 @@ export default function PatientRecords() {
                               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                           </div>
-                          {/* Price Input */}
                           <div className="w-full sm:w-1/4">
                             <input
-                              type="number"
+                              type="text"
                               placeholder="Price"
                               value={field.price}
                               onChange={(e) => handlePriceChange(index, e)}
                               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                           </div>
-                          {/* Add New Field Button */}
                           {index === treatments.length - 1 && (
                             <Button
                               type="button"
@@ -606,16 +519,16 @@ export default function PatientRecords() {
                       )}
                     />
 
-                    {/* Amount Recieved */}
+                    {/* Amount Received */}
                     <FormField
                       control={form.control}
-                      name="amountRecieved"
+                      name="amountReceived"
                       render={({ field }) => (
                         <FormItem className="mb-4">
-                          <FormLabel>Amount Recieved (in Rs.)</FormLabel>
+                          <FormLabel>Amount Received (in Rs.)</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Enter amount recieved"
+                              placeholder="Enter amount received"
                               {...field}
                             />
                           </FormControl>
