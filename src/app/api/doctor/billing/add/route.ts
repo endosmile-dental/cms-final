@@ -3,6 +3,7 @@ import dbConnect from "@/app/utils/dbConnect";
 import Billing from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import { zodBillingSchema } from "@/schemas/zodBillingSchema";
+import { ZodError } from "zod";
 
 /**
  * POST route handler for creating a new billing record.
@@ -69,10 +70,9 @@ export async function POST(request: Request) {
     );
   } catch (error: unknown) {
     console.error("Error creating billing:", error);
-    if (error instanceof Error && "issues" in error) {
-      // Handles Zod validation errors with detailed messages.
+    if (error instanceof ZodError) {
       return NextResponse.json(
-        { message: "Validation error", errors: (error as any).issues },
+        { message: "Validation error", errors: error.issues },
         { status: 400 }
       );
     } else if (error instanceof Error) {

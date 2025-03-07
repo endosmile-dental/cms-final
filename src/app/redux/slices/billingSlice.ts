@@ -122,7 +122,7 @@ export const fetchBillings = createAsyncThunk<
       const data = await res.json();
       // Assuming the API returns an object with a billings array.
       return data.billings as BillingRecord[];
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       return rejectWithValue("Failed to fetch billings");
     }
   }
