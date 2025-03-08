@@ -6,8 +6,16 @@ import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import DashboardCalendar from "@/app/dashboard/ui/DashboardCalendar";
-import DashboardTable from "@/app/dashboard/ui/DashboardTable";
-import { Syringe, User, Clock, AlertTriangle } from "lucide-react";
+import DashboardTable, {
+  ColumnDefinition,
+} from "@/app/dashboard/ui/DashboardTable";
+import {
+  Syringe,
+  User,
+  Clock,
+  AlertTriangle,
+  MessageSquareDashed,
+} from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
 import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
@@ -15,6 +23,10 @@ import { selectBillings } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
 import { DashboardBarChart } from "../../ui/DashboardBarChart";
 import { ChartConfig } from "@/components/ui/chart";
+import { ProfileData } from "@/app/redux/slices/profileSlice";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 
 // Define a type for a treatment
 interface BillingTreatment {
@@ -22,16 +34,40 @@ interface BillingTreatment {
   quantity?: number;
 }
 
+export interface PatientData {
+  patient: string;
+  contact: string;
+  gender: "Male" | "Female" | "Other";
+  registeredAt: string;
+}
+
+const patientColumns: ColumnDefinition<PatientData>[] = [
+  {
+    header: "Patient",
+    accessor: (row) => row.patient,
+  },
+  {
+    header: "Contact",
+    accessor: (row) => row.contact,
+  },
+  {
+    header: "Gender",
+    accessor: (row) => row.gender,
+  },
+  {
+    header: "Registration",
+    accessor: (row) => row.registeredAt,
+  },
+];
+
 export default function DoctorDashboard() {
   const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
-
-  useEffect(() => {
-    if (billings) {
-      console.log("all billings", billings);
-    }
-  }, [billings]);
+  const profile = useAppSelector((state) => {
+    return state?.profile?.profile as ProfileData;
+  });
+  const { data: session } = useSession();
 
   const [tableData, setTableData] = useState<
     {
@@ -260,7 +296,42 @@ export default function DoctorDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-3 space-y-4">
+      <div className="px-1 space-y-3">
+        {session && profile && (
+          <div className="w-full flex justify-between items-end">
+            <h1 className="text-2xl font-semibold tracking-wide font-sans">
+              {(() => {
+                const hour = new Date().getHours();
+                let greeting = "";
+                if (hour < 12) {
+                  greeting = "Good morning";
+                } else if (hour < 18) {
+                  greeting = "Good afternoon";
+                } else {
+                  greeting = "Good evening";
+                }
+                return `${greeting}, ${profile.fullName.split(" ")[0]}`;
+              })()}
+            </h1>
+            <div className="flex items-center pr-5 gap-x-5">
+              <div className="hidden md:flex gap-x-3 items-center">
+                <MessageSquareDashed size={18} color="black" />
+                <User size={18} color="blue" />
+                <Clock size={18} color="green" />
+              </div>
+              <div>
+                <Image
+                  src="/logo1.png"
+                  alt="Clinic Logo"
+                  width={50}
+                  height={50}
+                  className="rounded-full"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <DashboardCards stats={stats} />
 
         <div className="w-full flex flex-col md:flex-row gap-y-4 md:gap-x-4">
@@ -268,7 +339,7 @@ export default function DoctorDashboard() {
             title="Appointments"
             appointmentDates={appointmentDates}
           />
-          <div className="w-full pt-10">
+          <div className="w-full">
             <DashboardBarChart
               data={appointmentStats}
               config={barChartConfig}
@@ -287,7 +358,12 @@ export default function DoctorDashboard() {
         </div>
 
         <div>
-          <DashboardTable data={tableData} />
+          <ReusableTable<PatientData>
+            title="Recent Patient Registrations"
+            data={tableData}
+            columns={patientColumns}
+            emptyMessage="No patient data available."
+          />
         </div>
       </div>
     </DashboardLayout>

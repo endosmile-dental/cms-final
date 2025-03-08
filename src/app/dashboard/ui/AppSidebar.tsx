@@ -82,7 +82,7 @@ const allMenuItems = [
   {
     name: "Doctor Portal",
     icon: <Stethoscope size={20} />,
-    path: "/dashboard/Doctor",
+    path: "/dashboard/pages/Doctor",
     roles: ["Doctor"],
   },
   {

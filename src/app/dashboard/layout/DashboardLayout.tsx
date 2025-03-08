@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "../ui/AppSidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { fetchPatients, selectPatients } from "@/app/redux/slices/patientSlice";
@@ -9,6 +9,7 @@ import {
   fetchAppointments,
   selectAppointments,
 } from "@/app/redux/slices/appointmentSlice";
+import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
 
 export default function DashboardLayout({
   children,
@@ -22,6 +23,9 @@ export default function DashboardLayout({
   const patients = useAppSelector(selectPatients);
   const billings = useAppSelector(selectBillings);
   const appointments = useAppSelector(selectAppointments);
+  const profile = useAppSelector((state) => {
+    return state?.profile?.profile as ProfileData;
+  });
 
   useEffect(() => {
     if (session?.user?.role === "Doctor") {
@@ -32,8 +36,18 @@ export default function DashboardLayout({
         dispatch(fetchBillings(session?.user.id));
       if (!appointments || appointments.length === 0)
         dispatch(fetchAppointments(session?.user.id));
+      if (!profile)
+        dispatch(
+          fetchProfile({ userId: session.user.id, role: session.user.role })
+        );
+
+      // Fetch global profile data regardless of role.
     }
-  }, [dispatch, session?.user?.role]); // Depend on role & existing data
+  }, [dispatch, session?.user?.id]); // Depend on role & existing data
+
+  useEffect(() => {
+    console.log("profile", profile);
+  }, [profile]);
 
   return (
     <SidebarProvider>
@@ -41,7 +55,7 @@ export default function DashboardLayout({
         <AppSidebar />
 
         {/* Main Content */}
-        <main className="flex-1 p-2 md:p-6 w-full overflow-auto">
+        <main className="flex-1 px-1 md:px-2 w-full overflow-auto">
           <SidebarTrigger />
           {children}
         </main>

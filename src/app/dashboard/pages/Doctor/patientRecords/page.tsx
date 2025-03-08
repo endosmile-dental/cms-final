@@ -111,7 +111,7 @@ export default function PatientRecords() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         {/* Top Section: Search & Add Patient Button */}
-        <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex justify-between items-end gap-x-2 bg-white p-4 rounded-lg shadow-sm">
           <div className="relative w-full">
             <Search
               className="absolute left-3 top-2.5 text-gray-400"
@@ -142,7 +142,7 @@ export default function PatientRecords() {
           <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
             <Button className="mt-3 md:mt-0 md:ml-4 flex items-center gap-2">
               <UserPlus size={18} />
-              Add Patient
+              <span className="hidden md:block">Add Patient</span>
             </Button>
           </Link>
         </div>
