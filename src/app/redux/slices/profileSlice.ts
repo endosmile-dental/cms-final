@@ -105,8 +105,11 @@ export const fetchProfile = createAsyncThunk<
       return data.patient as ProfileData;
     }
     return rejectWithValue("Profile data missing");
-  } catch (error: any) {
-    return rejectWithValue(error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return rejectWithValue(error.message);
+    }
+    return rejectWithValue("An unknown error occurred");
   }
 });
 
