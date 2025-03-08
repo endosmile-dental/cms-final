@@ -5,9 +5,25 @@ import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCalendar from "../../ui/DashboardCalendar";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
 import DashboardChart from "../../ui/DashboardChart";
-import DashboardTable, { TableData } from "../../ui/DashboardTable";
+import ReusableTable, { ColumnDefinition } from "../../ui/DashboardTable";
 
 export default function PatientDashboard() {
+  // Define the interface for table data
+  interface TableData {
+    patient: string;
+    contact: string;
+    gender: string;
+    registeredAt: string;
+  }
+
+  // Define the column structure for the table
+  const columns: ColumnDefinition<TableData>[] = [
+    { header: "Doctor Name", accessor: (row) => row.patient },
+    { header: "Contact", accessor: (row) => row.contact },
+    { header: "Gender", accessor: (row) => row.gender },
+    { header: "Appointment Date", accessor: (row) => row.registeredAt },
+  ];
+
   // Define patient-specific stats
   const stats: Stat[] = [
     {
@@ -75,7 +91,11 @@ export default function PatientDashboard() {
         </div>
 
         {/* Recent Activities / Appointments Table */}
-        <DashboardTable data={tableData} />
+        <ReusableTable
+          title="Recent Appointments"
+          columns={columns}
+          data={tableData}
+        />
       </div>
     </DashboardLayout>
   );
