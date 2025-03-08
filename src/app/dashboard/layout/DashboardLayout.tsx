@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "../ui/AppSidebar";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { fetchPatients, selectPatients } from "@/app/redux/slices/patientSlice";
