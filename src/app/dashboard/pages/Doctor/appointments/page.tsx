@@ -25,6 +25,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface TransformedAppointment {
+  patientId: string;
+  patientName: string;
+  date: string;
+  contactNumber: string;
+  consultationType: "New" | "Follow-up";
+  status: "Scheduled" | "Completed" | "Cancelled";
+}
+
 export default function DoctorAppointments() {
   const appointments = useAppSelector(selectAppointments);
   const patients = useAppSelector(selectPatients);
@@ -32,12 +41,10 @@ export default function DoctorAppointments() {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
 
-  // Function to get patient details
   const getPatientInfo = (patientId: string) => {
     return patients.find((p) => p._id === patientId) || null;
   };
 
-  // Filtered Appointments based on search and filters
   const filteredAppointments = appointments.filter((appointment) => {
     const patientInfo = getPatientInfo(appointment.patient);
     const patientName = patientInfo ? patientInfo.fullName.toLowerCase() : "";
@@ -60,7 +67,6 @@ export default function DoctorAppointments() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // Separate upcoming and past appointments
   const today = new Date();
   const upcomingAppointments = filteredAppointments.filter(
     (appointment) => new Date(appointment.appointmentDate) >= today
@@ -69,20 +75,32 @@ export default function DoctorAppointments() {
     (appointment) => new Date(appointment.appointmentDate) < today
   );
 
-  // Define table columns
-  const columns: ColumnDefinition<any>[] = [
+  const transformData = (
+    appointments: Appointment[]
+  ): TransformedAppointment[] => {
+    return appointments.map((appointment) => {
+      const patientInfo = getPatientInfo(appointment.patient);
+      return {
+        patientId: patientInfo?.PatientId || "NA",
+        patientName: patientInfo?.fullName || "NA",
+        date: format(new Date(appointment.appointmentDate), "yyyy-MM-dd"),
+        contactNumber: patientInfo?.contactNumber || "NA",
+        consultationType: appointment.consultationType,
+        status: appointment.status,
+      };
+    });
+  };
+
+  const columns: ColumnDefinition<TransformedAppointment>[] = [
     { header: "ID", accessor: (row) => row.patientId },
     { header: "Patient", accessor: (row) => row.patientName },
-    {
-      header: "Date",
-      accessor: (row) => format(new Date(row.date), "yyyy-MM-dd"),
-    },
+    { header: "Date", accessor: (row) => row.date },
     { header: "Contact", accessor: (row) => row.contactNumber },
     { header: "Type", accessor: (row) => row.consultationType },
     { header: "Status", accessor: (row) => row.status },
     {
       header: "Actions",
-      accessor: (row) => (
+      accessor: () => (
         <div className="flex space-x-2">
           <Button variant="ghost" size="sm">
             <Edit size={16} />
@@ -95,31 +113,15 @@ export default function DoctorAppointments() {
     },
   ];
 
-  // Transform appointment data for table
-  const transformData = (appointments: Appointment[]) => {
-    return appointments.map((appointment) => {
-      const patientInfo = getPatientInfo(appointment.patient);
-      return {
-        patientId: patientInfo?.PatientId || "NA",
-        patientName: patientInfo?.fullName || "NA",
-        date: appointment.appointmentDate,
-        contactNumber: patientInfo?.contactNumber || "NA",
-        consultationType: appointment.consultationType,
-        status: appointment.status,
-      };
-    });
-  };
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <h1 className="text-3xl font-bold">Appointments</h1>
+
+          {/* Filters & Search */}
           <div className="flex flex-1 flex-wrap items-center gap-2 justify-center md:justify-end mt-4 md:mt-0">
-            <Link
-              href="/dashboard/pages/Doctor/appointments/bookAppointment"
-              className="hidden md:block"
-            >
+            <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
               <Button variant="default" className="w-full sm:w-auto">
                 <BookPlus size={16} className="mr-2" />
                 Add New
@@ -164,15 +166,6 @@ export default function DoctorAppointments() {
                 <SelectItem value="Follow-up">Follow-up</SelectItem>
               </SelectContent>
             </Select>
-            <Link
-              href="/dashboard/pages/Doctor/appointments/bookAppointment"
-              className="block md:hidden"
-            >
-              <Button variant="default" className="w-full sm:w-auto">
-                <BookPlus size={16} className="mr-2" />
-                Add New
-              </Button>
-            </Link>
           </div>
         </div>
 

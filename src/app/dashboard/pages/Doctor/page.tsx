@@ -6,9 +6,7 @@ import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import DashboardCalendar from "@/app/dashboard/ui/DashboardCalendar";
-import DashboardTable, {
-  ColumnDefinition,
-} from "@/app/dashboard/ui/DashboardTable";
+import { ColumnDefinition } from "@/app/dashboard/ui/DashboardTable";
 import {
   Syringe,
   User,
