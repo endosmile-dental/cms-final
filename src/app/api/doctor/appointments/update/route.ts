@@ -50,8 +50,11 @@ export async function PUT(request: Request) {
       { status: 200 }
     );
   } catch (error: any) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json(
-      { error: error.message || "Failed to update appointment" },
+      { error: "Unknown error occurred" },
       { status: 500 }
     );
   }
