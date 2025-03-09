@@ -33,8 +33,6 @@ export async function GET(request: Request) {
       "-permissions -userId"
     );
 
-    console.log("doctor before transformation", doctor);
-
     if (!doctor) {
       return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
     }
@@ -47,8 +45,6 @@ export async function GET(request: Request) {
       createdAt: doctor.createdAt.toISOString(),
       updatedAt: doctor.updatedAt.toISOString(),
     };
-
-    console.log("doctor after transformation", transformedDoctor);
 
     return NextResponse.json({ doctor: transformedDoctor }, { status: 200 });
   } catch (error: unknown) {

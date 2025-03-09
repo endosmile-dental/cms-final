@@ -45,10 +45,6 @@ export default function DashboardLayout({
     }
   }, [dispatch, session?.user?.id]); // Depend on role & existing data
 
-  useEffect(() => {
-    console.log("profile", profile);
-  }, [profile]);
-
   return (
     <SidebarProvider>
       <div className="flex w-full min-h-screen bg-gray-100">

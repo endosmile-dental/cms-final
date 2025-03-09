@@ -13,6 +13,7 @@ import {
   Clock,
   AlertTriangle,
   MessageSquareDashed,
+  ReceiptIndianRupee,
 } from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
@@ -108,11 +109,21 @@ export default function DoctorDashboard() {
     }
   }, [patients]);
 
+  const totalRevenue = useMemo(() => {
+    return (
+      billings?.reduce(
+        (sum, billing) => sum + (billing.amountReceived || 0),
+        0
+      ) || 0
+    );
+  }, [billings]);
+
   // Combine multiple appointment calculations into one aggregated pass
   const aggregatedAppointments = useMemo(() => {
     const result = {
       followUps: 0,
       pending: 0,
+      upcoming: 0, // NEW
       monthly: {} as Record<string, { completed: number; cancelled: number }>,
       weekly: {} as Record<string, { completed: number; cancelled: number }>,
       yearly: {} as Record<string, { completed: number; cancelled: number }>,
@@ -121,7 +132,11 @@ export default function DoctorDashboard() {
 
     if (!appointments || appointments.length === 0) return result;
 
+    const today = new Date();
+
     appointments.forEach((appointment) => {
+      const appointmentDate = new Date(appointment.appointmentDate);
+
       // Count consultation types
       if (appointment.consultationType === "Follow-up") {
         result.followUps += 1;
@@ -129,14 +144,20 @@ export default function DoctorDashboard() {
         result.pending += 1;
       }
 
-      // Aggregate date-based stats
-      const date = new Date(appointment.appointmentDate);
-      const month = format(date, "MMM"); // e.g., "Jan"
-      const week = format(date, "wo"); // e.g., "3rd"
-      const year = format(date, "yyyy"); // e.g., "2024"
-      result.uniqueDates.add(format(date, "yyyy-MM-dd"));
+      // Check for upcoming appointments
+      if (
+        appointmentDate >= today &&
+        !["Completed", "Cancelled"].includes(appointment.status)
+      ) {
+        result.upcoming += 1;
+      }
 
-      // Initialize aggregates if not present
+      // Aggregate date-based stats
+      const month = format(appointmentDate, "MMM");
+      const week = format(appointmentDate, "wo");
+      const year = format(appointmentDate, "yyyy");
+      result.uniqueDates.add(format(appointmentDate, "yyyy-MM-dd"));
+
       if (!result.monthly[month])
         result.monthly[month] = { completed: 0, cancelled: 0 };
       if (!result.weekly[week])
@@ -144,7 +165,6 @@ export default function DoctorDashboard() {
       if (!result.yearly[year])
         result.yearly[year] = { completed: 0, cancelled: 0 };
 
-      // Increment counts based on appointment status
       if (appointment.status === "Completed") {
         result.monthly[month].completed += 1;
         result.weekly[week].completed += 1;
@@ -155,12 +175,9 @@ export default function DoctorDashboard() {
         result.yearly[year].cancelled += 1;
       }
     });
+
     return result;
   }, [appointments]);
-
-  // Derive counts and stats from the aggregated results
-  const upcomingFollowUpsCount = aggregatedAppointments.followUps;
-  const pendingConsultationsCount = aggregatedAppointments.pending;
 
   const stats: Stat[] = [
     {
@@ -178,15 +195,15 @@ export default function DoctorDashboard() {
       LinkURL: "/dashboard/pages/Doctor/appointments",
     },
     {
-      title: "Upcoming Follow-ups",
-      value: upcomingFollowUpsCount.toString(),
-      icon: <Clock size={24} color="white" />,
+      title: "Total Revenue",
+      value: `₹ ${totalRevenue.toLocaleString()}`, // Format currency properly
+      icon: <ReceiptIndianRupee size={24} color="white" />,
       color: "bg-orange-500",
-      LinkURL: "",
+      LinkURL: "/dashboard/pages/Doctor/revenue",
     },
     {
       title: "Pending Consultations",
-      value: pendingConsultationsCount.toString(),
+      value: aggregatedAppointments.upcoming.toString(),
       icon: <AlertTriangle size={24} color="white" />,
       color: "bg-red-500",
       LinkURL: "",
@@ -246,6 +263,8 @@ export default function DoctorDashboard() {
 
   // Compute pie chart data from billings by aggregating treatment counts
   const pieData = useMemo(() => {
+    console.log(billings);
+
     if (!billings || billings.length === 0) return [];
     const treatmentCounts: Record<string, number> = {};
     billings.forEach((billing) => {

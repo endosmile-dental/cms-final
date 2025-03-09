@@ -18,6 +18,7 @@ import {
   ClipboardList,
   UserCog,
   Receipt,
+  BadgePercent,
 } from "lucide-react";
 import { SignOut } from "@/app/components/auth/signout-button";
 import { useSession } from "next-auth/react";
@@ -72,6 +73,12 @@ const allMenuItems = [
     icon: <Receipt size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/patientBilling`,
     roles: ["Doctor"],
+  },
+  {
+    name: "Revenue",
+    icon: <BadgePercent size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/revenue`,
+    roles: ["SuperAdmin", "Admin", "clientAdmin", "Doctor"],
   },
   {
     name: "Settings",
