@@ -49,7 +49,8 @@ export async function PUT(request: Request) {
       { appointment: updatedAppointment },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error("Error fetching doctor details:", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

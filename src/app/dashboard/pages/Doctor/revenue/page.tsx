@@ -7,7 +7,7 @@ import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 import { useAppSelector } from "@/app/redux/store/hooks";
-import { selectBillings } from "@/app/redux/slices/billingSlice";
+import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
 import {
   ReceiptIndianRupee,
@@ -41,7 +41,7 @@ export default function RevenueDashboard() {
     const revenueByPaymentMode: Record<string, number> = {};
     const monthlyRevenue: Record<string, number> = {};
 
-    billings.forEach((billing) => {
+    billings.forEach((billing: BillingRecord) => {
       // totalAmount is already computed in the model (amountBeforeDiscount - discount)
       totalRevenue += billing.totalAmount;
       totalReceived += billing.amountReceived;
@@ -131,21 +131,21 @@ export default function RevenueDashboard() {
 
   // Optional: Table columns to display detailed billing records
   const billingTableColumns = [
-    { header: "Invoice ID", accessor: (row: any) => row.invoiceId },
-    { header: "Patient ID", accessor: (row: any) => row.patientId },
+    { header: "Invoice ID", accessor: (row: BillingRecord) => row.invoiceId },
+    { header: "Patient ID", accessor: (row: BillingRecord) => row.patientId },
     {
       header: "Date",
-      accessor: (row: any) => format(new Date(row.date), "yyyy-MM-dd"),
+      accessor: (row: BillingRecord) => format(new Date(row.date), "yyyy-MM-dd"),
     },
-    { header: "Total Amount", accessor: (row: any) => `₹ ${row.totalAmount}` },
-    { header: "Discount", accessor: (row: any) => `₹ ${row.discount}` },
+    { header: "Total Amount", accessor: (row: BillingRecord) => `₹ ${row.totalAmount}` },
+    { header: "Discount", accessor: (row: BillingRecord) => `₹ ${row.discount}` },
     {
       header: "Amount Received",
-      accessor: (row: any) => `₹ ${row.amountReceived}`,
+      accessor: (row: BillingRecord) => `₹ ${row.amountReceived}`,
     },
-    { header: "Amount Due", accessor: (row: any) => `₹ ${row.amountDue}` },
-    { header: "Payment Mode", accessor: (row: any) => row.modeOfPayment },
-    { header: "Status", accessor: (row: any) => row.status },
+    { header: "Amount Due", accessor: (row: BillingRecord) => `₹ ${row.amountDue}` },
+    { header: "Payment Mode", accessor: (row: BillingRecord) => row.modeOfPayment },
+    { header: "Status", accessor: (row: BillingRecord) => row.status },
   ];
 
   return (

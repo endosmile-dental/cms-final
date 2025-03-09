@@ -41,7 +41,8 @@ export async function DELETE(
       { message: "Appointment deleted successfully", id: appointmentId },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    console.error("Error fetching doctor details:", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

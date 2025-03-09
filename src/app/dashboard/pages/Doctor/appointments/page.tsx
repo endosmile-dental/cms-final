@@ -12,8 +12,6 @@ import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
 import {
   Appointment,
   selectAppointments,
-  updateAppointment,
-  deleteAppointment,
   editAppointment,
   removeAppointment,
 } from "@/app/redux/slices/appointmentSlice";
@@ -28,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSession } from "next-auth/react";
 
 // Modal component with children in its props
 interface ModalProps {
@@ -36,7 +33,7 @@ interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
 }
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
