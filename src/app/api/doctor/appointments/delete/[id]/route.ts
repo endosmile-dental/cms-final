@@ -3,19 +3,15 @@ import mongoose from "mongoose";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 
-interface Params {
-  id: string;
-}
-
 export async function DELETE(
   request: NextRequest,
-  context: { params: Params } // ✅ Corrected type
+  { params }: { params: { id: string } } // ✅ Corrected type
 ) {
   try {
     await dbConnect();
     console.log("Database connected successfully.");
 
-    const appointmentId = context.params.id; // ✅ Access params correctly
+    const appointmentId = params.id; // ✅ Correctly accessing params
     console.log("Deleting appointment with ID:", appointmentId);
 
     // Validate ObjectId
@@ -45,11 +41,11 @@ export async function DELETE(
     );
   } catch (error: unknown) {
     console.error("Error deleting appointment:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
+      {
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      },
       { status: 500 }
     );
   }
