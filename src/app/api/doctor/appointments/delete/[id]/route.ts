@@ -3,15 +3,16 @@ import mongoose from "mongoose";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } } // ✅ Corrected type
-) {
+export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
     console.log("Database connected successfully.");
 
-    const appointmentId = params.id; // ✅ Correctly accessing params
+    // Extract the ID from the request URL
+    const { pathname } = request.nextUrl;
+    const parts = pathname.split("/");
+    const appointmentId = parts[parts.length - 1];
+
     console.log("Deleting appointment with ID:", appointmentId);
 
     // Validate ObjectId
