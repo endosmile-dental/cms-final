@@ -1,17 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 
+interface Params {
+  id: string;
+}
+
 export async function DELETE(
-  request: Request,
-  { params }: { params: Record<string, string> } // ✅ Corrected type
+  request: NextRequest,
+  context: { params: Params } // ✅ Corrected type
 ) {
   try {
     await dbConnect();
     console.log("Database connected successfully.");
 
-    const appointmentId = params.id; // ✅ Access `id` directly
+    const appointmentId = context.params.id; // ✅ Access params correctly
     console.log("Deleting appointment with ID:", appointmentId);
 
     // Validate ObjectId
