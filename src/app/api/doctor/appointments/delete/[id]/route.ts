@@ -5,13 +5,13 @@ import AppointmentModel from "@/app/model/Appointment.model";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Record<string, string> } // ✅ Corrected type
 ) {
   try {
     await dbConnect();
     console.log("Database connected successfully.");
 
-    const appointmentId = params.id; // No need for `await`
+    const appointmentId = params.id; // ✅ Access `id` directly
     console.log("Deleting appointment with ID:", appointmentId);
 
     // Validate ObjectId
