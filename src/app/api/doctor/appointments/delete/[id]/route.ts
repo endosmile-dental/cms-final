@@ -1,4 +1,3 @@
-// app/api/doctor/appointments/delete/[id]/route.ts
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/app/utils/dbConnect";
@@ -12,8 +11,7 @@ export async function DELETE(
     await dbConnect();
     console.log("Database connected successfully.");
 
-    // Await params before destructuring its properties
-    const { id: appointmentId } = await params;
+    const appointmentId = params.id; // No need for `await`
     console.log("Deleting appointment with ID:", appointmentId);
 
     // Validate ObjectId
@@ -42,7 +40,7 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error: unknown) {
-    console.error("Error fetching doctor details:", error);
+    console.error("Error deleting appointment:", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
