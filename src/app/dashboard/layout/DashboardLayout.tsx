@@ -10,6 +10,7 @@ import {
   selectAppointments,
 } from "@/app/redux/slices/appointmentSlice";
 import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
+import { fetchDoctors } from "@/app/redux/slices/doctorSlice";
 
 export default function DashboardLayout({
   children,
@@ -45,6 +46,7 @@ export default function DashboardLayout({
           fetchProfile({ userId: session.user.id, role: session.user.role })
         );
       // Fetch global profile data regardless of role.
+      dispatch(fetchDoctors({ userId: session?.user.id }));
     }
 
     if (session?.user.role === "Doctor") {
