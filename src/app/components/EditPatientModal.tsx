@@ -87,7 +87,8 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
         });
       }
       // Remove password from payload for Redux update
-      const { password, ...patientData } = data;
+      const patientData = { ...data };
+      delete patientData.password; // Explicitly remove password
       const updatedPatient = await dispatch(
         updatePatientAsync(patientData)
       ).unwrap();
