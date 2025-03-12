@@ -14,7 +14,6 @@ import {
   LineChart,
   Calendar,
   Hospital,
-  Stethoscope,
   ClipboardList,
   UserCog,
   Receipt,

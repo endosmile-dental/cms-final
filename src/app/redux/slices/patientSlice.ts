@@ -77,7 +77,7 @@ export const fetchPatients = createAsyncThunk(
       return role === "Doctor"
         ? (data.patients as Patient[])
         : [data.profile as Patient]; // Ensure data format consistency
-    } catch (error) {
+    } catch {
       return rejectWithValue("Failed to fetch patients");
     }
   }
@@ -100,7 +100,7 @@ export const updatePatientAsync = createAsyncThunk(
       }
       const updatedPatient = await response.json();
       return updatedPatient.patient as Patient;
-    } catch (error) {
+    } catch {
       return rejectWithValue("Failed to update patient");
     }
   }

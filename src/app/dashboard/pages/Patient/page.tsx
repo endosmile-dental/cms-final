@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Calendar, Clock, FileText, Home, Users } from "lucide-react";
+import { Calendar, Clock, FileText} from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
 import DashboardChart from "../../ui/DashboardChart";

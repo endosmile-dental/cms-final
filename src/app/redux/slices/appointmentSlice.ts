@@ -66,7 +66,7 @@ export const fetchAppointments = createAsyncThunk(
 
       const data = await response.json();
       return data.appointments as Appointment[];
-    } catch (error: unknown) {
+    } catch {
       return rejectWithValue("An error occurred while fetching appointments");
     }
   }
