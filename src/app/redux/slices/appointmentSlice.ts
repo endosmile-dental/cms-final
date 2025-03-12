@@ -32,22 +32,43 @@ const initialState: AppointmentState = {
   error: null,
 };
 
-// Async thunk for fetching appointments
+// Async thunk for fetching appointments based on userId and role
 export const fetchAppointments = createAsyncThunk(
   "appointment/fetchAppointments",
-  async (doctorUserId: string, { rejectWithValue }) => {
-    const response = await fetch("/api/doctor/appointments/fetchAppointments", {
-      headers: {
-        "Content-Type": "application/json",
-        "x-doctor-user-id": doctorUserId,
-      },
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      return rejectWithValue(errorData.error);
+  async (
+    { userId, role }: { userId: string; role: "Doctor" | "Patient" },
+    { rejectWithValue }
+  ) => {
+    let url = "";
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (role === "Doctor") {
+      url = "/api/doctor/appointments/fetchAppointments";
+      headers["x-doctor-user-id"] = userId;
+    } else if (role === "Patient") {
+      url = "/api/patient/appointments/fetchAppointments";
+      headers["x-patient-user-id"] = userId;
+    } else {
+      return rejectWithValue("Invalid role");
     }
-    const data = await response.json();
-    return data.appointments as Appointment[];
+
+    try {
+      const response = await fetch(url, { method: "GET", headers });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(
+          errorData.error || "Failed to fetch appointments"
+        );
+      }
+
+      const data = await response.json();
+      return data.appointments as Appointment[];
+    } catch (error: unknown) {
+      return rejectWithValue("An error occurred while fetching appointments");
+    }
   }
 );
 

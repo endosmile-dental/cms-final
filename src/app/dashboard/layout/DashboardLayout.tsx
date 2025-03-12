@@ -28,20 +28,30 @@ export default function DashboardLayout({
   });
 
   useEffect(() => {
-    if (session?.user?.role === "Doctor") {
-      // Fetch only if patients/billings are empty
-      if (!patients || patients.length === 0)
-        dispatch(fetchPatients(session?.user.id));
+    if (session?.user?.role === "Doctor" || session?.user?.role === "Patient") {
       if (!billings || billings.length === 0)
-        dispatch(fetchBillings(session?.user.id));
+        dispatch(
+          fetchBillings({ userId: session.user.id, role: session.user.role })
+        );
       if (!appointments || appointments.length === 0)
-        dispatch(fetchAppointments(session?.user.id));
+        dispatch(
+          fetchAppointments({
+            userId: session.user.id,
+            role: session.user.role,
+          })
+        );
       if (!profile)
         dispatch(
           fetchProfile({ userId: session.user.id, role: session.user.role })
         );
-
       // Fetch global profile data regardless of role.
+    }
+
+    if (session?.user.role === "Doctor") {
+      if (!patients || patients.length === 0)
+        dispatch(
+          fetchPatients({ userId: session?.user.id, role: session?.user.role })
+        );
     }
   }, [dispatch, session?.user?.id]); // Depend on role & existing data
 

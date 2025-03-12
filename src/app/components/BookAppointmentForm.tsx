@@ -67,8 +67,8 @@ export default function BookAppointmentForm({
     return patientQuery.length > 0
       ? patients.filter(
           (p: Patient) =>
-            p.fullName.toLowerCase().includes(patientQuery.toLowerCase()) ||
-            p.PatientId.includes(patientQuery)
+            p.fullName.toLowerCase().includes(patientQuery) ||
+            p.PatientId.toLowerCase().includes(patientQuery)
         )
       : [];
   }, [patientQuery, patients]);

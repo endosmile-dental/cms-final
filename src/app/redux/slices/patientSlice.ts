@@ -46,19 +46,63 @@ const initialState: PatientState = {
 // Asynchronous thunk action for fetching patients for a given doctor
 export const fetchPatients = createAsyncThunk(
   "patient/fetchPatients",
-  async (doctorUserId: string, { rejectWithValue }) => {
-    const response = await fetch("/api/doctor/fetchPatients", {
-      headers: {
+  async (
+    { userId, role }: { userId: string; role: "Doctor" },
+    { rejectWithValue }
+  ) => {
+    try {
+      let url = "";
+      const headers: HeadersInit = {
         "Content-Type": "application/json",
-        "x-doctor-user-id": doctorUserId,
-      },
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      return rejectWithValue(errorData.error);
+      };
+
+      if (role === "Doctor") {
+        url = "/api/doctor/fetchPatients";
+        headers["x-doctor-user-id"] = userId;
+      } else {
+        return rejectWithValue("Invalid role");
+      }
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error);
+      }
+
+      const data = await response.json();
+      return role === "Doctor"
+        ? (data.patients as Patient[])
+        : [data.profile as Patient]; // Ensure data format consistency
+    } catch (error) {
+      return rejectWithValue("Failed to fetch patients");
     }
-    const data = await response.json();
-    return data.patients as Patient[];
+  }
+);
+
+export const updatePatientAsync = createAsyncThunk(
+  "patient/updatePatientAsync",
+  async (patient: Patient, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/doctor/editPatient", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(patient),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error);
+      }
+      const updatedPatient = await response.json();
+      return updatedPatient.patient as Patient;
+    } catch (error) {
+      return rejectWithValue("Failed to update patient");
+    }
   }
 );
 
@@ -99,6 +143,26 @@ const patientSlice = createSlice({
       .addCase(fetchPatients.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch patients";
+      })
+      .addCase(updatePatientAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        updatePatientAsync.fulfilled,
+        (state, action: PayloadAction<Patient>) => {
+          state.loading = false;
+          const index = state.patients.findIndex(
+            (patient) => patient._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.patients[index] = action.payload;
+          }
+        }
+      )
+      .addCase(updatePatientAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

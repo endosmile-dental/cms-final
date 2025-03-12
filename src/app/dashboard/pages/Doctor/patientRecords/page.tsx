@@ -3,7 +3,6 @@
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
-// import DashboardTable from "@/app/dashboard/ui/DashboardTable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,25 +16,27 @@ import {
   UserPlus,
   MapPin,
   Mail,
+  Edit,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
-import { useAppSelector } from "@/app/redux/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
 import SelectPatientMessage from "@/app/components/SelectPatientMessage";
+import EditPatientModal from "../../../../components/EditPatientModal";
+import { useSession } from "next-auth/react";
+import { fetchPatients } from "@/app/redux/slices/patientSlice";
 
 export default function PatientRecords() {
-  // Local state for search input and suggestions
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
-  // State to track the selected patient (if any)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-  // Redux: get patients from store (ensure this returns an array of Patient)
   const patients = useAppSelector(selectPatients);
-  // const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch();
+  const { data: session } = useSession();
 
-  // Example health metrics cards (static demo values)
   const stats: Stat[] = [
     {
       title: "Upcoming Appointments",
@@ -67,19 +68,14 @@ export default function PatientRecords() {
     },
   ];
 
-  // Search handler: Filter the Redux patients array (using all available patients)
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchInput(value);
-
     if (value.length < 3) {
       setSuggestions([]);
       return;
     }
-
-    // Always use the Redux patients for filtering.
     let filteredPatients: Patient[] = [];
-    // If the input starts with "ES" followed by a digit or begins with a digit, search by PatientId.
     if (
       (value.slice(0, 2).toUpperCase() === "ES" &&
         /\d/.test(value.charAt(2))) ||
@@ -89,28 +85,36 @@ export default function PatientRecords() {
         patient.PatientId.toLowerCase().includes(value.toLowerCase())
       );
     } else {
-      // Otherwise, search by fullName.
       filteredPatients = patients.filter((patient) =>
         patient.fullName.toLowerCase().includes(value.toLowerCase())
       );
     }
-
     setSuggestions(filteredPatients);
   };
 
-  // When a patient suggestion is selected, store the entire patient object.
   const handleSelectSuggestion = (patient: Patient) => {
     console.log("patient", patient);
-
     setSelectedPatient(patient);
     setSearchInput(patient.fullName);
     setSuggestions([]);
   };
 
+  const openEditModal = () => setEditModalOpen(true);
+  const closeEditModal = () => setEditModalOpen(false);
+
+  // Update selectedPatient when the Redux patients list changes
+  useEffect(() => {
+    if (selectedPatient) {
+      const updated = patients.find((p) => p._id === selectedPatient._id);
+      if (updated) {
+        setSelectedPatient(updated);
+      }
+    }
+  }, [patients, selectedPatient]);
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Top Section: Search & Add Patient Button */}
         <div className="flex justify-between items-end gap-x-2 bg-white p-4 rounded-lg shadow-sm">
           <div className="relative w-full">
             <Search
@@ -124,7 +128,6 @@ export default function PatientRecords() {
               onChange={handleSearchChange}
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {/* Dropdown suggestions */}
             {suggestions.length > 0 && (
               <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((patient, index) => (
@@ -149,11 +152,29 @@ export default function PatientRecords() {
 
         {selectedPatient ? (
           <>
-            {/* Patient Info Section */}
             <div className="bg-white p-6 rounded-lg shadow-sm">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {selectedPatient.fullName || "NA"}
-              </h1>
+              <div className="flex justify-between items-start">
+                <h1 className="text-2xl font-bold text-gray-800">
+                  {selectedPatient.fullName || "NA"}
+                </h1>
+                <Button variant="ghost" size="sm" onClick={openEditModal}>
+                  <Edit size={16} />
+                </Button>
+                {selectedPatient && (
+                  <EditPatientModal
+                    isOpen={isEditModalOpen}
+                    onClose={closeEditModal}
+                    patient={selectedPatient}
+                    onPatientUpdated={(updatedPatient: Patient) => {
+                      setSelectedPatient(updatedPatient);
+                      if (session?.user.id) {
+                        dispatch(fetchPatients(session.user.id));
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
                 <div>
                   <span className="text-gray-500">Contact:</span>{" "}
@@ -176,14 +197,11 @@ export default function PatientRecords() {
               </div>
             </div>
 
-            {/* Health Metrics Cards */}
             <DashboardCards stats={stats} />
 
-            {/* Vital Signs & Medical Info */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <DashboardChart />
               <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
-                {/* Patient Info - Email */}
                 <div>
                   <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                     <Mail className="text-blue-500" size={20} />
@@ -196,7 +214,6 @@ export default function PatientRecords() {
                   </ul>
                 </div>
 
-                {/* Patient Info - Address */}
                 <div>
                   <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                     <MapPin className="text-green-500" size={20} />
@@ -235,7 +252,6 @@ export default function PatientRecords() {
               </div>
             </div>
 
-            {/* Additional Sections */}
             <h2>TODO: Medical History Table</h2>
             <h2>TODO: Prescription Table</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

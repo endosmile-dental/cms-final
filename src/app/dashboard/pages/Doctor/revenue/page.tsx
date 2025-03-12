@@ -132,19 +132,25 @@ export default function RevenueDashboard() {
   // Optional: Table columns to display detailed billing records
   const billingTableColumns = [
     { header: "Invoice ID", accessor: (row: BillingRecord) => row.invoiceId },
-    { header: "Patient ID", accessor: (row: BillingRecord) => row.patientId },
     {
       header: "Date",
-      accessor: (row: BillingRecord) => format(new Date(row.date), "yyyy-MM-dd"),
+      accessor: (row: BillingRecord) =>
+        format(new Date(row.date), "yyyy-MM-dd"),
     },
-    { header: "Total Amount", accessor: (row: BillingRecord) => `₹ ${row.totalAmount}` },
-    { header: "Discount", accessor: (row: BillingRecord) => `₹ ${row.discount}` },
     {
-      header: "Amount Received",
+      header: "Total Amount",
+      accessor: (row: BillingRecord) => `₹ ${row.totalAmount}`,
+    },
+    {
+      header: "Discount",
+      accessor: (row: BillingRecord) => `₹ ${row.discount}`,
+    },
+    {
+      header: "Received",
       accessor: (row: BillingRecord) => `₹ ${row.amountReceived}`,
     },
-    { header: "Amount Due", accessor: (row: BillingRecord) => `₹ ${row.amountDue}` },
-    { header: "Payment Mode", accessor: (row: BillingRecord) => row.modeOfPayment },
+    { header: "Due", accessor: (row: BillingRecord) => `₹ ${row.amountDue}` },
+    { header: "Mode", accessor: (row: BillingRecord) => row.modeOfPayment },
     { header: "Status", accessor: (row: BillingRecord) => row.status },
   ];
 

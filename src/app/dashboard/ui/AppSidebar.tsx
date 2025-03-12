@@ -19,6 +19,7 @@ import {
   UserCog,
   Receipt,
   BadgePercent,
+  User,
 } from "lucide-react";
 import { SignOut } from "@/app/components/auth/signout-button";
 import { useSession } from "next-auth/react";
@@ -63,16 +64,16 @@ const allMenuItems = [
     roles: ["Doctor", "Receptionist", "Admin", "Patient"],
   },
   {
-    name: "Patient Records",
+    name: "Medical Records",
     icon: <ClipboardList size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/patientRecords`,
-    roles: ["Doctor", "Receptionist"],
+    roles: ["Doctor", "Receptionist", "Patient"],
   },
   {
-    name: "Patient Billing",
+    name: "Billing",
     icon: <Receipt size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/patientBilling`,
-    roles: ["Doctor"],
+    roles: ["Doctor", "Patient"],
   },
   {
     name: "Revenue",
@@ -87,10 +88,10 @@ const allMenuItems = [
     roles: ["SuperAdmin", "Admin", "clientAdmin"],
   },
   {
-    name: "Doctor Portal",
-    icon: <Stethoscope size={20} />,
-    path: "/dashboard/pages/Doctor",
-    roles: ["Doctor"],
+    name: "Profile Setting",
+    icon: <User size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/profile`,
+    roles: ["Doctor", "Patient"],
   },
   {
     name: "Admin Console",

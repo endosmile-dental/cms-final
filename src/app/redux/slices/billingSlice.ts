@@ -1,4 +1,3 @@
-// src/store/slices/billingSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
 
@@ -20,17 +19,13 @@ export interface BillingRecord {
   patientId: string;
   doctorId: string;
   clinicId: string;
-  date: string; // Alternatively, Date if needed
+  date: string;
   treatments: Treatment[];
-  /** Original total before discount is applied */
   amountBeforeDiscount: number;
-  /** Discount amount applied */
   discount: number;
-  /** Total after discount is applied */
   totalAmount: number;
   advance: number;
   amountReceived: number;
-  /** Remaining amount to be paid */
   amountDue: number;
   modeOfPayment: string;
   address?: string;
@@ -61,10 +56,9 @@ interface CreateBillingArgs {
 
 /**
  * Async thunk to create a new billing record.
- * It sends a POST request to the billing API endpoint.
  */
 export const createBilling = createAsyncThunk<
-  BillingRecord | undefined, // Return type (can be undefined)
+  BillingRecord | undefined,
   CreateBillingArgs,
   { rejectValue: string }
 >(
@@ -98,35 +92,49 @@ export const createBilling = createAsyncThunk<
 );
 
 /**
- * Async thunk to fetch billing records for a specific doctor.
- * The doctor ID is provided via a custom header.
+ * Async thunk to fetch billing records based on userId and role.
  */
 export const fetchBillings = createAsyncThunk<
   BillingRecord[],
-  string,
+  { userId: string; role: "Doctor" | "Patient" },
   { rejectValue: string }
->(
-  "billing/fetchBillings",
-  async (doctorUserId: string, { rejectWithValue }) => {
-    try {
-      const res = await fetch(`/api/doctor/billing/getAll`, {
-        headers: {
-          "Content-Type": "application/json",
-          "x-doctor-user-id": doctorUserId,
-        },
-      });
-      if (!res.ok) {
-        const errorData = await res.json();
-        return rejectWithValue(errorData.error);
-      }
-      const data = await res.json();
-      // Assuming the API returns an object with a billings array.
-      return data.billings as BillingRecord[];
-    } catch {
-      return rejectWithValue("Failed to fetch billings");
+>("billing/fetchBillings", async ({ userId, role }, { rejectWithValue }) => {
+  try {
+    let url = "";
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (role === "Doctor") {
+      url = "/api/doctor/billing/getAll";
+      headers["x-doctor-user-id"] = userId;
+    } else if (role === "Patient") {
+      url = "/api/patient/billing/getBilling"; // API for fetching patient-specific billing
+      headers["x-patient-user-id"] = userId;
+    } else {
+      return rejectWithValue("Invalid role");
     }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return rejectWithValue(errorData.error);
+    }
+
+    const data = await response.json();
+    console.log("data.billings", data.billings);
+
+    return role === "Doctor"
+      ? (data.billings as BillingRecord[])
+      : (data.billings as BillingRecord[]);
+  } catch {
+    return rejectWithValue("Failed to fetch billings");
   }
-);
+});
 
 /**
  * Billing slice definition.
@@ -135,15 +143,9 @@ const billingSlice = createSlice({
   name: "billing",
   initialState,
   reducers: {
-    /**
-     * Adds a billing record to the state.
-     */
     addBilling(state, action: PayloadAction<BillingRecord>) {
       state.billingRecords.push(action.payload);
     },
-    /**
-     * Updates an existing billing record.
-     */
     updateBilling(state, action: PayloadAction<BillingRecord>) {
       const index = state.billingRecords.findIndex(
         (billing) => billing._id === action.payload._id
@@ -152,9 +154,6 @@ const billingSlice = createSlice({
         state.billingRecords[index] = action.payload;
       }
     },
-    /**
-     * Deletes a billing record from the state by its _id.
-     */
     deleteBilling(state, action: PayloadAction<string>) {
       state.billingRecords = state.billingRecords.filter(
         (billing) => billing._id !== action.payload
@@ -162,7 +161,6 @@ const billingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Handle fetchBillings lifecycle.
     builder.addCase(fetchBillings.pending, (state) => {
       state.loading = true;
       state.error = null;
@@ -179,14 +177,12 @@ const billingSlice = createSlice({
       state.error = (action.payload as string) || "Failed to fetch billings";
     });
 
-    // Handle createBilling lifecycle.
     builder.addCase(createBilling.pending, (state) => {
       state.loading = true;
       state.error = null;
     });
     builder.addCase(createBilling.fulfilled, (state, action) => {
       state.loading = false;
-      // Check if action.payload is defined before adding it.
       if (action.payload) {
         state.billingRecords.push(action.payload);
       }
@@ -198,7 +194,6 @@ const billingSlice = createSlice({
   },
 });
 
-// Export actions and selector.
 export const { addBilling, updateBilling, deleteBilling } =
   billingSlice.actions;
 export const selectBillings = (state: RootState) =>

@@ -71,7 +71,6 @@ interface FetchProfileArgs {
   userId: string;
   role: string;
 }
-
 // Create an async thunk to fetch the profile data based on the role.
 export const fetchProfile = createAsyncThunk<
   ProfileData,
@@ -79,31 +78,36 @@ export const fetchProfile = createAsyncThunk<
   { rejectValue: string }
 >("profile/fetchProfile", async ({ userId, role }, { rejectWithValue }) => {
   let endpoint = "";
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
   if (role === "Doctor") {
     endpoint = "/api/doctor/fetchProfile";
+    headers["x-doctor-user-id"] = userId;
   } else if (role === "Patient") {
     endpoint = "/api/patient/fetchProfile";
+    headers["x-patient-user-id"] = userId;
   } else {
     return rejectWithValue("Unsupported user role");
   }
+
   try {
-    const res = await fetch(endpoint, {
-      headers: {
-        "Content-Type": "application/json",
-        // Pass userId as header (adjust key if needed)
-        "x-doctor-user-id": userId,
-      },
-    });
+    const res = await fetch(endpoint, { method: "GET", headers });
+
     if (!res.ok) {
       const errorData = await res.json();
       return rejectWithValue(errorData.error || "Failed to fetch profile");
     }
+
     const data = await res.json();
+
     if (role === "Doctor" && data.doctor) {
       return data.doctor as ProfileData;
     } else if (role === "Patient" && data.patient) {
       return data.patient as ProfileData;
     }
+
     return rejectWithValue("Profile data missing");
   } catch (error: unknown) {
     if (error instanceof Error) {

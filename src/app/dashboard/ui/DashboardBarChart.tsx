@@ -52,6 +52,7 @@ export function DashboardBarChart({
           onValueChange={(value: "monthly" | "weekly" | "yearly") =>
             setTimeFrame(value)
           }
+          defaultValue="monthly"
         >
           <SelectTrigger className="w-[120px]">
             <SelectValue />

@@ -109,6 +109,10 @@ export default function DoctorDashboard() {
     }
   }, [patients]);
 
+  useEffect(() => {
+    console.log("profile", profile);
+  }, [profile]);
+
   const totalRevenue = useMemo(() => {
     return (
       billings?.reduce(
