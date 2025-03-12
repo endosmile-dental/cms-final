@@ -168,7 +168,12 @@ export default function PatientRecords() {
                     onPatientUpdated={(updatedPatient: Patient) => {
                       setSelectedPatient(updatedPatient);
                       if (session?.user.id) {
-                        dispatch(fetchPatients(session.user.id));
+                        dispatch(
+                          fetchPatients({
+                            userId: session.user.id,
+                            role: "Doctor",
+                          })
+                        );
                       }
                     }}
                   />
