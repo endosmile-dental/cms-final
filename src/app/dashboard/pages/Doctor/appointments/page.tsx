@@ -80,7 +80,9 @@ export default function DoctorAppointments() {
   };
 
   const filteredAppointments = appointments.filter((appointment) => {
-    const patientInfo = getPatientInfo(appointment.patient);
+    const patientInfo = appointment.patient
+      ? getPatientInfo(appointment.patient)
+      : null;
     const patientName = patientInfo ? patientInfo.fullName.toLowerCase() : "";
 
     const matchesSearch =
@@ -113,7 +115,9 @@ export default function DoctorAppointments() {
     appointments: Appointment[]
   ): TransformedAppointment[] => {
     return appointments.map((appointment) => {
-      const patientInfo = getPatientInfo(appointment.patient);
+      const patientInfo = appointment.patient
+        ? getPatientInfo(appointment.patient)
+        : null;
       return {
         _id: appointment._id,
         patientId: patientInfo?.PatientId || "NA",
