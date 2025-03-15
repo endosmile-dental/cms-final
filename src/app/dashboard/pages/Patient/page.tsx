@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Calendar, Clock, FileText } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
@@ -31,7 +31,10 @@ export default function PatientDashboard() {
   );
   // doctors slice structure is assumed to be { doctors: Doctor[], loading, error }
   const doctorsState = useAppSelector((state) => state.doctors);
-  const doctorList = doctorsState.doctors || [];
+  const doctorList = useMemo(
+    () => doctorsState.doctors || [],
+    [doctorsState.doctors]
+  );
 
   // Calculate KPI values from data
   const upcomingAppointmentsCount = appointments.filter(

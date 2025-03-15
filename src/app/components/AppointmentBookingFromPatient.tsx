@@ -54,8 +54,8 @@ export default function AppointmentBookingFromPatient({
       doctor: formData.doctorId, // Doctor's user ID
       patient: profile?._id, // Fetch logged-in user's ID
       appointmentDate: new Date(formData.appointmentDate).toISOString(), // Ensure it's in the correct format
-      status: "Scheduled" as "Scheduled", // Explicitly type as one of the allowed values
-      consultationType: "New" as "New", // Ensure consultationType is correctly typed
+      status: "Scheduled" as const, // Fix: Use 'as const' to infer the literal type
+      consultationType: "New" as const, // Fix: Use 'as const' to infer the literal type
       notes: formData.notes,
       createdBy: session?.user.id,
     };
