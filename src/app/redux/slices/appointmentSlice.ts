@@ -5,7 +5,7 @@ import { RootState } from "../store/store";
 export interface Appointment {
   _id: string;
   doctor: string | undefined;
-  patient: string;
+  patient: string | undefined;
   clinic?: string;
   appointmentDate: string;
   status: "Scheduled" | "Completed" | "Cancelled";

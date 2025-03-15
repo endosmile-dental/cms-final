@@ -36,7 +36,7 @@ export default async function Home() {
 
   if (!session?.user) {
     return (
-      <div>
+      <div className="w-full h-screen bg-[url('/signin.png')] bg-cover bg-center">
         <SignIn />
       </div>
     );

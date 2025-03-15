@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Calendar, Clock, FileText } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
@@ -11,6 +11,9 @@ import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectBillings } from "@/app/redux/slices/billingSlice";
 import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
 import { ProfileData } from "@/app/redux/slices/profileSlice";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import AppointmentBookingFromPatient from "@/app/components/AppointmentBookingFromPatient";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 // Update DataPoint to match DashboardChart's expected type
 interface DataPoint {
@@ -19,6 +22,8 @@ interface DataPoint {
 }
 
 export default function PatientDashboard() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   const billings = useAppSelector(selectBillings);
   const appointments = useAppSelector(selectAppointments);
   const profile = useAppSelector(
@@ -143,10 +148,25 @@ export default function PatientDashboard() {
             )}
           </div>
           <div className="mt-4 sm:mt-0">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+              onClick={() => setIsDialogOpen(true)}
+            >
               Book Appointment
             </button>
           </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+              <DialogTitle>Book an Appointment</DialogTitle>
+              <DialogDescription id="dialog-description">
+                Select a doctor and a date for your appointment.
+              </DialogDescription>
+              {/* Add appointment booking form here */}
+              <AppointmentBookingFromPatient
+                onClose={() => setIsDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </header>
 
         {/* KPI Cards Section */}

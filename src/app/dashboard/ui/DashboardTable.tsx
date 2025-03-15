@@ -21,6 +21,9 @@ export default function ReusableTable<T>({
   columns,
   emptyMessage = "No data available.",
 }: ReusableTableProps<T>) {
+  // Limit the number of rows to a maximum of 5
+  const displayedData = data.slice(0, 5);
+
   return (
     <Card className="p-4">
       <CardHeader>
@@ -28,7 +31,7 @@ export default function ReusableTable<T>({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          {data && data.length > 0 ? (
+          {displayedData.length > 0 ? (
             <table className="w-full text-center">
               <thead>
                 <tr>
@@ -40,7 +43,7 @@ export default function ReusableTable<T>({
                 </tr>
               </thead>
               <tbody>
-                {data.map((row, rowIndex) => (
+                {displayedData.map((row, rowIndex) => (
                   <tr key={rowIndex} className="border-b">
                     {columns.map((col, colIndex) => (
                       <td key={colIndex} className="py-2">
