@@ -10,10 +10,10 @@ import { ColumnDefinition } from "@/app/dashboard/ui/DashboardTable";
 import {
   Syringe,
   User,
-  Clock,
   AlertTriangle,
-  MessageSquareDashed,
   ReceiptIndianRupee,
+  UserRoundPlus,
+  ClipboardPlus,
 } from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
@@ -26,6 +26,7 @@ import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import ReusableTable from "@/app/dashboard/ui/DashboardTable";
+import Link from "next/link";
 
 // Define a type for a treatment
 interface BillingTreatment {
@@ -200,7 +201,7 @@ export default function DoctorDashboard() {
     },
     {
       title: "Total Revenue",
-      value: `₹ ${totalRevenue.toLocaleString()}`, // Format currency properly
+      value: `${totalRevenue.toLocaleString()}`, // Format currency properly
       icon: <ReceiptIndianRupee size={24} color="white" />,
       color: "bg-orange-500",
       LinkURL: "/dashboard/pages/Doctor/revenue",
@@ -320,7 +321,7 @@ export default function DoctorDashboard() {
       <div className="px-1 space-y-3">
         {session && profile && (
           <div className="w-full flex justify-between items-end">
-            <h1 className="text-2xl font-semibold tracking-wide font-sans">
+            <h1 className="text-base md:text-2xl font-semibold tracking-wide font-sans">
               {(() => {
                 const hour = new Date().getHours();
                 let greeting = "";
@@ -334,11 +335,24 @@ export default function DoctorDashboard() {
                 return `${greeting}, ${profile.fullName.split(" ")[0]}`;
               })()}
             </h1>
-            <div className="flex items-center pr-5 gap-x-5">
-              <div className="hidden md:flex gap-x-3 items-center">
-                <MessageSquareDashed size={18} color="black" />
-                <User size={18} color="blue" />
-                <Clock size={18} color="green" />
+            <div className="flex pr-5 gap-x-5">
+              <div className="hidden md:flex gap-x-3 items-end">
+                <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
+                  <div className="group p-1 rounded-full hover:bg-teal-600">
+                    <ClipboardPlus
+                      size={18}
+                      className="text-teal-600 group-hover:text-white"
+                    />
+                  </div>
+                </Link>
+                <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
+                  <div className="group p-1 rounded-full hover:bg-green-600">
+                    <UserRoundPlus
+                      size={18}
+                      className="text-green-600 group-hover:text-white"
+                    />
+                  </div>
+                </Link>
               </div>
               <div>
                 <Image

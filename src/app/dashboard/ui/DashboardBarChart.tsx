@@ -86,9 +86,9 @@ export function DashboardBarChart({
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
 
-          {Object.keys(config).map((key) => (
+          {Object.keys(config).map((key, index) => (
             <Bar
-              key={key}
+              key={`${key}-${timeFrame}-${index}`}
               dataKey={key}
               fill={`var(--color-${key})`}
               radius={barRadius}

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-// import { Users, Calendar, BarChart } from "lucide-react";
 
 export interface Stat {
   title: string;
@@ -15,11 +14,17 @@ interface DashboardCardsProps {
 }
 export default function DashboardCards({ stats }: DashboardCardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-4">
       {stats.map((stat, index) => {
+        // Determine dynamic text size based on value length
+        let textSize = "text-3xl"; // Default size
+        if (stat.value.length > 5) textSize = "text-2xl"; // If length > 5, use 'lg'
+        if (stat.value.length > 7) textSize = "text-lg"; // If length > 7, use 'base'
+
         // Split title into words
         const words = stat.title.split(" ");
         const mobileTitle = words.length > 1 ? words[1] : stat.title; // Show second word if available
+
         return (
           <Link href={stat.LinkURL || ""} key={index}>
             <Card className="relative transition-all duration-200 ease-in-out hover:-translate-y-1 hover:shadow-lg border border-gray-100 rounded-xl overflow-hidden">
@@ -36,14 +41,16 @@ export default function DashboardCards({ stats }: DashboardCardsProps) {
                       {stat.title}
                     </span>
                     {/* Truncated title on small screens with hover animation */}
-                    <span className="p-1 text-sm text-white font-semibold block md:hidden relative max-w-[100px] overflow-hidden whitespace-nowrap text-ellipsis group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-black group-hover:px-2 group-hover:rounded">
+                    <span className="p-1 pl-2 text-sm text-white font-semibold block md:hidden relative max-w-[100px] overflow-hidden whitespace-nowrap text-ellipsis group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-black group-hover:px-2 group-hover:rounded">
                       {mobileTitle || stat.title}
                     </span>
                   </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                <p className={`font-bold text-gray-900 ${textSize}`}>
+                  {stat.value}
+                </p>
                 <div
                   className={`h-1.5 w-8 mt-4 rounded-full ${stat.color.replace(
                     "text",
