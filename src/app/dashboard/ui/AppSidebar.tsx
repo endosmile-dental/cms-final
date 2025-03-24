@@ -90,7 +90,7 @@ const allMenuItems = [
     name: "Profile Setting",
     icon: <User size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/profile`,
-    roles: ["Doctor", "Patient"],
+    roles: ["Patient"],
   },
   {
     name: "Admin Console",

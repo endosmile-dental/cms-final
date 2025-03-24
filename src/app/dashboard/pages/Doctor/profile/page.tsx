@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
-import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
+import { useAppSelector } from "@/app/redux/store/hooks";
 import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Aperture } from "lucide-react";
 
 export default function ProfileSettings() {
-  const dispatch = useAppDispatch();
+  // const dispatch = useAppDispatch();
   const userProfile = useAppSelector((state) => {
     return state?.profile?.profile as ProfileData;
   });
