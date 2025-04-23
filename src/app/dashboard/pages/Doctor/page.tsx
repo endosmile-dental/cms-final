@@ -5,7 +5,9 @@ import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
-import DashboardCalendar from "@/app/dashboard/ui/DashboardCalendar";
+import DashboardCalendar, {
+  AppointmentDateDetailed,
+} from "@/app/dashboard/ui/DashboardCalendar";
 import { ColumnDefinition } from "@/app/dashboard/ui/DashboardTable";
 import {
   Syringe,
@@ -26,7 +28,7 @@ import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import ReusableTable from "@/app/dashboard/ui/DashboardTable";
-import Link from "next/link";
+import IconButtonWithTooltip from "@/app/components/IconButtonWithTooltip";
 
 // Define a type for a treatment
 interface BillingTreatment {
@@ -109,10 +111,6 @@ export default function DoctorDashboard() {
       setTableData(patientsTableData);
     }
   }, [patients]);
-
-  useEffect(() => {
-    console.log("profile", profile);
-  }, [profile]);
 
   const totalRevenue = useMemo(() => {
     return (
@@ -262,9 +260,45 @@ export default function DoctorDashboard() {
   }, [aggregatedAppointments]);
 
   // Compute unique appointment dates for the calendar component
-  const appointmentDates = useMemo(() => {
-    return Array.from(aggregatedAppointments.uniqueDates);
-  }, [aggregatedAppointments]);
+  const appointmentDatesDetailed = useMemo<AppointmentDateDetailed[]>(() => {
+    if (
+      !appointments ||
+      appointments.length === 0 ||
+      !patients ||
+      patients.length === 0
+    )
+      return [];
+
+    const dateMap: Record<string, { count: number; patients: string[] }> = {};
+
+    appointments.forEach((appointment) => {
+      const dateStr = format(
+        new Date(appointment.appointmentDate),
+        "yyyy-MM-dd"
+      );
+
+      if (!dateMap[dateStr]) {
+        dateMap[dateStr] = { count: 0, patients: [] };
+      }
+
+      dateMap[dateStr].count += 1;
+
+      const matchedPatient = patients.find(
+        (p) => p._id === appointment.patient
+      );
+      const patientName = matchedPatient ? matchedPatient.fullName : "Unknown";
+
+      if (!dateMap[dateStr].patients.includes(patientName)) {
+        dateMap[dateStr].patients.push(patientName);
+      }
+    });
+
+    return Object.entries(dateMap).map(([date, { count, patients }]) => ({
+      date,
+      count,
+      patients,
+    }));
+  }, [appointments, patients]);
 
   // Compute pie chart data from billings by aggregating treatment counts
   const pieData = useMemo(() => {
@@ -337,22 +371,28 @@ export default function DoctorDashboard() {
             </h1>
             <div className="flex pr-5 gap-x-5">
               <div className="hidden md:flex gap-x-3 items-end">
-                <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
-                  <div className="group p-1 rounded-full hover:bg-teal-600">
+                <IconButtonWithTooltip
+                  href="/dashboard/pages/Doctor/appointments/bookAppointment"
+                  tooltip="Book Appointment"
+                  icon={
                     <ClipboardPlus
                       size={18}
                       className="text-teal-600 group-hover:text-white"
                     />
-                  </div>
-                </Link>
-                <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
-                  <div className="group p-1 rounded-full hover:bg-green-600">
+                  }
+                  hoverBgColor="bg-teal-600"
+                />
+                <IconButtonWithTooltip
+                  href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm"
+                  tooltip="Add New Patient"
+                  icon={
                     <UserRoundPlus
                       size={18}
                       className="text-green-600 group-hover:text-white"
                     />
-                  </div>
-                </Link>
+                  }
+                  hoverBgColor="bg-green-600"
+                />
               </div>
               <div>
                 <Image
@@ -372,7 +412,7 @@ export default function DoctorDashboard() {
         <div className="w-full flex flex-col md:flex-row gap-y-4 md:gap-x-4">
           <DashboardCalendar
             title="Appointments"
-            appointmentDates={appointmentDates}
+            appointmentDetails={appointmentDatesDetailed}
           />
           <div className="w-full">
             <DashboardBarChart

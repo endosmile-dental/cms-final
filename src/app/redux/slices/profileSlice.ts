@@ -22,7 +22,7 @@ export interface DoctorProfile {
     startTime: string;
     endTime: string;
   }[];
-  createdAt: string; // ISO string representation
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -33,9 +33,8 @@ export interface PatientProfile {
   PatientId: string;
   fullName: string;
   contactNumber: string;
-  email?: string;
   gender: "Male" | "Female" | "Other";
-  dateOfBirth: string; // ISO string representation
+  dateOfBirth: string;
   address?: {
     street: string;
     city: string;
@@ -71,7 +70,8 @@ interface FetchProfileArgs {
   userId: string;
   role: string;
 }
-// Create an async thunk to fetch the profile data based on the role.
+
+// Fetch Profile Thunk
 export const fetchProfile = createAsyncThunk<
   ProfileData,
   FetchProfileArgs,
@@ -117,6 +117,54 @@ export const fetchProfile = createAsyncThunk<
   }
 });
 
+interface UpdateProfileArgs {
+  profile: DoctorProfile | PatientProfile;
+  role: "Doctor" | "Patient";
+}
+
+// Update Profile Thunk
+export const updateProfile = createAsyncThunk<
+  ProfileData,
+  UpdateProfileArgs,
+  { rejectValue: string }
+>("profile/updateProfile", async ({ profile, role }, { rejectWithValue }) => {
+  let endpoint = "";
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (role === "Doctor") {
+    endpoint = `/api/doctor/updateProfile/${profile._id}`;
+    headers["x-doctor-user-id"] = profile._id;
+  } else if (role === "Patient") {
+    endpoint = `/api/patient/updateProfile/${profile._id}`;
+    headers["x-patient-user-id"] = profile._id;
+  } else {
+    return rejectWithValue("Unsupported user role");
+  }
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(profile),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      return rejectWithValue(errorData.error || "Failed to update profile");
+    }
+
+    const updatedData = await res.json();
+    return updatedData as ProfileData;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return rejectWithValue(error.message);
+    }
+    return rejectWithValue("An unknown error occurred");
+  }
+});
+
 const profileSlice = createSlice({
   name: "profile",
   initialState,
@@ -126,18 +174,31 @@ const profileSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchProfile.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchProfile.fulfilled, (state, action) => {
-      state.loading = false;
-      state.profile = action.payload;
-    });
-    builder.addCase(fetchProfile.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload || "Failed to fetch profile";
-    });
+    builder
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload;
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch profile";
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile = action.payload;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update profile";
+      });
   },
 });
 
