@@ -5,7 +5,9 @@ import { Calendar, Clock, FileText } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
 import DashboardChart from "../../ui/DashboardChart";
-import DashboardCalendar from "../../ui/DashboardCalendar";
+import DashboardCalendar, {
+  AppointmentDateDetailed,
+} from "../../ui/DashboardCalendar";
 import ReusableTable, { ColumnDefinition } from "../../ui/DashboardTable";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { selectBillings } from "@/app/redux/slices/billingSlice";
@@ -14,6 +16,7 @@ import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import AppointmentBookingFromPatient from "@/app/components/AppointmentBookingFromPatient";
 import { DialogDescription } from "@radix-ui/react-dialog";
+import { format } from "date-fns";
 
 // Update DataPoint to match DashboardChart's expected type
 interface DataPoint {
@@ -98,6 +101,34 @@ export default function PatientDashboard() {
     { header: "Gender", accessor: (row) => row.gender },
     { header: "Appointment Date", accessor: (row) => row.appointmentDate },
   ];
+
+  const appointmentDetails = useMemo(() => {
+    const groupedAppointments: Record<string, AppointmentDateDetailed> = {};
+
+    appointments.forEach((appointment) => {
+      const date = new Date(appointment.appointmentDate);
+      const dateKey = format(date, "yyyy-MM-dd");
+      const doctor = doctorList.find((doc) => doc._id === appointment.doctor);
+
+      if (!groupedAppointments[dateKey]) {
+        groupedAppointments[dateKey] = {
+          date: dateKey,
+          count: 0,
+          appointments: [],
+        };
+      }
+
+      groupedAppointments[dateKey].count += 1;
+      groupedAppointments[dateKey].appointments.push({
+        patientName: doctor?.fullName || "Unknown Doctor", // Doctor's name for patient view
+        timeSlot: format(date, "HH:mm"),
+        treatments: appointment.treatments || [], // Adjust based on your data structure
+        teeth: appointment.teeth || [], // Adjust based on your data structure
+      });
+    });
+
+    return Object.values(groupedAppointments);
+  }, [appointments, doctorList]);
 
   // Map appointments data and lookup corresponding doctor details
   const tableData: TableData[] = appointments.map((appointment) => {
@@ -185,7 +216,7 @@ export default function PatientDashboard() {
           />
           <DashboardCalendar
             title="Appointment Calendar"
-            appointmentDates={appointments.map((a) => a.appointmentDate)}
+            appointmentDetails={appointmentDetails} // Pass formatted data
           />
         </section>
 

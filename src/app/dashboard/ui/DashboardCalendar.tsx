@@ -113,7 +113,7 @@ export default function DashboardCalendar({
             }}
             className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm w-full max-w-full overflow-x-auto md:overflow-x-hidden"
             classNames={{
-              months: "flex flex-col gap-6",
+              months: "flex flex-col gap-6 justify-center items-center",
               month: "space-y-4",
               caption: "flex justify-center pt-1 relative items-center",
               caption_label: "text-gray-900 font-medium",
