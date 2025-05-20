@@ -111,7 +111,7 @@ export default function DashboardCalendar({
             components={{
               Day: CustomDay,
             }}
-            className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm w-full max-w-full overflow-x-auto"
+            className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm w-full max-w-full overflow-x-auto md:overflow-x-hidden"
             classNames={{
               months: "flex flex-col gap-6",
               month: "space-y-4",

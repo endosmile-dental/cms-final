@@ -16,9 +16,16 @@ import {
   TableHead,
 } from "@/components/ui/table";
 
+interface Appointment {
+  patientName: string;
+  timeSlot?: string;
+  teeth?: string[] | string;
+  treatments?: string[] | string;
+}
+
 interface AppointmentDetailsModalProps {
   date: Date;
-  appointments: any[]; // Array of appointments for this date
+  appointments: Appointment[]; // Array of appointments for this date
   onClose: () => void;
 }
 
@@ -51,10 +58,6 @@ const AppointmentDetailsModal = ({
               <TableBody>
                 {appointments.map((appointment, index) => {
                   // Check if teeth and treatments are arrays
-
-                  const teeth = Array.isArray(appointment.teeth)
-                    ? appointment.teeth.join(", ")
-                    : appointment.teeth || "Not specified";
 
                   const treatments = Array.isArray(appointment.treatments)
                     ? appointment.treatments.join(", ")

@@ -29,7 +29,6 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 import IconButtonWithTooltip from "@/app/components/IconButtonWithTooltip";
-import { log } from "node:console";
 
 // Define a type for a treatment
 interface BillingTreatment {
@@ -138,8 +137,6 @@ export default function DoctorDashboard() {
 
     const today = new Date();
 
-    console.log("appointments", appointments);
-
     appointments.forEach((appointment) => {
       const appointmentDate = new Date(appointment.appointmentDate);
 
@@ -243,7 +240,6 @@ export default function DoctorDashboard() {
       "Nov",
       "Dec",
     ];
-    console.log("aggregatedAppointments", aggregatedAppointments);
     return {
       monthly: months.map((month) => ({
         month,
@@ -326,7 +322,6 @@ export default function DoctorDashboard() {
 
   // Compute pie chart data from billings by aggregating treatment counts
   const pieData = useMemo(() => {
-    console.log(billings);
 
     if (!billings || billings.length === 0) return [];
     const treatmentCounts: Record<string, number> = {};
