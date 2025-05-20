@@ -27,7 +27,7 @@ import { addPatient } from "@/app/redux/slices/patientSlice";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { PreviewDialog } from "@/app/components/PreviewDialog";
 
-export const medicalHistoryOptions = [
+const medicalHistoryOptions = [
   { label: "Fever/Cough/Cold", value: "Fever/Cough/Cold" },
   { label: "COVID-19 Positive", value: "COVID-19 Positive" },
   { label: "Recent Hospitalization", value: "Recent Hospitalization" },
