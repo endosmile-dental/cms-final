@@ -2,7 +2,6 @@
 
 import { Briefcase, UserCheck, AlertTriangle } from "lucide-react";
 import DashboardLayout from "../../layout/DashboardLayout";
-import DashboardCalendar from "../../ui/DashboardCalendar";
 import DashboardCards, { Stat } from "../../ui/DashboardCards";
 import DashboardChart from "../../ui/DashboardChart";
 import ReusableTable, { ColumnDefinition } from "../../ui/DashboardTable";
@@ -80,10 +79,6 @@ export default function ClientAdminDashboard() {
         {/* Charts & Calendar */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DashboardChart title="Clinic Performance Overview" data={[]} />
-          <DashboardCalendar
-            title="Upcoming Appointments"
-            appointmentDates={[]}
-          />
         </div>
 
         {/* Recent Activities Table */}
