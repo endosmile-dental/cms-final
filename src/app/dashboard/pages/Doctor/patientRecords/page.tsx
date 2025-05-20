@@ -26,6 +26,7 @@ import SelectPatientMessage from "@/app/components/SelectPatientMessage";
 import EditPatientModal from "../../../../components/EditPatientModal";
 import { useSession } from "next-auth/react";
 import { fetchPatients } from "@/app/redux/slices/patientSlice";
+import PatientListCard from "@/app/components/PatientListCard";
 
 export default function PatientRecords() {
   const [searchInput, setSearchInput] = useState("");
@@ -71,10 +72,6 @@ export default function PatientRecords() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchInput(value);
-    if (value.length < 3) {
-      setSuggestions([]);
-      return;
-    }
     let filteredPatients: Patient[] = [];
     if (
       (value.slice(0, 2).toUpperCase() === "ES" &&
@@ -294,7 +291,15 @@ export default function PatientRecords() {
             </div>
           </>
         ) : (
-          <SelectPatientMessage />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {patients.map((patient) => (
+              <PatientListCard
+                key={patient._id}
+                patient={patient}
+                onSelect={handleSelectSuggestion}
+              />
+            ))}
+          </div>
         )}
       </div>
     </DashboardLayout>
