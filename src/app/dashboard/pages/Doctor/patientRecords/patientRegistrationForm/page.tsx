@@ -46,7 +46,7 @@ const medicalHistoryOptions = [
   { label: "Pregnancy/Breastfeeding", value: "Pregnancy/Breastfeeding" },
 ];
 
-export const currentMedicationsOptions = [
+const currentMedicationsOptions = [
   { label: "Antibiotics", value: "Antibiotics" },
   { label: "Antihypertensives", value: "Antihypertensives" },
   { label: "Antidiabetics", value: "Antidiabetics" },
