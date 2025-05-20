@@ -1,7 +1,6 @@
 // components/PatientListCard.tsx
 import { Patient } from "@/app/redux/slices/patientSlice";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   patient: Patient;

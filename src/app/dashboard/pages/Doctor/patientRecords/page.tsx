@@ -22,7 +22,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
-import SelectPatientMessage from "@/app/components/SelectPatientMessage";
 import EditPatientModal from "../../../../components/EditPatientModal";
 import { useSession } from "next-auth/react";
 import { fetchPatients } from "@/app/redux/slices/patientSlice";
