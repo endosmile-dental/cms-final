@@ -29,6 +29,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 import IconButtonWithTooltip from "@/app/components/IconButtonWithTooltip";
+import { log } from "node:console";
 
 // Define a type for a treatment
 interface BillingTreatment {
@@ -127,15 +128,17 @@ export default function DoctorDashboard() {
       followUps: 0,
       pending: 0,
       upcoming: 0, // NEW
-      monthly: {} as Record<string, { completed: number; cancelled: number }>,
-      weekly: {} as Record<string, { completed: number; cancelled: number }>,
-      yearly: {} as Record<string, { completed: number; cancelled: number }>,
+      monthly: {} as Record<string, { completed: number; scheduled: number }>,
+      weekly: {} as Record<string, { completed: number; scheduled: number }>,
+      yearly: {} as Record<string, { completed: number; scheduled: number }>,
       uniqueDates: new Set<string>(),
     };
 
     if (!appointments || appointments.length === 0) return result;
 
     const today = new Date();
+
+    console.log("appointments", appointments);
 
     appointments.forEach((appointment) => {
       const appointmentDate = new Date(appointment.appointmentDate);
@@ -162,20 +165,20 @@ export default function DoctorDashboard() {
       result.uniqueDates.add(format(appointmentDate, "yyyy-MM-dd"));
 
       if (!result.monthly[month])
-        result.monthly[month] = { completed: 0, cancelled: 0 };
+        result.monthly[month] = { completed: 0, scheduled: 0 };
       if (!result.weekly[week])
-        result.weekly[week] = { completed: 0, cancelled: 0 };
+        result.weekly[week] = { completed: 0, scheduled: 0 };
       if (!result.yearly[year])
-        result.yearly[year] = { completed: 0, cancelled: 0 };
+        result.yearly[year] = { completed: 0, scheduled: 0 };
 
       if (appointment.status === "Completed") {
         result.monthly[month].completed += 1;
         result.weekly[week].completed += 1;
         result.yearly[year].completed += 1;
-      } else if (appointment.status === "Cancelled") {
-        result.monthly[month].cancelled += 1;
-        result.weekly[week].cancelled += 1;
-        result.yearly[year].cancelled += 1;
+      } else if (appointment.status === "Scheduled") {
+        result.monthly[month].scheduled += 1;
+        result.weekly[week].scheduled += 1;
+        result.yearly[year].scheduled += 1;
       }
     });
 
@@ -219,7 +222,7 @@ export default function DoctorDashboard() {
       color: "#2563eb",
     },
     cancelled: {
-      label: "Cancelled",
+      label: "Scheduled",
       color: "#60a5fa",
     },
   } satisfies ChartConfig;
@@ -240,21 +243,22 @@ export default function DoctorDashboard() {
       "Nov",
       "Dec",
     ];
+    console.log("aggregatedAppointments", aggregatedAppointments);
     return {
       monthly: months.map((month) => ({
         month,
         completed: aggregatedAppointments.monthly[month]?.completed || 0,
-        cancelled: aggregatedAppointments.monthly[month]?.cancelled || 0,
+        cancelled: aggregatedAppointments.monthly[month]?.scheduled || 0,
       })),
       weekly: Object.keys(aggregatedAppointments.weekly).map((week) => ({
         week,
         completed: aggregatedAppointments.weekly[week].completed,
-        cancelled: aggregatedAppointments.weekly[week].cancelled,
+        cancelled: aggregatedAppointments.weekly[week].scheduled,
       })),
       yearly: Object.keys(aggregatedAppointments.yearly).map((year) => ({
         year,
         completed: aggregatedAppointments.yearly[year].completed,
-        cancelled: aggregatedAppointments.yearly[year].cancelled,
+        cancelled: aggregatedAppointments.yearly[year].scheduled,
       })),
     };
   }, [aggregatedAppointments]);
@@ -269,7 +273,18 @@ export default function DoctorDashboard() {
     )
       return [];
 
-    const dateMap: Record<string, { count: number; patients: string[] }> = {};
+    const dateMap: Record<
+      string,
+      {
+        count: number;
+        appointments: {
+          patientName: string;
+          timeSlot: string;
+          treatments: string[];
+          teeth: string[];
+        }[];
+      }
+    > = {};
 
     appointments.forEach((appointment) => {
       const dateStr = format(
@@ -277,26 +292,35 @@ export default function DoctorDashboard() {
         "yyyy-MM-dd"
       );
 
-      if (!dateMap[dateStr]) {
-        dateMap[dateStr] = { count: 0, patients: [] };
-      }
-
-      dateMap[dateStr].count += 1;
-
       const matchedPatient = patients.find(
         (p) => p._id === appointment.patient
       );
       const patientName = matchedPatient ? matchedPatient.fullName : "Unknown";
 
-      if (!dateMap[dateStr].patients.includes(patientName)) {
-        dateMap[dateStr].patients.push(patientName);
+      const timeSlot = appointment.timeSlot || "09:00 AM";
+      const teeth = appointment.teeth || [];
+      const treatments = appointment.treatments || [];
+
+      if (!dateMap[dateStr]) {
+        dateMap[dateStr] = {
+          count: 0,
+          appointments: [],
+        };
       }
+
+      dateMap[dateStr].count += 1;
+      dateMap[dateStr].appointments.push({
+        patientName,
+        timeSlot,
+        teeth,
+        treatments,
+      });
     });
 
-    return Object.entries(dateMap).map(([date, { count, patients }]) => ({
+    return Object.entries(dateMap).map(([date, { count, appointments }]) => ({
       date,
       count,
-      patients,
+      appointments,
     }));
   }, [appointments, patients]);
 
@@ -380,7 +404,7 @@ export default function DoctorDashboard() {
                       className="text-teal-600 group-hover:text-white"
                     />
                   }
-                  hoverBgColor="bg-teal-600"
+                  hoverBgColor="teal"
                 />
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm"
@@ -391,7 +415,7 @@ export default function DoctorDashboard() {
                       className="text-green-600 group-hover:text-white"
                     />
                   }
-                  hoverBgColor="bg-green-600"
+                  hoverBgColor="green"
                 />
               </div>
               <div>

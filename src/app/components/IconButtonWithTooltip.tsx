@@ -6,19 +6,27 @@ interface IconButtonWithTooltipProps {
   href: string;
   tooltip: string;
   icon: ReactNode;
-  hoverBgColor?: string;
+  hoverBgColor?: "green" | "teal" | "red"; // Add other colors as needed
 }
 
 export default function IconButtonWithTooltip({
   href,
   tooltip,
   icon,
-  hoverBgColor = "bg-teal-600",
+  hoverBgColor = "teal",
 }: IconButtonWithTooltipProps) {
+  // Map color names to Tailwind classes
+  const hoverClasses = {
+    green: "hover:bg-green-600",
+    teal: "hover:bg-teal-600",
+    red: "hover:bg-red-600",
+  };
   return (
     <div className="relative group">
       <Link href={href}>
-        <div className={`p-1 rounded-full hover:${hoverBgColor} group`}>
+        <div
+          className={`p-1 rounded-full ${hoverClasses[hoverBgColor]} transition-colors group`}
+        >
           {icon}
         </div>
       </Link>

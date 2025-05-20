@@ -1,15 +1,21 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
 
-// Define a type for an Appointment
+export type ConsultationType = "New" | "Follow-up";
+export type AppointmentStatus = "Scheduled" | "Completed" | "Cancelled";
+export type PaymentStatus = "Pending" | "Paid" | "Refunded";
+
 export interface Appointment {
   _id: string;
   doctor: string | undefined;
   patient: string | undefined;
   clinic?: string;
   appointmentDate: string;
-  status: "Scheduled" | "Completed" | "Cancelled";
-  consultationType: "New" | "Follow-up";
+  status: AppointmentStatus;
+  consultationType: ConsultationType;
+  timeSlot: string;
+  treatments?: string[];
+  teeth?: string[];
   notes?: string;
   createdBy: string | undefined;
   rescheduledAt?: string;

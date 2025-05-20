@@ -24,6 +24,44 @@ import {
 // Redux hooks and patient slice action
 import { useAppDispatch } from "@/app/redux/store/hooks";
 import { addPatient } from "@/app/redux/slices/patientSlice";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { PreviewDialog } from "@/app/components/PreviewDialog";
+
+export const medicalHistoryOptions = [
+  { label: "Fever/Cough/Cold", value: "Fever/Cough/Cold" },
+  { label: "COVID-19 Positive", value: "COVID-19 Positive" },
+  { label: "Recent Hospitalization", value: "Recent Hospitalization" },
+  { label: "AIDS/Hepatitis/Herpes", value: "AIDS/Hepatitis/Herpes" },
+  { label: "Drug Allergy", value: "Drug Allergy" },
+  { label: "Diabetes", value: "Diabetes" },
+  { label: "Hypertension", value: "Hypertension" },
+  { label: "Asthma", value: "Asthma" },
+  { label: "Heart Disease", value: "Heart Disease" },
+  { label: "Recent Surgery", value: "Recent Surgery" },
+  { label: "Epilepsy/Fits", value: "Epilepsy/Fits" },
+  { label: "Thyroid Disorder", value: "Thyroid Disorder" },
+  { label: "Lung Disease/TB", value: "Lung Disease/TB" },
+  { label: "Bleeding Disorder", value: "Bleeding Disorder" },
+  { label: "Cancer Treatment", value: "Cancer Treatment" },
+  { label: "Pregnancy/Breastfeeding", value: "Pregnancy/Breastfeeding" },
+];
+
+export const currentMedicationsOptions = [
+  { label: "Antibiotics", value: "Antibiotics" },
+  { label: "Antihypertensives", value: "Antihypertensives" },
+  { label: "Antidiabetics", value: "Antidiabetics" },
+  { label: "Asthma Inhalers", value: "Asthma Inhalers" },
+  { label: "Thyroid Medications", value: "Thyroid Medications" },
+  { label: "Heart Medications", value: "Heart Medications" },
+  { label: "Blood Thinners", value: "Blood Thinners" },
+  { label: "Cancer Medications", value: "Cancer Medications" },
+  { label: "Steroids", value: "Steroids" },
+  { label: "Pain Killers", value: "Pain Killers" },
+  { label: "Vitamins/Supplements", value: "Vitamins/Supplements" },
+  { label: "Anti-allergy Drugs", value: "Anti-allergy Drugs" },
+  { label: "Anti-epileptic Drugs", value: "Anti-epileptic Drugs" },
+  { label: "TB Medications", value: "TB Medications" },
+];
 
 // Define the Zod schema based on your Patient model
 const patientSchema = z.object({
@@ -46,9 +84,9 @@ const patientSchema = z.object({
       postalCode: z.string().optional(),
     })
     .optional(),
-  // For simplicity, medicalHistory and currentMedications are comma‐separated strings.
-  medicalHistory: z.string().optional(),
-  currentMedications: z.string().optional(),
+  // For simplicity, medicalHistory and currentMedications are comma‐separated strings stored in array.
+  medicalHistory: z.string().array().optional(),
+  currentMedications: z.string().array().optional(),
   // Emergency contact is optional; if provided, each field is required.
   emergencyContact: z
     .object({
@@ -69,6 +107,11 @@ export default function PatientRegistrationForm() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
 
+  const [showPreviewModal, setShowPreviewModal] = React.useState(false);
+  const [previewData, setPreviewData] =
+    React.useState<PatientFormValues | null>(null);
+  const [modalError, setModalError] = React.useState<string | null>(null);
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -84,8 +127,8 @@ export default function PatientRegistrationForm() {
         state: "",
         postalCode: "",
       },
-      medicalHistory: "",
-      currentMedications: "",
+      medicalHistory: [],
+      currentMedications: [],
       emergencyContact: {
         fullName: "",
         contactNumber: "",
@@ -94,19 +137,35 @@ export default function PatientRegistrationForm() {
     },
   });
 
-  const onSubmit: SubmitHandler<PatientFormValues> = async (data) => {
+  // Modified onSubmit handler - only shows preview modal
+  const onSubmit: SubmitHandler<PatientFormValues> = (data) => {
+    // Show preview modal with form data
+    setPreviewData(data);
+    setShowPreviewModal(true);
+  };
+
+  // New confirmation handler with the actual API call
+  const handleConfirm = async () => {
+    if (!previewData) return;
+
     setIsLoading(true);
     setFormError(null);
 
     try {
+      // Format the data from preview state
+      const formattedData = {
+        ...previewData,
+        medicalHistory: previewData.medicalHistory?.join(",") || "",
+        currentMedications: previewData.currentMedications?.join(",") || "",
+      };
+
       const res = await fetch("/api/doctor/addPatient", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // Pass the session's user id as the doctor id header.
           "x-doctor-id": session?.user?.id || "",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(formattedData),
       });
 
       const result = await res.json();
@@ -116,23 +175,15 @@ export default function PatientRegistrationForm() {
         console.error("Error registering patient:", result.error);
       } else {
         console.log("Patient registration successful", result);
-        // Dispatch the action to add the new patient to the Redux store.
         dispatch(addPatient(result.patient));
-        // Redirect to the patient records page on success.
         router.push("/dashboard/pages/Doctor/patientRecords");
+        setShowPreviewModal(false); // Close modal on success
       }
     } catch (error: unknown) {
       console.error("Error registering patient:", error);
-
-      if (error instanceof Error) {
-        console.error("Error registering patient:", error.message);
-        setFormError(error.message || "An unexpected error occurred");
-        // Optionally set a form error
-        // setFormError(error.message || "An unexpected error occurred");
-      } else {
-        console.error("An unexpected error occurred");
-        // setFormError("An unexpected error occurred");
-      }
+      setFormError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -266,7 +317,7 @@ export default function PatientRegistrationForm() {
                   name="address.street"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Street</FormLabel>
+                      <FormLabel>House no./Appartment</FormLabel>
                       <FormControl>
                         <Input placeholder="Street" {...field} />
                       </FormControl>
@@ -317,40 +368,32 @@ export default function PatientRegistrationForm() {
             </div>
 
             {/* Medical History */}
-            <FormField
-              control={form.control}
-              name="medicalHistory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Medical History</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="List any previous medical conditions, separated by commas"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div>
+              <FormLabel>Medical History</FormLabel>
+              <MultiSelect
+                options={medicalHistoryOptions}
+                onValueChange={(values) =>
+                  form.setValue("medicalHistory", values)
+                }
+                defaultValue={form.watch("medicalHistory")}
+                placeholder="Select medical conditions"
+                variant="secondary"
+              />
+            </div>
 
             {/* Current Medications */}
-            <FormField
-              control={form.control}
-              name="currentMedications"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current Medications</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="List current medications, separated by commas"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div>
+              <FormLabel>Current Medications</FormLabel>
+              <MultiSelect
+                options={currentMedicationsOptions}
+                onValueChange={(values) =>
+                  form.setValue("currentMedications", values)
+                }
+                defaultValue={form.watch("currentMedications")}
+                placeholder="Select current medications"
+                variant="secondary"
+              />
+            </div>
 
             {/* Emergency Contact Section */}
             <div className="border-t pt-4">
@@ -416,6 +459,141 @@ export default function PatientRegistrationForm() {
           </form>
         </Form>
       </div>
+
+      <PreviewDialog
+        open={showPreviewModal}
+        onOpenChange={(open) => {
+          if (!open) setModalError(null);
+          setShowPreviewModal(open);
+        }}
+        onConfirm={handleConfirm}
+        isLoading={isLoading}
+        error={modalError}
+        title="Patient Registration Preview"
+        description="Please review the patient information before confirming."
+      >
+        {/* Keep all the existing preview content */}
+        <div className="space-y-4 p-2 md:p-5">
+          {/* Personal Information */}
+          <div className="space-y-2">
+            <h3 className="font-semibold">Personal Information</h3>
+            <dl className="grid grid-cols-2 gap-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Full Name</dt>
+                <dd>{previewData?.fullName}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">
+                  Contact Number
+                </dt>
+                <dd>{previewData?.contactNumber}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Gender</dt>
+                <dd>{previewData?.gender}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Date of Birth</dt>
+                <dd>{previewData?.dateOfBirth}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Email</dt>
+                <dd>{previewData?.email}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Password</dt>
+                <dd>••••••••</dd>
+              </div>
+            </dl>
+          </div>
+
+          {/* Address */}
+          {previewData?.address && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Address</h3>
+              <dl className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Street</dt>
+                  <dd>{previewData.address.street || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">City</dt>
+                  <dd>{previewData.address.city || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">State</dt>
+                  <dd>{previewData.address.state || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Postal Code</dt>
+                  <dd>{previewData.address.postalCode || "-"}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+
+          {/* Medical History */}
+          <div className="space-y-2">
+            <h3 className="font-semibold">Medical History</h3>
+            <div className="flex flex-wrap gap-2">
+              {previewData?.medicalHistory?.map((item) => (
+                <span
+                  key={item}
+                  className="bg-blue-100 text-blue-800 px-2 py-1 rounded"
+                >
+                  {item}
+                </span>
+              ))}
+              {!previewData?.medicalHistory?.length && (
+                <span className="text-muted-foreground">None</span>
+              )}
+            </div>
+          </div>
+
+          {/* Current Medications */}
+          <div className="space-y-2">
+            <h3 className="font-semibold">Current Medications</h3>
+            <div className="flex flex-wrap gap-2">
+              {previewData?.currentMedications?.map((item) => (
+                <span
+                  key={item}
+                  className="bg-green-100 text-green-800 px-2 py-1 rounded"
+                >
+                  {item}
+                </span>
+              ))}
+              {!previewData?.currentMedications?.length && (
+                <span className="text-muted-foreground">None</span>
+              )}
+            </div>
+          </div>
+
+          {/* Emergency Contact */}
+          {previewData?.emergencyContact && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Emergency Contact</h3>
+              <dl className="grid grid-cols-2 gap-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Name</dt>
+                  <dd>{previewData.emergencyContact.fullName || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Contact Number
+                  </dt>
+                  <dd>{previewData.emergencyContact.contactNumber || "-"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">
+                    Relationship
+                  </dt>
+                  <dd>{previewData.emergencyContact.relationship || "-"}</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+      </PreviewDialog>
     </DashboardLayout>
   );
 }

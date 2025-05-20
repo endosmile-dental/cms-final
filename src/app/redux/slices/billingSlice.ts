@@ -126,7 +126,6 @@ export const fetchBillings = createAsyncThunk<
     }
 
     const data = await response.json();
-    console.log("data.billings", data.billings);
 
     return role === "Doctor"
       ? (data.billings as BillingRecord[])

@@ -5,6 +5,9 @@ interface IAppointment extends Document {
   patient: mongoose.Types.ObjectId;
   clinic: mongoose.Types.ObjectId;
   appointmentDate: Date;
+  timeSlot: string;
+  treatments: mongoose.Types.ObjectId[]; // Assuming Treatment model
+  teeth: string[]; // Assuming teeth numbers like "11", "21" etc.
   status: "Scheduled" | "Completed" | "Cancelled";
   consultationType: "New" | "Follow-up";
   notes?: string;
@@ -21,6 +24,9 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
     patient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
     clinic: { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
     appointmentDate: { type: Date, required: true, index: true },
+    timeSlot: { type: String, required: true },
+    treatments: [{ type: String }],
+    teeth: [{ type: String, required: false }],
     status: {
       type: String,
       enum: ["Scheduled", "Completed", "Cancelled"],
@@ -35,12 +41,15 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     rescheduledAt: { type: Date },
     cancelledAt: { type: Date },
-    paymentStatus: { type: String, enum: ["Pending", "Paid", "Refunded"], default: "Pending" },
-    amount: { type: Number, required: false },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Paid", "Refunded"],
+      default: "Pending",
+    },
+    amount: { type: Number },
   },
   { timestamps: true }
 );
-
 
 // Prevent past appointments from being created
 AppointmentSchema.pre("save", function (next) {
@@ -50,4 +59,5 @@ AppointmentSchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models.Appointment || model<IAppointment>("Appointment", AppointmentSchema);
+export default mongoose.models.Appointment ||
+  model<IAppointment>("Appointment", AppointmentSchema);

@@ -8,6 +8,7 @@ export async function PUT(request: Request) {
     // Establish database connection
     await dbConnect();
 
+    // Parse request body
     const body = await request.json();
 
     // Ensure the appointment _id is provided in the request body.
@@ -29,12 +30,38 @@ export async function PUT(request: Request) {
       );
     }
 
+    // Ensure treatments and teeth are arrays
+    if (body.treatments && !Array.isArray(body.treatments)) {
+      return NextResponse.json(
+        { error: "Treatments should be an array" },
+        { status: 400 }
+      );
+    }
+    if (body.teeth && !Array.isArray(body.teeth)) {
+      return NextResponse.json(
+        { error: "Teeth should be an array" },
+        { status: 400 }
+      );
+    }
+
     const appointmentId = body._id;
 
-    // Update the appointment document; { new: true } returns the updated document.
+    // Update the appointment document with the provided body fields; { new: true } returns the updated document.
     const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
       appointmentId,
-      body,
+      {
+        $set: {
+          appointmentDate: body.appointmentDate,
+          status: body.status,
+          consultationType: body.consultationType,
+          timeSlot: body.timeSlot,
+          treatments: body.treatments, // Optional, will overwrite if provided
+          teeth: body.teeth, // Optional, will overwrite if provided
+          notes: body.notes, // Optional, will overwrite if provided
+          paymentStatus: body.paymentStatus, // Optional, will overwrite if provided
+          amount: body.amount, // Optional, will overwrite if provided
+        },
+      },
       { new: true, runValidators: true }
     );
 
@@ -50,7 +77,7 @@ export async function PUT(request: Request) {
       { status: 200 }
     );
   } catch (error: unknown) {
-    console.error("Error fetching doctor details:", error);
+    console.error("Error updating appointment:", error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

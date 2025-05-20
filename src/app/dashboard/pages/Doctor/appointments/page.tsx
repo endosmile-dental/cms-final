@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  teethOptions,
+  timeSlots,
+  treatmentOptions,
+} from "@/app/components/BookAppointmentForm";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 // Modal component with children in its props
 interface ModalProps {
@@ -69,6 +75,9 @@ export default function DoctorAppointments() {
     appointmentDate: string;
     status: "Scheduled" | "Completed" | "Cancelled";
     consultationType: "New" | "Follow-up";
+    timeSlot: string;
+    treatments: string[]; // Assuming treatment names or IDs
+    teeth: string[];
   } | null>(null);
 
   // State for controlling the delete confirmation modal
@@ -136,18 +145,24 @@ export default function DoctorAppointments() {
       (appointment) => appointment._id === appointmentId
     );
     if (appointmentToEdit) {
+      console.log("appointmentToEdit", appointmentToEdit);
+
       setEditForm({
         _id: appointmentToEdit._id,
         appointmentDate: appointmentToEdit.appointmentDate,
         status: appointmentToEdit.status,
         consultationType: appointmentToEdit.consultationType,
+        timeSlot: appointmentToEdit.timeSlot || "",
+        treatments: appointmentToEdit.treatments || [],
+        teeth: appointmentToEdit.teeth || [],
       });
+
       setIsEditModalOpen(true);
     }
   };
 
   // Handle form field changes in the edit modal
-  const handleEditFormChange = (field: string, value: string) => {
+  const handleEditFormChange = (field: string, value: string | string[]) => {
     if (editForm) {
       setEditForm({
         ...editForm,
@@ -168,7 +183,11 @@ export default function DoctorAppointments() {
           appointmentDate: editForm.appointmentDate,
           status: editForm.status,
           consultationType: editForm.consultationType,
+          timeSlot: editForm.timeSlot,
+          treatments: editForm.treatments,
+          teeth: editForm.teeth,
         };
+
         dispatch(editAppointment(updatedAppointment));
 
         setIsEditModalOpen(false);
@@ -196,6 +215,24 @@ export default function DoctorAppointments() {
     setIsDeleteModalOpen(false);
     setDeleteId(null);
   };
+
+  const handleMultiSelectChange = (field: string, values: string[]) => {
+    if (editForm) {
+      setEditForm({
+        ...editForm,
+        [field]: values,
+      });
+    }
+  };
+
+  const treatmentOptionsForSelect = useMemo(
+    () => treatmentOptions.map((option) => ({ label: option, value: option })),
+    []
+  );
+  const teethOptionsForSelect = useMemo(
+    () => teethOptions.map((option) => ({ label: option, value: option })),
+    []
+  );
 
   const columns: ColumnDefinition<TransformedAppointment>[] = [
     { header: "ID", accessor: (row) => row.patientId },
@@ -311,6 +348,63 @@ export default function DoctorAppointments() {
                 className="w-full"
               />
             </div>
+
+            {/* Time Slot */}
+            <div>
+              <label className="block mb-1 text-sm font-medium">
+                Time Slot
+              </label>
+              <Select
+                onValueChange={(value) =>
+                  handleEditFormChange("timeSlot", value)
+                }
+                value={editForm.timeSlot}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Time Slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((slot) => (
+                    <SelectItem key={slot} value={slot}>
+                      {slot}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Treatments */}
+            <div>
+              <label className="block mb-1 text-sm font-medium">
+                Treatments
+              </label>
+              <MultiSelect
+                options={treatmentOptionsForSelect}
+                onValueChange={(values) =>
+                  handleMultiSelectChange("treatments", values)
+                }
+                defaultValue={editForm?.treatments}
+                placeholder="Select treatments"
+                variant="secondary"
+                maxCount={3}
+              />
+            </div>
+
+            {/* Teeth */}
+            <div>
+              <label className="block mb-1 text-sm font-medium">Teeth</label>
+              <MultiSelect
+                options={teethOptionsForSelect}
+                onValueChange={(values) =>
+                  handleMultiSelectChange("teeth", values)
+                }
+                defaultValue={editForm?.teeth}
+                placeholder="Select teeth"
+                variant="secondary"
+                maxCount={5}
+              />
+            </div>
+
             <div>
               <label className="block mb-1 text-sm font-medium">Status</label>
               <Select

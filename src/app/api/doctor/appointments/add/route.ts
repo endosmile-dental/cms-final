@@ -5,30 +5,31 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    // Connect to the database
     await dbConnect();
 
-    // Parse the JSON body from the request
     const body = await request.json();
     console.log("body", body);
 
-    // Destructure the required fields from the request body
     const {
-      doctor, // This is doctors User Id
+      doctor, // User ID
       patient,
       appointmentDate,
       consultationType,
       createdBy,
       notes,
+      timeSlot,
+      treatments,
+      teeth,
     } = body;
 
-    // Basic validation: check required fields
+    // Validate required fields
     if (
       !doctor ||
       !patient ||
       !appointmentDate ||
       !consultationType ||
-      !createdBy
+      !createdBy ||
+      !timeSlot
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -36,27 +37,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Fetch doctor info to extract internal ID and clinic ID
     const doctorInfo = await DoctorModel.findOne({ userId: doctor });
+    if (!doctorInfo) {
+      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+    }
 
-    console.log("doctorInfo", doctorInfo);
-
-    // Create a new appointment document.
-    // Note: Mongoose's pre-save hook will validate that the appointmentDate is in the future.
     const appointment = new AppointmentModel({
-      doctor: doctorInfo?._id,
-      clinic: doctorInfo?.clinicId,
+      doctor: doctorInfo._id,
+      clinic: doctorInfo.clinicId,
       patient,
       appointmentDate,
       consultationType,
       createdBy,
       notes,
-      status: "Scheduled", // You can set the default status here
+      timeSlot,
+      treatments, // should be array of strings or ObjectIds
+      teeth, // should be array of numbers or strings
+      status: "Scheduled",
     });
 
-    // Save the appointment to the database
+    console.log("appointment", appointment);
+    
+
     const savedAppointment = await appointment.save();
 
-    // Return the created appointment with a 201 status code.
     return NextResponse.json(
       { appointment: savedAppointment },
       { status: 201 }
@@ -64,12 +69,11 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error("Error creating appointment:", error);
 
-    let errorMessage = "Internal Server Error";
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
+      { status: 500 }
+    );
   }
 }
