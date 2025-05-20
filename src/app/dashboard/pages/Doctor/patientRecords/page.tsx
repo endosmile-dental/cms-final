@@ -18,14 +18,14 @@ import {
   Mail,
   Edit,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
 import EditPatientModal from "../../../../components/EditPatientModal";
 import { useSession } from "next-auth/react";
 import { fetchPatients } from "@/app/redux/slices/patientSlice";
-import PatientListCard from "@/app/components/PatientListCard";
+import PatientTable from "@/app/components/PatientListCard";
 
 export default function PatientRecords() {
   const [searchInput, setSearchInput] = useState("");
@@ -36,6 +36,8 @@ export default function PatientRecords() {
   const patients = useAppSelector(selectPatients);
   const dispatch = useAppDispatch();
   const { data: session } = useSession();
+
+  const suggestionBoxRef = useRef<HTMLUListElement | null>(null);
 
   const stats: Stat[] = [
     {
@@ -108,6 +110,23 @@ export default function PatientRecords() {
     }
   }, [patients, selectedPatient]);
 
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        suggestionBoxRef.current &&
+        !suggestionBoxRef.current.contains(event.target as Node)
+      ) {
+        setSuggestions([]);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -125,7 +144,10 @@ export default function PatientRecords() {
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {suggestions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
+              <ul
+                ref={suggestionBoxRef}
+                className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto"
+              >
                 {suggestions.map((patient, index) => (
                   <li
                     key={index}
@@ -290,15 +312,7 @@ export default function PatientRecords() {
             </div>
           </>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {patients.map((patient) => (
-              <PatientListCard
-                key={patient._id}
-                patient={patient}
-                onSelect={handleSelectSuggestion}
-              />
-            ))}
-          </div>
+          <PatientTable patients={patients} onSelect={handleSelectSuggestion} />
         )}
       </div>
     </DashboardLayout>
