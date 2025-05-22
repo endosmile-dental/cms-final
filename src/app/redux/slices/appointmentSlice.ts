@@ -170,6 +170,7 @@ export const fetchAvailability = createAsyncThunk<
       const data = await response.json();
       return data.bookedSlots; // Directly access bookedSlots from response
     } catch (error) {
+      console.error("Error checking availability:", error);
       return rejectWithValue("Error checking availability");
     }
   }
@@ -270,5 +271,6 @@ export const { addAppointment, updateAppointment, deleteAppointment } =
   appointmentSlice.actions;
 export const selectAppointments = (state: RootState) =>
   state.appointment.appointments;
-export const selectBookedSlots = (state: RootState) => state.appointment.bookedSlots;
+export const selectBookedSlots = (state: RootState) =>
+  state.appointment.bookedSlots;
 export default appointmentSlice.reducer;
