@@ -104,4 +104,7 @@ const doctorSlice = createSlice({
 
 // Export actions & reducer
 export const { clearDoctors } = doctorSlice.actions;
+export const selectDoctors = (state: { doctors: DoctorsState }) =>
+  state.doctors.doctors;
+
 export default doctorSlice.reducer;

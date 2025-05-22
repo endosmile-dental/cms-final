@@ -28,12 +28,14 @@ export interface Appointment {
 
 interface AppointmentState {
   appointments: Appointment[];
+  bookedSlots: string[]; // holds booked time slots strings for quick reference
   loading: boolean;
   error: string | null;
 }
 
 const initialState: AppointmentState = {
   appointments: [],
+  bookedSlots: [],
   loading: false,
   error: null,
 };
@@ -145,6 +147,34 @@ export const removeAppointment = createAsyncThunk(
   }
 );
 
+// Modify fetchAvailability thunk to return only booked time slots (strings)
+export const fetchAvailability = createAsyncThunk<
+  string[], // return type: array of booked time slot strings
+  { doctorId: string; date: string },
+  { rejectValue: string }
+>(
+  "appointments/fetchAvailability",
+  async ({ doctorId, date }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(
+        `/api/patient/appointments/availability?doctorId=${doctorId}&date=${date}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(
+          errorData.message || "Availability check failed"
+        );
+      }
+
+      const data = await response.json();
+      return data.bookedSlots; // Directly access bookedSlots from response
+    } catch (error) {
+      return rejectWithValue("Error checking availability");
+    }
+  }
+);
+
 const appointmentSlice = createSlice({
   name: "appointment",
   initialState,
@@ -226,7 +256,13 @@ const appointmentSlice = createSlice({
       .addCase(removeAppointment.rejected, (state, action) => {
         state.error =
           (action.payload as string) || "Failed to delete appointment";
-      });
+      })
+      .addCase(
+        fetchAvailability.fulfilled,
+        (state, action: PayloadAction<string[]>) => {
+          state.bookedSlots = action.payload; // Store only time slots here
+        }
+      );
   },
 });
 
@@ -234,4 +270,5 @@ export const { addAppointment, updateAppointment, deleteAppointment } =
   appointmentSlice.actions;
 export const selectAppointments = (state: RootState) =>
   state.appointment.appointments;
+export const selectBookedSlots = (state: RootState) => state.appointment.bookedSlots;
 export default appointmentSlice.reducer;

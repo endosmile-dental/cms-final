@@ -26,7 +26,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { createAppointment } from "@/app/redux/slices/appointmentSlice";
+import {
+  createAppointment,
+  selectAppointments,
+} from "@/app/redux/slices/appointmentSlice";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -35,6 +38,7 @@ import type {
   AppointmentStatus,
 } from "@/app/redux/slices/appointmentSlice";
 import { PreviewDialog } from "./PreviewDialog";
+import { selectDoctors } from "../redux/slices/doctorSlice";
 
 export const timeSlots = [
   "10:00 AM",
@@ -187,9 +191,32 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
   const [modalError, setModalError] = useState("");
 
   const { data: session } = useSession();
+  const doctorId = session?.user?.id;
   const patients = useAppSelector(selectPatients);
+  const appointments = useAppSelector(selectAppointments);
+  const doctors = useAppSelector(selectDoctors);
+
   const router = useRouter();
   const dispatch = useAppDispatch();
+
+  // Find the doctor document that matches the logged-in user's ID
+  const currentDoctor = useMemo(
+    () => doctors.find((d) => d.userId === session?.user?.id),
+    [doctors, session?.user?.id]
+  );
+
+  const bookedSlots = useMemo(() => {
+    if (!currentDoctor?._id || !appointmentData.appointmentDate) return [];
+    const selectedDate = format(appointmentData.appointmentDate, "yyyy-MM-dd");
+
+    return appointments
+      .filter(
+        (appt) =>
+          appt.doctor === currentDoctor._id &&
+          format(new Date(appt.appointmentDate), "yyyy-MM-dd") === selectedDate
+      )
+      .map((appt) => appt.timeSlot);
+  }, [appointments, appointmentData.appointmentDate, currentDoctor?._id]);
 
   const treatmentOptionsForSelect = useMemo(
     () => treatmentOptions.map((option) => ({ label: option, value: option })),
@@ -252,7 +279,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
 
     try {
       const payload = {
-        doctor: session?.user?.id,
+        doctor: doctorId,
         patient: previewData.patient,
         appointmentDate: format(
           previewData.appointmentDate,
@@ -264,7 +291,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
         treatments: previewData.treatments,
         teeth: previewData.teeth,
         notes: previewData.notes,
-        createdBy: session?.user?.id,
+        createdBy: doctorId,
       };
 
       const result = await dispatch(createAppointment(payload));
@@ -361,15 +388,23 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
               <SelectValue placeholder="Select Time Slot" />
             </SelectTrigger>
             <SelectContent className="max-h-52 overflow-y-auto border shadow-md">
-              {timeSlots.map((slot) => (
-                <SelectItem
-                  key={slot}
-                  value={slot}
-                  className="cursor-pointer px-4 py-2 hover:bg-accent hover:text-accent-foreground"
-                >
-                  {slot}
-                </SelectItem>
-              ))}
+              {timeSlots.map((slot) => {
+                const isBooked = bookedSlots.includes(slot);
+                return (
+                  <SelectItem
+                    key={slot}
+                    value={slot}
+                    disabled={isBooked}
+                    className={`cursor-pointer px-4 py-2 ${
+                      isBooked
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {slot} {isBooked && "(Booked)"}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

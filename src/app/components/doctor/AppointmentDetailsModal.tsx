@@ -15,6 +15,7 @@ import {
   TableCell,
   TableHead,
 } from "@/components/ui/table";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 interface Appointment {
   patientName: string;
@@ -25,7 +26,7 @@ interface Appointment {
 
 interface AppointmentDetailsModalProps {
   date: Date;
-  appointments: Appointment[]; // Array of appointments for this date
+  appointments: Appointment[];
   onClose: () => void;
 }
 
@@ -42,6 +43,9 @@ const AppointmentDetailsModal = ({
           <DialogTitle className="text-lg font-semibold">
             Appointments for {format(date, "PPP")}
           </DialogTitle>
+          <DialogDescription className="text-sm text-gray-500">
+            Below is a list of all patient appointments scheduled on this date.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 overflow-x-auto">
@@ -57,14 +61,10 @@ const AppointmentDetailsModal = ({
               </TableHeader>
               <TableBody>
                 {appointments.map((appointment, index) => {
-                  // Check if teeth and treatments are arrays
-
-                  const treatments = Array.isArray(appointment.treatments)
-                    ? appointment.treatments.join(", ")
-                    : appointment.treatments || "Not specified";
-
-                  console.log(treatments, "treatments");
-
+                  const isTeethArray = Array.isArray(appointment.teeth);
+                  const isTreatmentsArray = Array.isArray(
+                    appointment.treatments
+                  );
                   return (
                     <TableRow key={index}>
                       <TableCell className="text-sm">
@@ -73,11 +73,12 @@ const AppointmentDetailsModal = ({
                       <TableCell className="text-sm">
                         {appointment?.timeSlot || "N/A"}
                       </TableCell>
+
                       <TableCell className="text-sm">
-                        {Array.isArray(appointment.teeth) ? (
+                        {isTeethArray ? (
                           <div className="flex flex-wrap gap-1">
-                            {appointment.teeth.map(
-                              (tooth: string, idx: number) => (
+                            {(appointment.teeth as string[]).map(
+                              (tooth, idx) => (
                                 <span
                                   key={idx}
                                   className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full"
@@ -95,10 +96,10 @@ const AppointmentDetailsModal = ({
                       </TableCell>
 
                       <TableCell className="text-sm">
-                        {Array.isArray(appointment.treatments) ? (
+                        {isTreatmentsArray ? (
                           <div className="flex flex-wrap gap-1">
-                            {appointment.treatments.map(
-                              (treatment: string, idx: number) => (
+                            {(appointment.treatments as string[]).map(
+                              (treatment, idx) => (
                                 <span
                                   key={idx}
                                   className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full"
