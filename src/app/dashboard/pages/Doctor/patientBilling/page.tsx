@@ -49,7 +49,7 @@ export default function PatientRecords() {
   // Manage dynamic treatments array state.
   // Note: Use number for price and quantity
   const [treatments, setTreatments] = useState([
-    { treatment: "", price: 0, quantity: 0 },
+    { treatment: "", price: 0, quantity: 1 },
   ]);
 
   // Initialize react-hook-form using the centralized Zod schema.
