@@ -2,7 +2,6 @@
 
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
-import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,8 @@ import {
   MapPin,
   Mail,
   Edit,
+  DollarSign,
+  Calendar,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -26,6 +27,9 @@ import EditPatientModal from "../../../../components/EditPatientModal";
 import { useSession } from "next-auth/react";
 import { fetchPatients } from "@/app/redux/slices/patientSlice";
 import PatientTable from "@/app/components/PatientListCard";
+import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import { selectBillings } from "@/app/redux/slices/billingSlice";
+import TwoLineDashboardChart from "@/app/components/TwoLineDashboardChart";
 
 export default function PatientRecords() {
   const [searchInput, setSearchInput] = useState("");
@@ -34,10 +38,13 @@ export default function PatientRecords() {
   const [isEditModalOpen, setEditModalOpen] = useState(false);
 
   const patients = useAppSelector(selectPatients);
+  const appointments = useAppSelector(selectAppointments);
+  const billings = useAppSelector(selectBillings);
   const dispatch = useAppDispatch();
   const { data: session } = useSession();
 
   const suggestionBoxRef = useRef<HTMLUListElement | null>(null);
+  const [timeFrame, setTimeFrame] = useState<"monthly" | "yearly">("monthly");
 
   const stats: Stat[] = [
     {
@@ -69,6 +76,68 @@ export default function PatientRecords() {
       LinkURL: "",
     },
   ];
+
+  // Add these utility functions
+  const processChartData = (
+    appointments: any[],
+    billings: any[],
+    timeFrame: "monthly" | "yearly"
+  ) => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return timeFrame === "yearly"
+        ? `${date.getFullYear()}`
+        : `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`;
+    };
+
+    // Process appointments
+    const appointmentCounts = appointments.reduce((acc, appointment) => {
+      const month = formatDate(appointment.appointmentDate);
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Process treatments from billings
+    const treatmentCounts = billings.reduce((acc, billing) => {
+      const month = formatDate(billing.date);
+      const treatmentsCount = billing.treatments?.length || 0;
+      acc[month] = (acc[month] || 0) + treatmentsCount;
+      return acc;
+    }, {});
+
+    console.log(appointmentCounts, "appointmentCounts");
+    console.log(treatmentCounts, "treatmentCounts");
+
+    // Combine data
+    const allMonths = Array.from(
+      new Set([
+        ...Object.keys(appointmentCounts),
+        ...Object.keys(treatmentCounts),
+      ])
+    ).sort();
+
+    return allMonths.map((month) => ({
+      date: month,
+      appointments: appointmentCounts[month] || 0,
+      treatments: treatmentCounts[month] || 0,
+    }));
+  };
+
+  // functions to filter patient-specific data
+  const getPatientAppointments = (patientId: string) => {
+    const appt = appointments.filter((appointment) => {
+      // console.log(appointment.patient, patientId, "patientId");
+      return appointment?.patient === patientId;
+    });
+    // console.log("appt", appt);
+    return appt;
+  };
+
+  const getPatientBillings = (patientId: string) => {
+    return billings.filter((billing) => billing.patientId === patientId);
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -200,11 +269,11 @@ export default function PatientRecords() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Contact:</span>{" "}
+                  <span className="text-gray-500">Contact:</span>
                   {selectedPatient.contactNumber || "NA"}
                 </div>
                 <div>
-                  <span className="text-gray-500">Gender:</span>{" "}
+                  <span className="text-gray-500">Gender:</span>
                   {selectedPatient.gender || "NA"}
                 </div>
                 <div>
@@ -223,7 +292,15 @@ export default function PatientRecords() {
             <DashboardCards stats={stats} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <DashboardChart />
+              <TwoLineDashboardChart
+                data={processChartData(
+                  getPatientAppointments(selectedPatient._id),
+                  getPatientBillings(selectedPatient.PatientId),
+                  timeFrame
+                )}
+                timeFrame={timeFrame}
+                setTimeFrame={setTimeFrame}
+              />
               <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
                 <div>
                   <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -275,8 +352,125 @@ export default function PatientRecords() {
               </div>
             </div>
 
-            <h2>TODO: Medical History Table</h2>
-            <h2>TODO: Prescription Table</h2>
+            <div className="space-y-6">
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <Calendar className="text-purple-500" size={20} />
+                  Appointment History
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-600 border-b">
+                        <th className="pb-3">Date</th>
+                        <th className="pb-3">Time</th>
+                        <th className="pb-3">Teeth</th>
+                        <th className="pb-3">Type</th>
+                        <th className="pb-3">Status</th>
+                        <th className="pb-3">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getPatientAppointments(selectedPatient._id).map(
+                        (appointment) => (
+                          <tr
+                            key={appointment._id}
+                            className="border-b last:border-b-0"
+                          >
+                            <td className="py-3">
+                              {new Date(
+                                appointment.appointmentDate
+                              ).toLocaleDateString()}
+                            </td>
+                            <td>{appointment.timeSlot}</td>
+                            <td>{appointment.teeth?.join(", ")}</td>
+                            <td>{appointment.consultationType}</td>
+                            <td>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs ${
+                                  appointment.status === "Completed"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                                }`}
+                              >
+                                {appointment.status}
+                              </span>
+                            </td>
+                            <td className="max-w-xs truncate">
+                              {appointment.notes}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                      {getPatientAppointments(selectedPatient._id).length ===
+                        0 && (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="text-center py-4 text-gray-500"
+                          >
+                            No appointment history found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <DollarSign className="text-green-500" size={20} />
+                  Billing History
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-600 border-b">
+                        <th className="pb-3">Date</th>
+                        <th className="pb-3">Treatments</th>
+                        <th className="pb-3">Amount</th>
+                        <th className="pb-3">Discount</th>
+                        <th className="pb-3">Mode</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getPatientBillings(selectedPatient.PatientId).map(
+                        (billing) => (
+                          <tr
+                            key={billing._id}
+                            className="border-b last:border-b-0"
+                          >
+                            <td className="py-3">
+                              {new Date(billing.date).toLocaleDateString()}
+                            </td>
+                            <td>
+                              {billing.treatments
+                                ?.map((treatment) => treatment.treatment) // Replace 'name' with the actual property you want to display
+                                .join(", ") || "No treatments"}
+                            </td>
+                            <td>Rs{billing.totalAmount.toFixed(2)}</td>
+                            <td>{billing.discount}</td>
+                            <td>{billing.modeOfPayment}</td>
+                          </tr>
+                        )
+                      )}
+                      {getPatientBillings(selectedPatient.PatientId).length ===
+                        0 && (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="text-center py-4 text-gray-500"
+                          >
+                            No billing records found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
