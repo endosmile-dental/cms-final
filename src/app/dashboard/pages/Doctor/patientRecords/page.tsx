@@ -27,8 +27,11 @@ import EditPatientModal from "../../../../components/EditPatientModal";
 import { useSession } from "next-auth/react";
 import { fetchPatients } from "@/app/redux/slices/patientSlice";
 import PatientTable from "@/app/components/PatientListCard";
-import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
-import { selectBillings } from "@/app/redux/slices/billingSlice";
+import {
+  Appointment,
+  selectAppointments,
+} from "@/app/redux/slices/appointmentSlice";
+import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import TwoLineDashboardChart from "@/app/components/TwoLineDashboardChart";
 
 export default function PatientRecords() {
@@ -79,8 +82,8 @@ export default function PatientRecords() {
 
   // Add these utility functions
   const processChartData = (
-    appointments: any[],
-    billings: any[],
+    appointments: Appointment[],
+    billings: BillingRecord[],
     timeFrame: "monthly" | "yearly"
   ) => {
     const formatDate = (dateString: string) => {
@@ -93,19 +96,25 @@ export default function PatientRecords() {
     };
 
     // Process appointments
-    const appointmentCounts = appointments.reduce((acc, appointment) => {
-      const month = formatDate(appointment.appointmentDate);
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {});
+    const appointmentCounts = appointments.reduce<Record<string, number>>(
+      (acc, appointment) => {
+        const month = formatDate(appointment.appointmentDate);
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
 
     // Process treatments from billings
-    const treatmentCounts = billings.reduce((acc, billing) => {
-      const month = formatDate(billing.date);
-      const treatmentsCount = billing.treatments?.length || 0;
-      acc[month] = (acc[month] || 0) + treatmentsCount;
-      return acc;
-    }, {});
+    const treatmentCounts = billings.reduce<Record<string, number>>(
+      (acc, billing) => {
+        const month = formatDate(billing.date);
+        const treatmentsCount = billing.treatments?.length || 0;
+        acc[month] = (acc[month] || 0) + treatmentsCount;
+        return acc;
+      },
+      {}
+    );
 
     console.log(appointmentCounts, "appointmentCounts");
     console.log(treatmentCounts, "treatmentCounts");
