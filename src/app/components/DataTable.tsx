@@ -1,0 +1,184 @@
+"use client";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+type ColumnDef<T> = {
+  header: string;
+  accessorKey: keyof T;
+  sortable?: boolean;
+  render?: (value: any, row: T) => React.ReactNode;
+};
+
+type DataTableProps<T> = {
+  data: T[];
+  title: string;
+  columns: ColumnDef<T>[];
+  searchFields?: (keyof T)[];
+  itemsPerPage?: number;
+  showSearch?: boolean; // Add this prop
+  onRowClick?: (row: T) => void;
+};
+
+const DataTable = <T extends object>({
+  data,
+  title,
+  columns,
+  searchFields,
+  showSearch = true,
+  itemsPerPage = 10,
+  onRowClick,
+}: DataTableProps<T>) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<keyof T | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [search, setSearch] = useState("");
+
+  const filteredData = useMemo(() => {
+    let result = [...data];
+
+    // Search implementation
+    if (search) {
+      const searchTerm = search.toLowerCase();
+      result = result.filter((item) =>
+        (searchFields ?? columns.map((c) => c.accessorKey)).some((key) =>
+          String(item[key]).toLowerCase().includes(searchTerm)
+        )
+      );
+    }
+
+    // Sorting implementation
+    if (sortKey) {
+      result.sort((a, b) => {
+        const valA = String(a[sortKey]).toLowerCase();
+        const valB = String(b[sortKey]).toLowerCase();
+
+        if (sortOrder === "asc") return valA.localeCompare(valB);
+        return valB.localeCompare(valA);
+      });
+    }
+
+    return result;
+  }, [data, search, sortKey, sortOrder, searchFields, columns]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(start, start + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
+
+  const handleSort = (key: keyof T) => {
+    if (sortKey === key) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortOrder("asc");
+    }
+  };
+
+  return (
+    <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
+      <div className="flex justify-between items-center">
+        {/* Conditionally render search bar */}
+        {showSearch && (
+          <Input
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full max-w-sm"
+          />
+        )}
+        {title && <h2 className="text-xl font-semibold">{title}</h2>}
+      </div>
+
+      <div className="w-full overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead
+                  key={String(column.accessorKey)}
+                  className={column.sortable ? "cursor-pointer" : ""}
+                  onClick={() =>
+                    column.sortable && handleSort(column.accessorKey)
+                  }
+                >
+                  <div className="flex items-center gap-1">
+                    {column.header}
+                    {column.sortable && sortKey === column.accessorKey && (
+                      <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
+                    )}
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedData.map((row, index) => (
+              <TableRow
+                key={index}
+                className={onRowClick ? "hover:bg-muted cursor-pointer" : ""}
+                onClick={() => onRowClick?.(row)}
+              >
+                {columns.map((column) => (
+                  <TableCell key={String(column.accessorKey)}>
+                    {column.render
+                      ? column.render(row[column.accessorKey], row)
+                      : String(row[column.accessorKey])}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+
+            {paginatedData.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-gray-500 py-4"
+                >
+                  No records found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-between items-center mt-2">
+        <span className="text-sm text-gray-600">
+          Page {currentPage} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={16} />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight size={16} />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DataTable;

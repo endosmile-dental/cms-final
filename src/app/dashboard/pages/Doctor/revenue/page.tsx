@@ -15,6 +15,8 @@ import {
   TrendingUp,
   PieChart,
 } from "lucide-react";
+import DataTable from "@/app/components/DataTable";
+
 
 export default function RevenueDashboard() {
   const billings = useAppSelector(selectBillings);
@@ -70,6 +72,55 @@ export default function RevenueDashboard() {
       monthlyRevenue,
     };
   }, [billings]);
+
+  const billingTableColumns = [
+    { 
+      header: "Invoice ID", 
+      accessorKey: "invoiceId" as const,
+      sortable: true 
+    },
+    { 
+      header: "Date", 
+      accessorKey: "date" as const,
+      sortable: true,
+      render: (value: string) => format(new Date(value), "yyyy-MM-dd")
+    },
+    { 
+      header: "Total Amount", 
+      accessorKey: "totalAmount" as const,
+      sortable: true,
+      render: (value: number) => `₹ ${value}`
+    },
+    { 
+      header: "Discount", 
+      accessorKey: "discount" as const,
+      sortable: true,
+      render: (value: number) => `₹ ${value}`
+    },
+    { 
+      header: "Received", 
+      accessorKey: "amountReceived" as const,
+      sortable: true,
+      render: (value: number) => `₹ ${value}`
+    },
+    { 
+      header: "Due", 
+      accessorKey: "amountDue" as const,
+      sortable: true,
+      render: (value: number) => `₹ ${value}`
+    },
+    { 
+      header: "Mode", 
+      accessorKey: "modeOfPayment" as const,
+      sortable: true 
+    },
+    { 
+      header: "Status", 
+      accessorKey: "status" as const,
+      sortable: true 
+    },
+  ];
+
 
   // Prepare stat cards
   const stats: Stat[] = [
@@ -129,30 +180,7 @@ export default function RevenueDashboard() {
     );
   }, [analytics.revenueByPaymentMode]);
 
-  // Optional: Table columns to display detailed billing records
-  const billingTableColumns = [
-    { header: "Invoice ID", accessor: (row: BillingRecord) => row.invoiceId },
-    {
-      header: "Date",
-      accessor: (row: BillingRecord) =>
-        format(new Date(row.date), "yyyy-MM-dd"),
-    },
-    {
-      header: "Total Amount",
-      accessor: (row: BillingRecord) => `₹ ${row.totalAmount}`,
-    },
-    {
-      header: "Discount",
-      accessor: (row: BillingRecord) => `₹ ${row.discount}`,
-    },
-    {
-      header: "Received",
-      accessor: (row: BillingRecord) => `₹ ${row.amountReceived}`,
-    },
-    { header: "Due", accessor: (row: BillingRecord) => `₹ ${row.amountDue}` },
-    { header: "Mode", accessor: (row: BillingRecord) => row.modeOfPayment },
-    { header: "Status", accessor: (row: BillingRecord) => row.status },
-  ];
+
 
   return (
     <DashboardLayout>
@@ -173,11 +201,17 @@ export default function RevenueDashboard() {
         </div>
 
         <div>
-          <ReusableTable
+           <DataTable
             title="Billing Details"
             data={billings}
             columns={billingTableColumns}
-            emptyMessage="No billing data available."
+            searchFields={[
+              'invoiceId', 
+              'date', 
+              'modeOfPayment', 
+              'status'
+            ]}
+            showSearch={true}
           />
         </div>
       </div>

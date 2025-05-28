@@ -5,7 +5,7 @@ import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { BookPlus, Edit, Trash } from "lucide-react";
+import { BookPlus, CalendarDays, Edit, FileClock, Trash } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
@@ -16,9 +16,6 @@ import {
   removeAppointment,
 } from "@/app/redux/slices/appointmentSlice";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
-import ReusableTable, {
-  ColumnDefinition,
-} from "@/app/dashboard/ui/DashboardTable";
 import {
   Select,
   SelectContent,
@@ -32,13 +29,16 @@ import {
   treatmentOptions,
 } from "@/app/components/BookAppointmentForm";
 import { MultiSelect } from "@/components/ui/multi-select";
+import DataTable from "@/app/components/DataTable";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
-// Modal component with children in its props
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
 }
+
 const Modal: React.FC<ModalProps> = ({ isOpen, children }) => {
   if (!isOpen) return null;
   return (
@@ -55,9 +55,15 @@ interface TransformedAppointment {
   patientId: string;
   patientName: string;
   date: string;
+  timeSlot: string;
   contactNumber: string;
   consultationType: "New" | "Follow-up";
   status: "Scheduled" | "Completed" | "Cancelled";
+  treatments: string[];
+  teeth: string[];
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function DoctorAppointments() {
@@ -67,8 +73,6 @@ export default function DoctorAppointments() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
-
-  // State for controlling the edit modal and its form fields
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<{
     _id: string;
@@ -76,16 +80,25 @@ export default function DoctorAppointments() {
     status: "Scheduled" | "Completed" | "Cancelled";
     consultationType: "New" | "Follow-up";
     timeSlot: string;
-    treatments: string[]; // Assuming treatment names or IDs
+    treatments: string[];
     teeth: string[];
   } | null>(null);
-
-  // State for controlling the delete confirmation modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const [openAppointmentDialog, setOpenAppointmentDialog] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<TransformedAppointment | null>(null);
+
   const getPatientInfo = (patientId: string) => {
     return patients.find((p) => p._id === patientId) || null;
+  };
+
+  type ColumnDef<T> = {
+    header: string;
+    accessorKey: keyof T;
+    sortable?: boolean;
+    render?: (value: unknown, row: T) => React.ReactNode;
   };
 
   const filteredAppointments = appointments.filter((appointment) => {
@@ -127,17 +140,84 @@ export default function DoctorAppointments() {
       const patientInfo = appointment.patient
         ? getPatientInfo(appointment.patient)
         : null;
+
       return {
         _id: appointment._id,
         patientId: patientInfo?.PatientId || "NA",
         patientName: patientInfo?.fullName || "NA",
         date: format(new Date(appointment.appointmentDate), "yyyy-MM-dd"),
+        timeSlot: appointment.timeSlot || "NA",
         contactNumber: patientInfo?.contactNumber || "NA",
         consultationType: appointment.consultationType,
         status: appointment.status,
+        treatments: appointment.treatments || [],
+        teeth: appointment.teeth || [],
+        notes: appointment.notes || "",
+        createdAt: appointment.createdAt,
+        updatedAt: appointment.updatedAt,
       };
     });
   };
+
+  const columns = useMemo(
+    () =>
+      [
+        {
+          header: "ID",
+          accessorKey: "patientId",
+          sortable: true,
+        },
+        {
+          header: "Patient",
+          accessorKey: "patientName",
+          sortable: true,
+        },
+        {
+          header: "Date",
+          accessorKey: "date",
+          sortable: true,
+        },
+        {
+          header: "Contact",
+          accessorKey: "contactNumber",
+          sortable: true,
+        },
+        {
+          header: "Type",
+          accessorKey: "consultationType",
+          sortable: true,
+        },
+        {
+          header: "Status",
+          accessorKey: "status",
+          sortable: true,
+        },
+        {
+          header: "Actions",
+          accessorKey: "_id",
+          sortable: false,
+          render: (_: unknown, row: TransformedAppointment) => (
+            <div className="flex space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditAppointment(row._id)}
+              >
+                <Edit size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteAppointment(row._id)}
+              >
+                <Trash size={16} />
+              </Button>
+            </div>
+          ),
+        },
+      ] as ColumnDef<TransformedAppointment>[],
+    []
+  );
 
   // Open modal with appointment data to edit
   const handleEditAppointment = (appointmentId: string) => {
@@ -234,42 +314,13 @@ export default function DoctorAppointments() {
     []
   );
 
-  const columns: ColumnDefinition<TransformedAppointment>[] = [
-    { header: "ID", accessor: (row) => row.patientId },
-    { header: "Patient", accessor: (row) => row.patientName },
-    { header: "Date", accessor: (row) => row.date },
-    { header: "Contact", accessor: (row) => row.contactNumber },
-    { header: "Type", accessor: (row) => row.consultationType },
-    { header: "Status", accessor: (row) => row.status },
-    {
-      header: "Actions",
-      accessor: (row) => (
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEditAppointment(row._id)}
-          >
-            <Edit size={16} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteAppointment(row._id)}
-          >
-            <Trash size={16} />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+  // Rest of the code (handleEditAppointment, handleDeleteAppointment, modals, etc.) remains the same
 
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <h1 className="text-3xl font-bold">Appointments</h1>
-          {/* Filters & Search */}
           <div className="flex flex-1 flex-wrap items-center gap-2 justify-center md:justify-end mt-4 md:mt-0">
             <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
               <Button variant="default" className="w-full sm:w-auto">
@@ -277,62 +328,50 @@ export default function DoctorAppointments() {
                 Add New
               </Button>
             </Link>
-            <Input
-              type="text"
-              placeholder="Search appointments..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-64"
-            />
-            <Select
-              onValueChange={(value) =>
-                setFilterStatus(value !== "all" ? value : null)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="Scheduled">Scheduled</SelectItem>
-                <SelectItem value="Completed">Completed</SelectItem>
-                <SelectItem value="Cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              onValueChange={(value) =>
-                setFilterType(value !== "all" ? value : null)
-              }
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Filter by Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Follow-up">Follow-up</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <Separator />
-        {/* Upcoming Appointments */}
-        <ReusableTable
+
+        <DataTable
           title="Upcoming Appointments"
           data={transformData(upcomingAppointments)}
           columns={columns}
-          emptyMessage="No upcoming appointments found."
+          searchFields={[
+            "patientName",
+            "patientId",
+            "consultationType",
+            "status",
+            "date",
+            "contactNumber",
+          ]}
+          itemsPerPage={5}
+          onRowClick={(row) => {
+            setSelectedAppointment(row);
+            setOpenAppointmentDialog(true);
+          }}
         />
-        {/* Past Appointments */}
-        <ReusableTable
+
+        <DataTable
           title="Past Appointments"
           data={transformData(pastAppointments)}
           columns={columns}
-          emptyMessage="No past appointments found."
+          searchFields={[
+            "patientName",
+            "patientId",
+            "consultationType",
+            "status",
+            "date",
+            "contactNumber",
+          ]}
+          itemsPerPage={5}
+          onRowClick={(row) => {
+            setSelectedAppointment(row);
+            setOpenAppointmentDialog(true);
+          }}
         />
-      </div>
 
-      {/* Edit Appointment Modal */}
+        {/* Edit and Delete Modals remain unchanged */}
+      </div>
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
         {editForm && (
@@ -473,6 +512,130 @@ export default function DoctorAppointments() {
           </div>
         </div>
       </Modal>
+
+      <Dialog
+        open={openAppointmentDialog}
+        onOpenChange={setOpenAppointmentDialog}
+      >
+        <DialogContent className="max-w-2xl animate-fade-in">
+          <DialogTitle className="text-2xl font-bold mb-4">
+            <CalendarDays className="inline-block mr-2 h-6 w-6" />
+            Appointment Details
+          </DialogTitle>
+
+          {selectedAppointment ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Appointment ID</p>
+                <p className="font-medium">
+                  {selectedAppointment._id.slice(-5)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Date</p>
+                <p className="font-medium">
+                  {new Date(selectedAppointment.date).toLocaleDateString()}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Time Slot</p>
+                <p className="font-medium">
+                  {selectedAppointment.timeSlot || "N/A"}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Consultation Type</p>
+                <p className="font-medium">
+                  {selectedAppointment.consultationType}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-muted-foreground">Status</p>
+                <Badge
+                  variant={
+                    selectedAppointment.status === "Scheduled"
+                      ? "secondary"
+                      : "default"
+                  }
+                  className="capitalize"
+                >
+                  {selectedAppointment.status}
+                </Badge>
+              </div>
+
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Treatments</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedAppointment.treatments?.length > 0 ? (
+                    selectedAppointment.treatments.map((t) => (
+                      <Badge key={t} variant="outline">
+                        {t}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="font-medium">N/A</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Teeth</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedAppointment.teeth?.length > 0 ? (
+                    selectedAppointment.teeth.map((tooth) => (
+                      <Badge key={tooth} variant="outline">
+                        {tooth}
+                      </Badge>
+                    ))
+                  ) : (
+                    <p className="font-medium">N/A</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Notes</p>
+                <p className="font-medium">
+                  {selectedAppointment.notes || "N/A"}
+                </p>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Created At</p>
+                  <p className="font-medium">
+                    {new Date(
+                      selectedAppointment.createdAt || ""
+                    ).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Updated At */}
+              <div className="flex items-start gap-2">
+                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Updated At</p>
+                  <p className="font-medium">
+                    {new Date(
+                      selectedAppointment.updatedAt || ""
+                    ).toLocaleString()}{" "}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              No appointment selected.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

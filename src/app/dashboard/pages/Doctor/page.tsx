@@ -8,7 +8,6 @@ import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import DashboardCalendar, {
   AppointmentDateDetailed,
 } from "@/app/dashboard/ui/DashboardCalendar";
-import { ColumnDefinition } from "@/app/dashboard/ui/DashboardTable";
 import {
   Syringe,
   User,
@@ -27,52 +26,28 @@ import { ChartConfig } from "@/components/ui/chart";
 import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 import IconButtonWithTooltip from "@/app/components/IconButtonWithTooltip";
+import DataTable from "@/app/components/DataTable";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
-// Define a type for a treatment
 interface BillingTreatment {
   treatment: string;
   quantity?: number;
 }
 
-export interface PatientData {
-  patient: string;
-  contact: string;
-  gender: "Male" | "Female" | "Other";
-  registeredAt: string;
-}
-
-const patientColumns: ColumnDefinition<PatientData>[] = [
-  {
-    header: "Patient",
-    accessor: (row) => row.patient,
-  },
-  {
-    header: "Contact",
-    accessor: (row) => row.contact,
-  },
-  {
-    header: "Gender",
-    accessor: (row) => row.gender,
-  },
-  {
-    header: "Registration",
-    accessor: (row) => row.registeredAt,
-  },
-];
-
 export default function DoctorDashboard() {
   const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
-  const profile = useAppSelector((state) => {
-    return state?.profile?.profile as ProfileData;
-  });
+  const profile = useAppSelector(
+    (state) => state?.profile?.profile as ProfileData
+  );
   const { data: session } = useSession();
 
   const [tableData, setTableData] = useState<
     {
+      id: string;
       patient: string;
       contact: string;
       gender: "Male" | "Female" | "Other";
@@ -81,7 +56,8 @@ export default function DoctorDashboard() {
     }[]
   >([]);
 
-  // Prepare table data from patients
+  const router = useRouter();
+
   useEffect(() => {
     if (patients) {
       const options: Intl.DateTimeFormatOptions = {
@@ -96,6 +72,7 @@ export default function DoctorDashboard() {
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
         .map((patient) => ({
+          id: patient._id,
           patient: patient.fullName,
           contact: patient.contactNumber,
           gender: patient.gender,
@@ -112,21 +89,20 @@ export default function DoctorDashboard() {
     }
   }, [patients]);
 
-  const totalRevenue = useMemo(() => {
-    return (
+  const totalRevenue = useMemo(
+    () =>
       billings?.reduce(
         (sum, billing) => sum + (billing.amountReceived || 0),
         0
-      ) || 0
-    );
-  }, [billings]);
+      ) || 0,
+    [billings]
+  );
 
-  // Combine multiple appointment calculations into one aggregated pass
   const aggregatedAppointments = useMemo(() => {
     const result = {
       followUps: 0,
       pending: 0,
-      upcoming: 0, // NEW
+      upcoming: 0,
       monthly: {} as Record<string, { completed: number; scheduled: number }>,
       weekly: {} as Record<string, { completed: number; scheduled: number }>,
       yearly: {} as Record<string, { completed: number; scheduled: number }>,
@@ -140,42 +116,42 @@ export default function DoctorDashboard() {
     appointments.forEach((appointment) => {
       const appointmentDate = new Date(appointment.appointmentDate);
 
-      // Count consultation types
-      if (appointment.consultationType === "Follow-up") {
-        result.followUps += 1;
-      } else if (appointment.consultationType === "New") {
-        result.pending += 1;
-      }
+      if (appointment.consultationType === "Follow-up") result.followUps++;
+      else if (appointment.consultationType === "New") result.pending++;
 
-      // Check for upcoming appointments
       if (
         appointmentDate >= today &&
         !["Completed", "Cancelled"].includes(appointment.status)
       ) {
-        result.upcoming += 1;
+        result.upcoming++;
       }
 
-      // Aggregate date-based stats
       const month = format(appointmentDate, "MMM");
       const week = format(appointmentDate, "wo");
       const year = format(appointmentDate, "yyyy");
       result.uniqueDates.add(format(appointmentDate, "yyyy-MM-dd"));
 
-      if (!result.monthly[month])
-        result.monthly[month] = { completed: 0, scheduled: 0 };
-      if (!result.weekly[week])
-        result.weekly[week] = { completed: 0, scheduled: 0 };
-      if (!result.yearly[year])
-        result.yearly[year] = { completed: 0, scheduled: 0 };
+      result.monthly[month] = result.monthly[month] || {
+        completed: 0,
+        scheduled: 0,
+      };
+      result.weekly[week] = result.weekly[week] || {
+        completed: 0,
+        scheduled: 0,
+      };
+      result.yearly[year] = result.yearly[year] || {
+        completed: 0,
+        scheduled: 0,
+      };
 
       if (appointment.status === "Completed") {
-        result.monthly[month].completed += 1;
-        result.weekly[week].completed += 1;
-        result.yearly[year].completed += 1;
+        result.monthly[month].completed++;
+        result.weekly[week].completed++;
+        result.yearly[year].completed++;
       } else if (appointment.status === "Scheduled") {
-        result.monthly[month].scheduled += 1;
-        result.weekly[week].scheduled += 1;
-        result.yearly[year].scheduled += 1;
+        result.monthly[month].scheduled++;
+        result.weekly[week].scheduled++;
+        result.yearly[year].scheduled++;
       }
     });
 
@@ -199,7 +175,7 @@ export default function DoctorDashboard() {
     },
     {
       title: "Total Revenue",
-      value: `${totalRevenue.toLocaleString()}`, // Format currency properly
+      value: `${totalRevenue.toLocaleString()}`,
       icon: <ReceiptIndianRupee size={24} color="white" />,
       color: "bg-orange-500",
       LinkURL: "/dashboard/pages/Doctor/revenue",
@@ -214,34 +190,26 @@ export default function DoctorDashboard() {
   ];
 
   const barChartConfig = {
-    completed: {
-      label: "Completed",
-      color: "#2563eb",
-    },
-    cancelled: {
-      label: "Scheduled",
-      color: "#60a5fa",
-    },
+    completed: { label: "Completed", color: "#2563eb" },
+    cancelled: { label: "Scheduled", color: "#60a5fa" },
   } satisfies ChartConfig;
 
-  // Prepare appointment stats data for the bar chart
-  const appointmentStats = useMemo(() => {
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    return {
-      monthly: months.map((month) => ({
+  const appointmentStats = useMemo(
+    () => ({
+      monthly: [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ].map((month) => ({
         month,
         completed: aggregatedAppointments.monthly[month]?.completed || 0,
         cancelled: aggregatedAppointments.monthly[month]?.scheduled || 0,
@@ -256,18 +224,12 @@ export default function DoctorDashboard() {
         completed: aggregatedAppointments.yearly[year].completed,
         cancelled: aggregatedAppointments.yearly[year].scheduled,
       })),
-    };
-  }, [aggregatedAppointments]);
+    }),
+    [aggregatedAppointments]
+  );
 
-  // Compute unique appointment dates for the calendar component
   const appointmentDatesDetailed = useMemo<AppointmentDateDetailed[]>(() => {
-    if (
-      !appointments ||
-      appointments.length === 0 ||
-      !patients ||
-      patients.length === 0
-    )
-      return [];
+    if (!appointments?.length || !patients?.length) return [];
 
     const dateMap: Record<
       string,
@@ -287,29 +249,19 @@ export default function DoctorDashboard() {
         new Date(appointment.appointmentDate),
         "yyyy-MM-dd"
       );
-
       const matchedPatient = patients.find(
         (p) => p._id === appointment.patient
       );
-      const patientName = matchedPatient ? matchedPatient.fullName : "Unknown";
+      const patientName = matchedPatient?.fullName || "Unknown";
 
-      const timeSlot = appointment.timeSlot || "09:00 AM";
-      const teeth = appointment.teeth || [];
-      const treatments = appointment.treatments || [];
+      if (!dateMap[dateStr]) dateMap[dateStr] = { count: 0, appointments: [] };
 
-      if (!dateMap[dateStr]) {
-        dateMap[dateStr] = {
-          count: 0,
-          appointments: [],
-        };
-      }
-
-      dateMap[dateStr].count += 1;
+      dateMap[dateStr].count++;
       dateMap[dateStr].appointments.push({
         patientName,
-        timeSlot,
-        teeth,
-        treatments,
+        timeSlot: appointment.timeSlot || "09:00 AM",
+        teeth: appointment.teeth || [],
+        treatments: appointment.treatments || [],
       });
     });
 
@@ -320,36 +272,29 @@ export default function DoctorDashboard() {
     }));
   }, [appointments, patients]);
 
-  // Compute pie chart data from billings by aggregating treatment counts
   const pieData = useMemo(() => {
-
-    if (!billings || billings.length === 0) return [];
-    const treatmentCounts: Record<string, number> = {};
-    billings.forEach((billing) => {
-      if (billing.treatments && Array.isArray(billing.treatments)) {
-        billing.treatments.forEach((treatment: BillingTreatment) => {
-          treatmentCounts[treatment.treatment] =
-            (treatmentCounts[treatment.treatment] || 0) +
-            (treatment.quantity || 1);
-        });
-      }
-    });
+    if (!billings?.length) return [];
+    const treatmentCounts = billings.reduce((acc, billing) => {
+      billing.treatments?.forEach((treatment: BillingTreatment) => {
+        acc[treatment.treatment] =
+          (acc[treatment.treatment] || 0) + (treatment.quantity || 1);
+      });
+      return acc;
+    }, {} as Record<string, number>);
     return Object.entries(treatmentCounts).map(([name, value]) => ({
       name,
       value,
     }));
   }, [billings]);
 
-  // Compute monthly patient registration data for the line chart
   const registrationChartData = useMemo(() => {
-    if (!patients || patients.length === 0) return [];
+    if (!patients?.length) return [];
     const monthlyData = patients.reduce((acc, patient) => {
-      const date = new Date(patient.createdAt);
-      const month = format(date, "MMM");
+      const month = format(new Date(patient.createdAt), "MMM");
       acc[month] = (acc[month] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    const months = [
+    return [
       "Jan",
       "Feb",
       "Mar",
@@ -362,11 +307,7 @@ export default function DoctorDashboard() {
       "Oct",
       "Nov",
       "Dec",
-    ];
-    return months.map((month) => ({
-      month,
-      users: monthlyData[month] || 0,
-    }));
+    ].map((month) => ({ month, users: monthlyData[month] || 0 }));
   }, [patients]);
 
   return (
@@ -377,15 +318,10 @@ export default function DoctorDashboard() {
             <h1 className="text-base md:text-2xl font-semibold tracking-wide font-sans">
               {(() => {
                 const hour = new Date().getHours();
-                let greeting = "";
-                if (hour < 12) {
-                  greeting = "Good morning";
-                } else if (hour < 18) {
-                  greeting = "Good afternoon";
-                } else {
-                  greeting = "Good evening";
-                }
-                return `${greeting}, ${profile.fullName.split(" ")[0]}`;
+                return `Good ${
+                  hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"
+                }, 
+                ${profile.fullName.split(" ")[0]}`;
               })()}
             </h1>
             <div className="flex pr-5 gap-x-5">
@@ -413,15 +349,13 @@ export default function DoctorDashboard() {
                   hoverBgColor="green"
                 />
               </div>
-              <div>
-                <Image
-                  src="/logo1.png"
-                  alt="Clinic Logo"
-                  width={50}
-                  height={50}
-                  className="rounded-full"
-                />
-              </div>
+              <Image
+                src="/logo1.png"
+                alt="Clinic Logo"
+                width={50}
+                height={50}
+                className="rounded-full"
+              />
             </div>
           </div>
         )}
@@ -433,14 +367,12 @@ export default function DoctorDashboard() {
             title="Appointments"
             appointmentDetails={appointmentDatesDetailed}
           />
-          <div className="w-full">
-            <DashboardBarChart
-              data={appointmentStats}
-              config={barChartConfig}
-              className="min-h-[200px]"
-              barRadius={8}
-            />
-          </div>
+          <DashboardBarChart
+            data={appointmentStats}
+            config={barChartConfig}
+            className="min-h-[200px] w-full"
+            barRadius={8}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -452,11 +384,66 @@ export default function DoctorDashboard() {
         </div>
 
         <div>
-          <ReusableTable<PatientData>
+          <DataTable
+            data={tableData
+              .slice()
+              .sort(
+                (a, b) =>
+                  new Date(b.registeredAt).getTime() -
+                  new Date(a.registeredAt).getTime()
+              )
+              .map((item) => ({
+                id: item.id,
+                fullName: item.patient,
+                contactNumber: item.contact,
+                dob: item.dob,
+                registeredAt: item.registeredAt,
+              }))}
             title="Recent Patient Registrations"
-            data={tableData}
-            columns={patientColumns}
-            emptyMessage="No patient data available."
+            itemsPerPage={10}
+            showSearch={true}
+            searchFields={["fullName", "registeredAt"]}
+            onRowClick={(patient) => {
+              router.push(
+                `/dashboard/pages/Doctor/patientRecords?patientId=${patient.id}`
+              );
+            }}
+            columns={[
+              { header: "Full Name", accessorKey: "fullName" },
+              {
+                header: "Contact",
+                accessorKey: "contactNumber",
+                render: (value) => value || "N/A",
+              },
+              {
+                header: "Date of Birth",
+                accessorKey: "dob",
+                render: (value) => value || "N/A",
+              },
+              {
+                header: "Registered At",
+                accessorKey: "registeredAt",
+                sortable: true,
+                render: (value) => value || "N/A",
+              },
+              {
+                header: "Actions",
+                accessorKey: "id",
+                render: (_, row) => (
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(
+                        `/dashboard/pages/Doctor/patientRecords?patientId=${row.id}`
+                      );
+                    }}
+                  >
+                    View
+                  </Button>
+                ),
+              },
+            ]}
           />
         </div>
       </div>

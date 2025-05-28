@@ -116,12 +116,16 @@ const Invoice = () => {
               </ul>
             </div>
             <div className="w-1/3 flex justify-center items-center">
-              <Image
-                src="/images/Logo.png"
-                alt="Logo"
-                width={200}
-                height={100}
-              />
+              <div className="relative w-full max-w-sm h-24">
+                <Image
+                  src="/images/Logo.png"
+                  alt="Logo"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 200px"
+                  priority
+                />
+              </div>
             </div>
             <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center text-slate-100">
               <ul className="text-xs">
@@ -249,13 +253,16 @@ const Invoice = () => {
           </div>
 
           <div className="w-full text-sm flex justify-end px-14 py-24">
-            <Image
-              src="/images/sign1.png"
-              alt="Signature"
-              width={200}
-              height={200}
-              className="bg-blend-multiply"
-            />
+            <div className="relative w-full max-w-sm h-32">
+              <Image
+                src="/images/sign1.png"
+                alt="Signature"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 200px"
+                priority
+              />
+            </div>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>
             Print
