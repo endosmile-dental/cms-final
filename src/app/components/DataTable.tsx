@@ -35,7 +35,7 @@ const DataTable = <T extends object>({
   title,
   columns,
   searchFields,
-  showSearch = true,
+  showSearch = true, 
   itemsPerPage = 10,
   onRowClick,
 }: DataTableProps<T>) => {
@@ -89,8 +89,8 @@ const DataTable = <T extends object>({
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
       <div className="flex justify-between items-center">
-        {/* Conditionally render search bar */}
-        {showSearch && (
+            {/* Conditionally render search bar */}
+            {showSearch && (
           <Input
             placeholder="Search..."
             value={search}
