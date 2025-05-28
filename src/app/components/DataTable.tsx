@@ -8,16 +8,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-type ColumnDef<T> = {
+export type ColumnDef<T, K extends keyof T = keyof T> = {
   header: string;
-  accessorKey: keyof T;
+  accessorKey: K;
   sortable?: boolean;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: T[K] | undefined, row: T) => React.ReactNode;
 };
 
 type DataTableProps<T> = {
@@ -35,7 +35,7 @@ const DataTable = <T extends object>({
   title,
   columns,
   searchFields,
-  showSearch = true, 
+  showSearch = true,
   itemsPerPage = 10,
   onRowClick,
 }: DataTableProps<T>) => {
@@ -86,11 +86,15 @@ const DataTable = <T extends object>({
     }
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
       <div className="flex justify-between items-center">
-            {/* Conditionally render search bar */}
-            {showSearch && (
+        {/* Conditionally render search bar */}
+        {showSearch && (
           <Input
             placeholder="Search..."
             value={search}
@@ -116,7 +120,9 @@ const DataTable = <T extends object>({
                   <div className="flex items-center gap-1">
                     {column.header}
                     {column.sortable && sortKey === column.accessorKey && (
-                      <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
+                      <span className="text-muted-foreground font-semibold">
+                        {sortOrder === "asc" ? "↑" : "↓"}
+                      </span>
                     )}
                   </div>
                 </TableHead>

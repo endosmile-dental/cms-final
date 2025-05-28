@@ -14,8 +14,7 @@ import {
   TrendingUp,
   PieChart,
 } from "lucide-react";
-import DataTable from "@/app/components/DataTable";
-
+import DataTable, { ColumnDef } from "@/app/components/DataTable";
 
 export default function RevenueDashboard() {
   const billings = useAppSelector(selectBillings);
@@ -72,54 +71,60 @@ export default function RevenueDashboard() {
     };
   }, [billings]);
 
-  const billingTableColumns = [
-    { 
-      header: "Invoice ID", 
-      accessorKey: "invoiceId" as const,
-      sortable: true 
-    },
-    { 
-      header: "Date", 
-      accessorKey: "date" as const,
+  const billingTableColumns: ColumnDef<BillingRecord, keyof BillingRecord>[] = [
+    {
+      header: "Invoice ID",
+      accessorKey: "invoiceId",
       sortable: true,
-      render: (value: string) => format(new Date(value), "yyyy-MM-dd")
     },
-    { 
-      header: "Total Amount", 
-      accessorKey: "totalAmount" as const,
+    {
+      header: "Date",
+      accessorKey: "date",
       sortable: true,
-      render: (value: number) => `₹ ${value}`
+      render: (value) =>
+        value ? new Date(value as string).toLocaleDateString() : "N/A",
     },
-    { 
-      header: "Discount", 
-      accessorKey: "discount" as const,
+    {
+      header: "Total Amount",
+      accessorKey: "totalAmount",
       sortable: true,
-      render: (value: number) => `₹ ${value}`
+      render: (value) =>
+        typeof value === "number" ? `₹ ${value.toFixed(2)}` : "N/A",
     },
-    { 
-      header: "Received", 
-      accessorKey: "amountReceived" as const,
+    {
+      header: "Discount",
+      accessorKey: "discount",
       sortable: true,
-      render: (value: number) => `₹ ${value}`
+      render: (value) =>
+        typeof value === "number" ? `₹ ${value.toFixed(2)}` : "N/A",
     },
-    { 
-      header: "Due", 
-      accessorKey: "amountDue" as const,
+    {
+      header: "Received",
+      accessorKey: "amountReceived",
       sortable: true,
-      render: (value: number) => `₹ ${value}`
+      render: (value) =>
+        typeof value === "number" ? `₹ ${value.toFixed(2)}` : "N/A",
     },
-    { 
-      header: "Mode", 
-      accessorKey: "modeOfPayment" as const,
-      sortable: true 
+    {
+      header: "Due",
+      accessorKey: "amountDue",
+      sortable: true,
+      render: (value) =>
+        typeof value === "number" ? `₹ ${value.toFixed(2)}` : "N/A",
     },
-    { 
-      header: "Status", 
-      accessorKey: "status" as const,
-      sortable: true 
+    {
+      header: "Mode",
+      accessorKey: "modeOfPayment",
+      sortable: true,
+      render: (value) => (typeof value === "string" ? value : "N/A"),
+    },
+    {
+      header: "Status",
+      accessorKey: "status",
+      sortable: true,
+      render: (value) => (typeof value === "string" ? value : "N/A"),
     },
   ];
-
 
   // Prepare stat cards
   const stats: Stat[] = [
@@ -179,8 +184,6 @@ export default function RevenueDashboard() {
     );
   }, [analytics.revenueByPaymentMode]);
 
-
-
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
@@ -200,16 +203,11 @@ export default function RevenueDashboard() {
         </div>
 
         <div>
-           <DataTable
+          <DataTable
             title="Billing Details"
             data={billings}
             columns={billingTableColumns}
-            searchFields={[
-              'invoiceId', 
-              'date', 
-              'modeOfPayment', 
-              'status'
-            ]}
+            searchFields={["invoiceId", "date", "modeOfPayment", "status"]}
             showSearch={true}
           />
         </div>

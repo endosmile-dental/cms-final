@@ -388,8 +388,10 @@ export default function PatientRecords() {
                     header: "Date",
                     accessorKey: "appointmentDate",
                     sortable: true,
-                    render: (v) => new Date(v).toLocaleDateString(),
-                  },
+                    render: (v) =>
+                      typeof v === "string" || typeof v === "number"
+                        ? new Date(v).toLocaleDateString()
+                        : "N/A",                  },
                   {
                     header: "Time",
                     accessorKey: "timeSlot",
@@ -398,7 +400,7 @@ export default function PatientRecords() {
                   {
                     header: "Teeth",
                     accessorKey: "teeth",
-                    render: (v) => v.join(",") || "N/A",
+                    render: (v) => Array.isArray(v) ? v.join(", ") : "N/A"
                   },
                   {
                     header: "Type",
@@ -454,29 +456,33 @@ export default function PatientRecords() {
                     header: "Date",
                     accessorKey: "date",
                     sortable: true,
-                    render: (v) => new Date(v).toLocaleDateString(),
+                    render: (v) =>
+                      typeof v === "string" || typeof v === "number"
+                        ? new Date(v).toLocaleDateString()
+                        : "N/A",
                   },
                   {
                     header: "Treatments",
                     accessorKey: "treatments",
                     sortable: true,
-                    render: (v: { treatment: string }[]) =>
-                      v.map((t) => t.treatment).join(", ") || "N/A",
+                    render: (v) =>
+                      Array.isArray(v)
+                        ? v.map((t) => t.treatment).join(", ")
+                        : "N/A",
                   },
                   {
                     header: "Amount",
                     accessorKey: "totalAmount",
-                    render: (v) => v.toFixed(2) || "N/A",
+                    render: (v) =>
+                      typeof v === "number" ? v.toFixed(2) : "N/A",
                   },
                   {
                     header: "Discount",
                     accessorKey: "discount",
-                    render: (v) => v || "N/A",
                   },
                   {
                     header: "Mode of Payment",
                     accessorKey: "modeOfPayment",
-                    render: (v) => v || "N/A",
                   },
                   {
                     header: "Actions",
@@ -868,12 +874,10 @@ export default function PatientRecords() {
               {
                 header: "Contact",
                 accessorKey: "contactNumber",
-                render: (v) => v || "N/A",
               },
               {
                 header: "Gender",
                 accessorKey: "gender",
-                render: (v) => v || "N/A",
               },
               {
                 header: "Actions",
