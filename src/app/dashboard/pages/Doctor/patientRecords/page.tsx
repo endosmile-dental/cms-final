@@ -54,7 +54,7 @@ import {
 } from "@/app/redux/slices/appointmentSlice";
 import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import TwoLineDashboardChart from "@/app/components/TwoLineDashboardChart";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -505,10 +505,11 @@ export default function PatientRecords() {
               patient={selectedPatient}
               onPatientUpdated={(updatedPatient: Patient) => {
                 setSelectedPatient(updatedPatient);
-                session?.user.id &&
+                if (session?.user.id) {
                   dispatch(
                     fetchPatients({ userId: session.user.id, role: "Doctor" })
                   );
+                }
               }}
             />
 

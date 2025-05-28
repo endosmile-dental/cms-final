@@ -5,7 +5,6 @@ import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
-import ReusableTable from "@/app/dashboard/ui/DashboardTable";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";

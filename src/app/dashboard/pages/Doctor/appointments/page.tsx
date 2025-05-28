@@ -70,9 +70,6 @@ export default function DoctorAppointments() {
   const dispatch = useAppDispatch();
   const appointments = useAppSelector(selectAppointments);
   const patients = useAppSelector(selectPatients);
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<{
     _id: string;
@@ -102,6 +99,9 @@ export default function DoctorAppointments() {
   };
 
   const filteredAppointments = appointments.filter((appointment) => {
+    const filterStatus = null;
+    const filterType = null;
+    const search = "";
     const patientInfo = appointment.patient
       ? getPatientInfo(appointment.patient)
       : null;
