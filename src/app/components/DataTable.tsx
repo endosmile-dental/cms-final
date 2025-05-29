@@ -60,11 +60,28 @@ const DataTable = <T extends object>({
     // Sorting implementation
     if (sortKey) {
       result.sort((a, b) => {
-        const valA = String(a[sortKey]).toLowerCase();
-        const valB = String(b[sortKey]).toLowerCase();
+        const valA = a[sortKey];
+        const valB = b[sortKey];
 
-        if (sortOrder === "asc") return valA.localeCompare(valB);
-        return valB.localeCompare(valA);
+        // Determine type of value for dynamic comparison
+        const isNumber = typeof valA === "number" && typeof valB === "number";
+        const isDate = valA instanceof Date && valB instanceof Date;
+
+        if (isNumber) {
+          return sortOrder === "asc"
+            ? (valA as number) - (valB as number)
+            : (valB as number) - (valA as number);
+        } else if (isDate) {
+          return sortOrder === "asc"
+            ? (valA as Date).getTime() - (valB as Date).getTime()
+            : (valB as Date).getTime() - (valA as Date).getTime();
+        } else {
+          const strA = String(valA).toLowerCase();
+          const strB = String(valB).toLowerCase();
+          return sortOrder === "asc"
+            ? strA.localeCompare(strB)
+            : strB.localeCompare(strA);
+        }
       });
     }
 

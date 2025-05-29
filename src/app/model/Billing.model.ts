@@ -109,6 +109,16 @@ BillingSchema.pre<IBilling>("save", function (next) {
   const paid = (this.advance || 0) + this.amountReceived;
   this.amountDue = this.totalAmount - paid;
 
+  // Determine payment status
+  if (this.amountDue <= 0) {
+    this.status = "Paid";
+    this.amountDue = 0; // Ensure no negative dues
+  } else if (paid > 0 && paid < this.totalAmount) {
+    this.status = "Partial";
+  } else {
+    this.status = "Pending";
+  }
+
   next();
 });
 
