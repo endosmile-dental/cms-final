@@ -32,6 +32,8 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import DataTable from "@/app/components/DataTable";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
+import FrequencyCard from "@/app/components/FrequencyCard";
 
 interface ModalProps {
   isOpen: boolean;
@@ -90,6 +92,107 @@ export default function DoctorAppointments() {
   const getPatientInfo = (patientId: string) => {
     return patients.find((p) => p._id === patientId) || null;
   };
+
+  // Appoointment statistics for charts
+  const appointmentStats = useMemo(() => {
+    const statusCounts = {
+      Scheduled: 0,
+      Completed: 0,
+      Cancelled: 0,
+    };
+
+    // NEW: Time-based status counters
+    const now = new Date();
+    const weeklyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+    const monthlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+    const yearlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+
+    const treatmentCounts: Record<string, number> = {};
+    const timeSlotCounts: Record<string, number> = {};
+
+    // Process appointment data for charts
+    appointments.forEach((appointment) => {
+      const appDate = new Date(appointment.appointmentDate);
+
+      // Update overall status counts
+      statusCounts[appointment.status] =
+        (statusCounts[appointment.status] || 0) + 1;
+
+      // NEW: Update time-based status counts
+      // Weekly (last 7 days)
+      if (appDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
+        weeklyCounts[appointment.status]++;
+      }
+
+      // Monthly (last 30 days)
+      if (appDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)) {
+        monthlyCounts[appointment.status]++;
+      }
+
+      // Yearly (current year)
+      if (appDate.getFullYear() === now.getFullYear()) {
+        yearlyCounts[appointment.status]++;
+      }
+
+      // Count treatments
+      appointment.treatments?.forEach((treatment) => {
+        treatmentCounts[treatment] = (treatmentCounts[treatment] || 0) + 1;
+      });
+
+      // Count time slots
+      if (appointment.timeSlot) {
+        timeSlotCounts[appointment.timeSlot] =
+          (timeSlotCounts[appointment.timeSlot] || 0) + 1;
+      }
+    });
+
+    // Format data for pie chart (status distribution)
+    const statusData = Object.entries(statusCounts).map(([name, value]) => ({
+      name,
+      value,
+    }));
+
+    // NEW: Format time-based status data
+    const statusByTime = {
+      weekly: Object.entries(weeklyCounts).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      monthly: Object.entries(monthlyCounts).map(([name, value]) => ({
+        name,
+        value,
+      })),
+      yearly: Object.entries(yearlyCounts).map(([name, value]) => ({
+        name,
+        value,
+      })),
+    };
+
+    // Format data for bar chart (treatment popularity)
+    const treatmentData = Object.entries(treatmentCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, value]) => ({
+        name,
+        value,
+      }));
+
+    // Format data for time slot heatmap
+    const timeSlotData = Object.entries(timeSlotCounts)
+      .map(([name, value]) => ({
+        time: name,
+        appointments: value,
+      }))
+      .sort((a, b) => timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time));
+
+    return {
+      statusData, // Overall status data
+      statusByTime, // NEW: Time-based status data
+      treatmentData,
+      timeSlotData,
+    };
+  }, [appointments]);
+
+  // Define the type for column definitions
 
   type ColumnDef<T> = {
     header: string;
@@ -314,6 +417,30 @@ export default function DoctorAppointments() {
     []
   );
 
+  function interpolateColor(
+    color1: string,
+    color2: string,
+    factor: number
+  ): string {
+    const hexToRgb = (hex: string) =>
+      hex
+        .replace(/^#/, "")
+        .match(/.{2}/g)!
+        .map((x) => parseInt(x, 16));
+
+    const rgbToHex = (rgb: number[]) =>
+      "#" +
+      rgb
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase();
+
+    const c1 = hexToRgb(color1);
+    const c2 = hexToRgb(color2);
+    const result = c1.map((c, i) => Math.round(c + (c2[i] - c) * factor));
+    return rgbToHex(result);
+  }
+
   // Rest of the code (handleEditAppointment, handleDeleteAppointment, modals, etc.) remains the same
 
   return (
@@ -331,6 +458,25 @@ export default function DoctorAppointments() {
           </div>
         </div>
         <Separator />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <DashboardPieChart
+            title="Appointment Status Distribution"
+            data={appointmentStats.statusByTime}
+            enableTimeFrameSort={true}
+            innerRadius={50}
+            showPercentage={true}
+            showLegend={true}
+          />
+
+          {appointmentStats.treatmentData && (
+            <FrequencyCard
+              title="Treatment Frequency"
+              data={appointmentStats.treatmentData}
+              total={appointments.length}
+            />
+          )}
+        </div>
 
         <DataTable
           title="Upcoming Appointments"
@@ -369,6 +515,59 @@ export default function DoctorAppointments() {
             setOpenAppointmentDialog(true);
           }}
         />
+
+        {/* Time Slot Utilization Chart   */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Time Slot Utilization</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            {timeSlots.map((slot) => {
+              const count =
+                appointmentStats.timeSlotData.find((t) => t.time === slot)
+                  ?.appointments || 0;
+
+              const maxCount = Math.max(
+                ...appointmentStats.timeSlotData.map(
+                  (t) => t.appointments || 0
+                ),
+                1
+              );
+
+              const greenHex = "#10B981"; // Olive Green
+              const redHex = "#EF4444"; // Red
+              const percentage = Math.min(100, (count / maxCount) * 100);
+
+              const heatColor = interpolateColor(
+                greenHex,
+                redHex,
+                percentage / 100
+              );
+
+              return (
+                <div key={slot} className="bg-background rounded-lg p-3">
+                  <div className="text-center font-medium">
+                    {slot} - <span className="text-blue-500">{count}</span>
+                  </div>
+                  <div className="mt-2 h-32 relative">
+                    <div
+                      className="absolute bottom-0 w-full rounded-t"
+                      style={{
+                        backgroundColor: heatColor,
+                        height: `${percentage}%`,
+                      }}
+                    />
+                    <div
+                      className={`absolute bottom-0 mb-2 w-full text-center ${
+                        percentage > 0 ? "text-white" : "text-black"
+                      }`}
+                    >
+                      {percentage.toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Edit and Delete Modals remain unchanged */}
       </div>

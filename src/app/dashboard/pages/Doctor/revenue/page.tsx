@@ -199,6 +199,10 @@ export default function RevenueDashboard() {
           <DashboardPieChart
             title="Revenue by Payment Mode"
             data={paymentModeData}
+            enableTimeFrameSort={false}
+            innerRadius={50}
+            showPercentage={false}
+            showLegend={true}
           />
         </div>
 

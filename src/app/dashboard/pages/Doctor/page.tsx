@@ -181,11 +181,11 @@ export default function DoctorDashboard() {
       LinkURL: "/dashboard/pages/Doctor/revenue",
     },
     {
-      title: "Pending Consultations",
+      title: "Upcoming Consultations",
       value: aggregatedAppointments.upcoming.toString(),
       icon: <AlertTriangle size={24} color="white" />,
       color: "bg-red-500",
-      LinkURL: "",
+      LinkURL: "/dashboard/pages/Doctor/appointments",
     },
   ];
 
@@ -380,7 +380,14 @@ export default function DoctorDashboard() {
             title="Patient Monthly Registration"
             data={registrationChartData}
           />
-          <DashboardPieChart title="Treatments Taken" data={pieData} />
+          <DashboardPieChart
+            title="Treatments Taken"
+            data={pieData}
+            enableTimeFrameSort={false}
+            innerRadius={0.5}
+            showPercentage={false}
+            showLegend={false}
+          />
         </div>
 
         <div>
