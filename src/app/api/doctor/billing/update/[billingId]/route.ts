@@ -1,13 +1,12 @@
-// File: /app/api/doctor/billing/update/[billingId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: { billingId: string } }
+  { params }: { params: { billingId: string } }
 ) {
-  const { billingId } = context.params;
+  const { billingId } = params;
 
   try {
     await dbConnect();
@@ -35,24 +34,4 @@ export async function PATCH(
       { status: 500 }
     );
   }
-}
-
-// Optional: block other methods with 405 response
-export async function GET() {
-  return NextResponse.json(
-    { error: "GET method not allowed" },
-    { status: 405 }
-  );
-}
-export async function POST() {
-  return NextResponse.json(
-    { error: "POST method not allowed" },
-    { status: 405 }
-  );
-}
-export async function DELETE() {
-  return NextResponse.json(
-    { error: "DELETE method not allowed" },
-    { status: 405 }
-  );
 }
