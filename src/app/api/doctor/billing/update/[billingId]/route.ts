@@ -1,14 +1,13 @@
 // File: /app/api/doctor/billing/update/[billingId]/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { billingId: string } }
+  context: { params: { billingId: string } }
 ) {
-  const { billingId } = params;
+  const { billingId } = context.params;
 
   try {
     await dbConnect();
