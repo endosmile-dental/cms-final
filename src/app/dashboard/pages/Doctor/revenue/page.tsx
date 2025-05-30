@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
-import { useAppSelector } from "@/app/redux/store/hooks";
-import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
+import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
+import {
+  BillingRecord,
+  selectBillings,
+  updateBillingRecord,
+} from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
 import {
   ReceiptIndianRupee,
@@ -15,9 +19,21 @@ import {
   PieChart,
 } from "lucide-react";
 import DataTable, { ColumnDef } from "@/app/components/DataTable";
+import EditBillingDialog from "@/app/components/doctor/EditBillingDialog";
 
 export default function RevenueDashboard() {
+  const dispatch = useAppDispatch();
   const billings = useAppSelector(selectBillings);
+
+  const [selectedBilling, setSelectedBilling] = useState<BillingRecord | null>(
+    null
+  );
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleRowClick = (billing: BillingRecord) => {
+    setSelectedBilling(billing);
+    setDialogOpen(true);
+  };
 
   // Compute advanced analytics from the billing data
   const analytics = useMemo(() => {
@@ -213,8 +229,29 @@ export default function RevenueDashboard() {
             columns={billingTableColumns}
             searchFields={["invoiceId", "date", "modeOfPayment", "status"]}
             showSearch={true}
+            onRowClick={handleRowClick}
           />
         </div>
+
+        {selectedBilling && (
+          <EditBillingDialog
+            open={dialogOpen}
+            billing={selectedBilling}
+            onClose={() => setDialogOpen(false)}
+            onSave={(updatedBilling) => {
+              // You can dispatch to Redux or call API here
+              console.log("Updated billing:", updatedBilling);
+              if (updatedBilling && updatedBilling._id) {
+                dispatch(
+                  updateBillingRecord({
+                    billingId: updatedBilling._id,
+                    updatedBillingData: updatedBilling, // partial update allowed
+                  })
+                );
+              }
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

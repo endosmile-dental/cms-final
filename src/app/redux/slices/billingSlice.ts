@@ -54,6 +54,50 @@ interface CreateBillingArgs {
   doctorId: string;
 }
 
+interface UpdateBillingArgs {
+  billingId: string;
+  updatedBillingData: Partial<BillingRecord>;
+}
+
+/**
+ * Async thunk to update an existing billing record.
+ * @param billingId - The ID of the billing record to update.
+ * @param updatedBillingData - The data to update the billing record with.
+ */
+
+export const updateBillingRecord = createAsyncThunk<
+  BillingRecord,
+  UpdateBillingArgs,
+  { rejectValue: string }
+>(
+  "billing/updateBilling",
+  async ({ billingId, updatedBillingData }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/doctor/billing/update/${billingId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedBillingData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error);
+      }
+
+      const data = await response.json();
+      return data.billing as BillingRecord;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      } else {
+        return rejectWithValue("An unexpected error occurred");
+      }
+    }
+  }
+);
+
 /**
  * Async thunk to create a new billing record.
  */
@@ -189,6 +233,26 @@ const billingSlice = createSlice({
     builder.addCase(createBilling.rejected, (state, action) => {
       state.loading = false;
       state.error = (action.payload as string) || "Failed to create billing";
+    });
+    builder.addCase(updateBillingRecord.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      updateBillingRecord.fulfilled,
+      (state, action: PayloadAction<BillingRecord>) => {
+        state.loading = false;
+        const index = state.billingRecords.findIndex(
+          (billing) => billing._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.billingRecords[index] = action.payload;
+        }
+      }
+    );
+    builder.addCase(updateBillingRecord.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload || "Failed to update billing";
     });
   },
 });
