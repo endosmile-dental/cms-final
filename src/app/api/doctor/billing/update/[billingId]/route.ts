@@ -2,11 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
+// Define the expected parameter structure
+interface RouteParams {
+  billingId: string;
+}
+
+// Define the context type with index signature
+interface RouteContext {
+  params: RouteParams & { [key: string]: string | string[] };
+}
+
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { billingId: string } }
+  context: RouteContext // Use the context type with index signature
 ) {
-  const { billingId } = params;
+  const { billingId } = context.params;
 
   try {
     await dbConnect();
