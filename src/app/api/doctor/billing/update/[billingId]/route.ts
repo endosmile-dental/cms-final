@@ -2,21 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
+// Correct type for Next.js dynamic route parameters
+interface RouteParams {
+  params: { billingId: string };
+}
+
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { [key: string]: string | string[] } } // Corrected type
+  { params }: RouteParams // Use the specific interface
 ) {
-  // Extract billingId with type checking
-  const billingId = Array.isArray(params.billingId)
-    ? params.billingId[0]
-    : params.billingId;
-
-  if (!billingId) {
-    return NextResponse.json(
-      { error: "Billing ID is required" },
-      { status: 400 }
-    );
-  }
+  const { billingId } = params;
 
   try {
     await dbConnect();
