@@ -1,25 +1,16 @@
+// src/app/api/doctor/billing/update/[billingId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
-// Define the expected parameter structure
-interface RouteParams {
-  billingId: string;
-}
-
-// Define the context type with index signature
-interface RouteContext {
-  params: RouteParams & { [key: string]: string | string[] };
-}
-
-export async function PATCH(
-  req: NextRequest,
-  context: RouteContext // Use the context type with index signature
-) {
-  const { billingId } = context.params;
-
+export async function PATCH(req: NextRequest) {
   try {
     await dbConnect();
+
+    // Extract billingId from URL path
+    const path = req.nextUrl.pathname;
+    const billingId = path.split("/").pop()!;
+
     const updatedBillingData = await req.json();
 
     const updatedBilling = await BillingModel.findByIdAndUpdate(
