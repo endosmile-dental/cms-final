@@ -4,13 +4,13 @@ import dbConnect from "@/app/utils/dbConnect";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { billingId: string } }
+  context: { params: Record<string, string | string[]> } // Corrected type
 ) {
-  const { billingId } = params;
+  // Extract billingId with type assertion
+  const billingId = context.params.billingId as string;
 
   try {
     await dbConnect();
-
     const updatedBillingData = await req.json();
 
     const updatedBilling = await BillingModel.findByIdAndUpdate(
