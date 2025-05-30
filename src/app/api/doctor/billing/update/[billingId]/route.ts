@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import dbConnect from "@/app/utils/dbConnect";
 
-// Correct type for Next.js dynamic route parameters
-interface RouteParams {
-  params: { billingId: string };
-}
-
 export async function PATCH(
   req: NextRequest,
-  { params }: RouteParams // Use the specific interface
+  { params }: { params: { billingId: string } }
 ) {
   const { billingId } = params;
 
