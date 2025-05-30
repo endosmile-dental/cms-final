@@ -4,10 +4,19 @@ import dbConnect from "@/app/utils/dbConnect";
 
 export async function PATCH(
   req: NextRequest,
-  context: { params: Record<string, string | string[]> } // Corrected type
+  { params }: { params: { [key: string]: string | string[] } } // Corrected type
 ) {
-  // Extract billingId with type assertion
-  const billingId = context.params.billingId as string;
+  // Extract billingId with type checking
+  const billingId = Array.isArray(params.billingId)
+    ? params.billingId[0]
+    : params.billingId;
+
+  if (!billingId) {
+    return NextResponse.json(
+      { error: "Billing ID is required" },
+      { status: 400 }
+    );
+  }
 
   try {
     await dbConnect();
