@@ -262,66 +262,6 @@ export default function DoctorAppointments() {
     });
   };
 
-  const columns = useMemo(
-    () =>
-      [
-        {
-          header: "ID",
-          accessorKey: "patientId",
-          sortable: true,
-        },
-        {
-          header: "Patient",
-          accessorKey: "patientName",
-          sortable: true,
-        },
-        {
-          header: "Date",
-          accessorKey: "date",
-          sortable: true,
-        },
-        {
-          header: "Contact",
-          accessorKey: "contactNumber",
-          sortable: true,
-        },
-        {
-          header: "Type",
-          accessorKey: "consultationType",
-          sortable: true,
-        },
-        {
-          header: "Status",
-          accessorKey: "status",
-          sortable: true,
-        },
-        {
-          header: "Actions",
-          accessorKey: "_id",
-          sortable: false,
-          render: (_: unknown, row: TransformedAppointment) => (
-            <div className="flex space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditAppointment(row._id)}
-              >
-                <Edit size={16} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDeleteAppointment(row._id)}
-              >
-                <Trash size={16} />
-              </Button>
-            </div>
-          ),
-        },
-      ] as ColumnDef<TransformedAppointment>[],
-    []
-  );
-
   // Open modal with appointment data to edit
   const handleEditAppointment = (appointmentId: string) => {
     const appointmentToEdit = appointments.find(
@@ -398,6 +338,66 @@ export default function DoctorAppointments() {
     setIsDeleteModalOpen(false);
     setDeleteId(null);
   };
+
+  const columns = useMemo(
+    () =>
+      [
+        {
+          header: "ID",
+          accessorKey: "patientId",
+          sortable: true,
+        },
+        {
+          header: "Patient",
+          accessorKey: "patientName",
+          sortable: true,
+        },
+        {
+          header: "Date",
+          accessorKey: "date",
+          sortable: true,
+        },
+        {
+          header: "Contact",
+          accessorKey: "contactNumber",
+          sortable: true,
+        },
+        {
+          header: "Type",
+          accessorKey: "consultationType",
+          sortable: true,
+        },
+        {
+          header: "Status",
+          accessorKey: "status",
+          sortable: true,
+        },
+        {
+          header: "Actions",
+          accessorKey: "_id",
+          sortable: false,
+          render: (_: unknown, row: TransformedAppointment) => (
+            <div className="flex space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditAppointment(row._id)}
+              >
+                <Edit size={16} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteAppointment(row._id)}
+              >
+                <Trash size={16} />
+              </Button>
+            </div>
+          ),
+        },
+      ] as ColumnDef<TransformedAppointment>[],
+    [handleEditAppointment, handleDeleteAppointment]
+  );
 
   const handleMultiSelectChange = (field: string, values: string[]) => {
     if (editForm) {

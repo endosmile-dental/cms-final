@@ -43,7 +43,10 @@ const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
     }
   }, [billing]);
 
-  const handleChange = (key: keyof BillingRecord, value: any) => {
+  const handleChange = <K extends keyof BillingRecord>(
+    key: K,
+    value: BillingRecord[K]
+  ) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : null));
   };
 
@@ -56,15 +59,18 @@ const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
       const oldValue = initialForm[key];
       const newValue = form[key];
 
-      // Simple shallow comparison
       const isEqual = JSON.stringify(oldValue) === JSON.stringify(newValue);
 
       if (!isEqual) {
-        updated[key] = newValue as any;
+        (
+          updated as Record<
+            keyof BillingRecord,
+            BillingRecord[keyof BillingRecord]
+          >
+        )[key] = newValue;
       }
     });
 
-    // Always include _id
     if (initialForm._id) {
       updated._id = initialForm._id;
     }
