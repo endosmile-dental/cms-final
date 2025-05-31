@@ -47,27 +47,22 @@ export async function POST(request: Request) {
     // Create a new billing document.
     // Dummy values are passed for computed fields to satisfy Mongoose's required constraints.
     // The pre-save middleware in the Billing model will recalculate these values.
-    const billing = await Billing.create(
-      {
-        invoiceId: data.invoiceId,
-        patientId: data.patientId,
-        doctorId: doctorId,
-        clinicId: clinicId,
-        date: new Date(data.date),
-        treatments: data.treatments,
-        discount: data.discount,
-        advance: data.advance,
-        amountReceived: data.amountReceived,
-        modeOfPayment: data.modeOfPayment,
-        address: data.address,
-        amountBeforeDiscount: 0,
-        totalAmount: 0,
-        amountDue: 0,
-      },
-      {
-        maxTimeMS: 30000, // Set a maximum time for the operation
-      }
-    );
+    const billing = await Billing.create({
+      invoiceId: data.invoiceId,
+      patientId: data.patientId,
+      doctorId: doctorId,
+      clinicId: clinicId,
+      date: new Date(data.date),
+      treatments: data.treatments,
+      discount: data.discount,
+      advance: data.advance,
+      amountReceived: data.amountReceived,
+      modeOfPayment: data.modeOfPayment,
+      address: data.address,
+      amountBeforeDiscount: 0,
+      totalAmount: 0,
+      amountDue: 0,
+    });
 
     return NextResponse.json(
       { message: "Billing created successfully", billing },

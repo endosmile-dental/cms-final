@@ -35,12 +35,7 @@ const dbConnect = async (): Promise<Connection> => {
   if (!cached.promise) {
     console.log("Creating new MongoDB connection...");
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
-        serverSelectionTimeoutMS: 30000, // Increase to 30 seconds
-        socketTimeoutMS: 45000, // Increase to 45 seconds
-        connectTimeoutMS: 30000, // Increase to 30 seconds
-        maxPoolSize: 10, // Set max pool size to 10
-      })
+      .connect(MONGODB_URI)
       .then((mongooseInstance) => mongooseInstance.connection);
   }
 
