@@ -4,7 +4,6 @@ import Billing from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import { zodBillingSchema } from "@/schemas/zodBillingSchema";
 import { ZodError } from "zod";
-import { max } from "date-fns";
 
 /**
  * POST route handler for creating a new billing record.
