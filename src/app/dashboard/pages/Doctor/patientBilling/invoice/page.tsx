@@ -4,7 +4,6 @@ import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import { Treatment } from "@/app/redux/slices/billingSlice";
-import { log } from "console";
 
 const Invoice = () => {
   // Reference to the content you want to convert to PDF
