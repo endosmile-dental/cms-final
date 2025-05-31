@@ -29,33 +29,46 @@ export default function DashboardLayout({
   });
 
   useEffect(() => {
-    if (session?.user?.role === "Doctor" || session?.user?.role === "Patient") {
-      if (!billings || billings.length === 0)
-        dispatch(
-          fetchBillings({ userId: session.user.id, role: session.user.role })
-        );
-      if (!appointments || appointments.length === 0)
-        dispatch(
-          fetchAppointments({
-            userId: session.user.id,
-            role: session.user.role,
-          })
-        );
-      if (!profile)
-        dispatch(
-          fetchProfile({ userId: session.user.id, role: session.user.role })
-        );
-      // Fetch global profile data regardless of role.
-      dispatch(fetchDoctors({ userId: session?.user.id }));
-    }
+    const fetchData = async () => {
+      if (!session?.user) return;
 
-    if (session?.user.role === "Doctor") {
-      if (!patients || patients.length === 0)
-        dispatch(
-          fetchPatients({ userId: session?.user.id, role: session?.user.role })
-        );
-    }
-  }, [dispatch, session?.user?.id]); // Depend on role & existing data
+      const { id, role } = session.user;
+
+      const promises = [];
+
+      // Shared for both Doctor and Patient
+      if (role === "Doctor" || role === "Patient") {
+        if (!billings || billings.length === 0) {
+          promises.push(dispatch(fetchBillings({ userId: id, role })));
+        }
+
+        if (!appointments || appointments.length === 0) {
+          promises.push(dispatch(fetchAppointments({ userId: id, role })));
+        }
+
+        if (!profile) {
+          promises.push(dispatch(fetchProfile({ userId: id, role })));
+        }
+
+        // Global data
+        promises.push(dispatch(fetchDoctors({ userId: id })));
+      }
+
+      if (role === "Doctor") {
+        if (!patients || patients.length === 0) {
+          promises.push(dispatch(fetchPatients({ userId: id, role })));
+        }
+      }
+
+      try {
+        await Promise.all(promises); // wait for all dispatches to finish
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      }
+    };
+
+    fetchData();
+  }, [dispatch, session?.user?.id]);
 
   return (
     <SidebarProvider>
