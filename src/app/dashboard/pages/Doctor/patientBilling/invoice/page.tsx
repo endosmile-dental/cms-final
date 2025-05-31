@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import { Treatment } from "@/app/redux/slices/billingSlice";
+import { log } from "console";
 
 const Invoice = () => {
   // Reference to the content you want to convert to PDF
@@ -116,13 +117,12 @@ const Invoice = () => {
               </ul>
             </div>
             <div className="w-1/3 flex justify-center items-center">
-              <div className="relative w-full max-w-sm h-24">
+              <div className="w-full flex justify-center">
                 <Image
                   src="/images/Logo.png"
                   alt="Logo"
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 200px"
+                  width={200}
+                  height={100}
                   priority
                 />
               </div>
@@ -252,17 +252,18 @@ const Invoice = () => {
             </table>
           </div>
 
-          <div className="w-full text-sm flex justify-end px-14 py-24">
-            <div className="relative w-full max-w-sm h-32">
-              <Image
-                src="/images/sign1.png"
-                alt="Signature"
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 200px"
-                priority
-              />
-            </div>
+          <div className="w-full text-sm flex justify-end px-24 py-20">
+            <Image
+              src="/images/sign1.png"
+              alt="Signature"
+              width={200}
+              height={100}
+              priority
+            />
+          </div>
+
+          <div className="w-full text-center px-10">
+            <p>Not valid for Medico Legal Case</p>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>
             Print
