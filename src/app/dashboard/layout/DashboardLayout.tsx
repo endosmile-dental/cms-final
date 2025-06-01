@@ -29,45 +29,47 @@ export default function DashboardLayout({
   });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUserData = async () => {
       if (!session?.user) return;
 
       const { id, role } = session.user;
 
-      const promises = [];
+      const fetchTasks: (() => Promise<any>)[] = [];
 
-      // Shared for both Doctor and Patient
+      // Shared for Doctor and Patient
       if (role === "Doctor" || role === "Patient") {
-        if (!billings || billings.length === 0) {
-          promises.push(dispatch(fetchBillings({ userId: id, role })));
+        if (!billings?.length) {
+          fetchTasks.push(() => dispatch(fetchBillings({ userId: id, role })));
         }
 
-        if (!appointments || appointments.length === 0) {
-          promises.push(dispatch(fetchAppointments({ userId: id, role })));
+        if (!appointments?.length) {
+          fetchTasks.push(() =>
+            dispatch(fetchAppointments({ userId: id, role }))
+          );
         }
 
         if (!profile) {
-          promises.push(dispatch(fetchProfile({ userId: id, role })));
+          fetchTasks.push(() => dispatch(fetchProfile({ userId: id, role })));
         }
 
-        // Global data
-        promises.push(dispatch(fetchDoctors({ userId: id })));
+        fetchTasks.push(() => dispatch(fetchDoctors({ userId: id })));
       }
 
-      if (role === "Doctor") {
-        if (!patients || patients.length === 0) {
-          promises.push(dispatch(fetchPatients({ userId: id, role })));
+      if (role === "Doctor" && !patients?.length) {
+        fetchTasks.push(() => dispatch(fetchPatients({ userId: id, role })));
+      }
+
+      // Run all tasks and handle results individually
+      const results = await Promise.allSettled(fetchTasks.map((fn) => fn()));
+
+      results.forEach((result, index) => {
+        if (result.status === "rejected") {
+          console.error(`❌ Task ${index + 1} failed:`, result.reason);
         }
-      }
-
-      try {
-        await Promise.all(promises); // wait for all dispatches to finish
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      }
+      });
     };
 
-    fetchData();
+    fetchUserData();
   }, [dispatch, session?.user?.id]);
 
   return (
