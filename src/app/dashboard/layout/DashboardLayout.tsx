@@ -34,7 +34,7 @@ export default function DashboardLayout({
 
       const { id, role } = session.user;
 
-      const fetchTasks: (() => Promise<any>)[] = [];
+      const fetchTasks = [];
 
       // Shared for Doctor and Patient
       if (role === "Doctor" || role === "Patient") {
@@ -59,12 +59,12 @@ export default function DashboardLayout({
         fetchTasks.push(() => dispatch(fetchPatients({ userId: id, role })));
       }
 
-      // Run all tasks and handle results individually
+      // Execute all tasks and log failures
       const results = await Promise.allSettled(fetchTasks.map((fn) => fn()));
 
-      results.forEach((result, index) => {
+      results.forEach((result, i) => {
         if (result.status === "rejected") {
-          console.error(`❌ Task ${index + 1} failed:`, result.reason);
+          console.error(`❌ Task ${i + 1} failed:`, result.reason);
         }
       });
     };
