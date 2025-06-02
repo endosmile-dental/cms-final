@@ -3,21 +3,22 @@ import UserModel from "@/app/model/User.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { NextRequest, NextResponse } from "next/server";
 
-
 export async function POST(req: NextRequest) {
+  // Connect to database
+  await dbConnect();
   try {
     const { patientId, newPassword } = await req.json();
 
     // Validate input
     if (!patientId || !newPassword) {
       return NextResponse.json(
-        { success: false, message: "Patient ID and new password are required." },
+        {
+          success: false,
+          message: "Patient ID and new password are required.",
+        },
         { status: 400 }
       );
     }
-
-    // Connect to database
-    await dbConnect();
 
     // Find the patient by ID
     const patient = await PatientModel.findById(patientId);

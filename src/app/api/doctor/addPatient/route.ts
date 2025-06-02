@@ -6,6 +6,7 @@ import { z } from "zod";
 import DoctorModel from "@/app/model/Doctor.model";
 import UserModel from "@/app/model/User.model";
 import PatientModel from "@/app/model/Patient.model";
+import dbConnect from "@/app/utils/dbConnect";
 
 // Define a Zod schema for incoming patient registration data.
 const patientRegistrationSchema = z.object({
@@ -36,6 +37,7 @@ const patientRegistrationSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    await dbConnect();
     // Parse and validate the incoming JSON request body
     const body = await request.json();
     const data = patientRegistrationSchema.parse(body);
