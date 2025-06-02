@@ -154,7 +154,10 @@ const DataTable = <T extends object>({
                 onClick={() => onRowClick?.(row)}
               >
                 {columns.map((column) => (
-                  <TableCell key={String(column.accessorKey)}>
+                  <TableCell
+                    key={String(column.accessorKey)}
+                    className="min-w-[120px]"
+                  >
                     {column.render
                       ? column.render(row[column.accessorKey], row)
                       : String(row[column.accessorKey])}

@@ -97,7 +97,7 @@ const Invoice = () => {
       {dataAvailable && patientName && (
         <div
           ref={contentRef}
-          className="bg-white text-black font-sans text-base w-full pb-20 flex flex-col border border-gray-300"
+          className="bg-white text-black font-sans text-base w-full pb-10 flex flex-col border border-gray-300"
         >
           <div className="flex bg-black px-2 py-5">
             <div className="w-1/3 text-slate-100 flex flex-col justify-center items-start">
@@ -105,12 +105,12 @@ const Invoice = () => {
                 <li className="text-base font-bold tracking-wide">
                   Dr. Sumit Dinkar
                 </li>
-                <li className="text-sm">BDS, MDS (MAIDS - Delhi)</li>
-                <li className="text-sm">
+                <li className="text-xs">BDS, MDS (MAIDS - Delhi)</li>
+                <li className="text-xs">
                   Conservative Dentistry And Endodontics
                 </li>
-                <li className="text-sm">Ex- Senior Resident (MAIDS - Delhi)</li>
-                <li className="text-sm">
+                <li className="text-xs">Ex- Senior Resident (MAIDS - Delhi)</li>
+                <li className="text-xs">
                   Ex- Resident (Dr. RML Hospital - New Delhi)
                 </li>
               </ul>
@@ -122,18 +122,19 @@ const Invoice = () => {
                   alt="Logo"
                   width={200}
                   height={100}
+                  className="object-contain"
                   priority
                 />
               </div>
             </div>
             <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center text-slate-100">
               <ul className="text-xs">
-                <li>phone: +91-83688 47831</li>
+                <li>Phone: +91-83688 47831</li>
                 <li>
-                  add: Plot No. 203, NX One Service Ln,
+                  Add: Plot No. 203, NX One Service Ln,
                   <br /> Iteda, Greater Noida, U.P
                 </li>
-                <li>website: www.endosmiledentalcare.in</li>
+                <li>Website: www.endosmiledentalcare.in</li>
               </ul>
             </div>
           </div>
@@ -257,11 +258,12 @@ const Invoice = () => {
               alt="Signature"
               width={200}
               height={100}
+              className="object-contain"
               priority
             />
           </div>
 
-          <div className="w-full text-center px-10">
+          <div className="w-full text-sm text-center px-10">
             <p>Not valid for Medico Legal Case</p>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>

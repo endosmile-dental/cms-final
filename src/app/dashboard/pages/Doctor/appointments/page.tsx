@@ -358,13 +358,13 @@ export default function DoctorAppointments() {
           sortable: true,
         },
         {
-          header: "Contact",
-          accessorKey: "contactNumber",
+          header: "Treatments",
+          accessorKey: "treatments",
           sortable: true,
         },
         {
-          header: "Type",
-          accessorKey: "consultationType",
+          header: "Teeth",
+          accessorKey: "teeth",
           sortable: true,
         },
         {
@@ -377,7 +377,10 @@ export default function DoctorAppointments() {
           accessorKey: "_id",
           sortable: false,
           render: (_: unknown, row: TransformedAppointment) => (
-            <div className="flex space-x-2">
+            <div
+              className="flex space-x-2"
+              onClick={(e) => e.stopPropagation()} // Stop row click
+            >
               <Button
                 variant="ghost"
                 size="sm"
@@ -485,10 +488,9 @@ export default function DoctorAppointments() {
           searchFields={[
             "patientName",
             "patientId",
-            "consultationType",
             "status",
             "date",
-            "contactNumber",
+            "treatments",
           ]}
           itemsPerPage={5}
           onRowClick={(row) => {
