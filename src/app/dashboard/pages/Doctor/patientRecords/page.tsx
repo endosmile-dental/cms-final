@@ -500,7 +500,7 @@ export default function PatientRecords() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
+                            onClick={() => {
                               setSelectedBilling(row);
                               setOpenSelectedBilling(true);
                             }}
