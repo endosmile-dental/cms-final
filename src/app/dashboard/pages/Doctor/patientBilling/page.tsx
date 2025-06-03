@@ -66,7 +66,7 @@ export default function PatientRecords() {
     const value = e.target.value;
     setSearchInput(value);
 
-    if (value.length < 3) {
+    if (value.length < 1) {
       setSuggestions([]);
       return;
     }

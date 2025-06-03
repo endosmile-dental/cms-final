@@ -42,6 +42,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   AlertCircle,
+  Printer,
 } from "lucide-react";
 
 // Redux and Data
@@ -54,11 +55,13 @@ import {
 } from "@/app/redux/slices/appointmentSlice";
 import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import TwoLineDashboardChart from "@/app/components/TwoLineDashboardChart";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 export default function PatientRecords() {
+  const router = useRouter();
   // State Management
   const [searchInput, setSearchInput] = useState("");
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
@@ -391,7 +394,8 @@ export default function PatientRecords() {
                     render: (v) =>
                       typeof v === "string" || typeof v === "number"
                         ? new Date(v).toLocaleDateString()
-                        : "N/A",                  },
+                        : "N/A",
+                  },
                   {
                     header: "Time",
                     accessorKey: "timeSlot",
@@ -400,7 +404,7 @@ export default function PatientRecords() {
                   {
                     header: "Teeth",
                     accessorKey: "teeth",
-                    render: (v) => Array.isArray(v) ? v.join(", ") : "N/A"
+                    render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
                   },
                   {
                     header: "Type",
@@ -488,16 +492,54 @@ export default function PatientRecords() {
                     header: "Actions",
                     accessorKey: "_id",
                     render: (_, row) => (
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedBilling(row);
-                          setOpenSelectedBilling(true);
-                        }}
-                      >
-                        View
-                      </Button>
+                      <>
+                        <div
+                          className="flex space-x-2"
+                          onClick={(e) => e.stopPropagation()} // Stop row click
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              setSelectedBilling(row);
+                              setOpenSelectedBilling(true);
+                            }}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const formattedRow = {
+                                ...row,
+                                date: format(new Date(row.date), "dd MMM yyyy"), // Format ISO date to YYYY-MM-DD
+                                patientName: selectedPatient?.fullName || "", // Add patient name
+                                contactNumber:
+                                  selectedPatient?.contactNumber || "", // Add contact
+                                gender: selectedPatient?.gender || "", // Add gender
+                                email: selectedPatient?.email,
+                              };
+
+                              // Only add email if it exists
+                              if (selectedPatient?.email) {
+                                formattedRow.email = selectedPatient.email;
+                              }
+
+                              sessionStorage.setItem(
+                                "formData",
+                                JSON.stringify(formattedRow)
+                              );
+
+                              router.push(
+                                "/dashboard/pages/Doctor/patientBilling/invoice"
+                              );
+                            }}
+                          >
+                            <Printer size={16} />
+                          </Button>
+                        </div>
+                      </>
                     ),
                   },
                 ]}

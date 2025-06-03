@@ -273,18 +273,57 @@ export default function DoctorDashboard() {
   }, [appointments, patients]);
 
   const pieData = useMemo(() => {
-    if (!billings?.length) return [];
-    const treatmentCounts = billings.reduce((acc, billing) => {
-      billing.treatments?.forEach((treatment: BillingTreatment) => {
-        acc[treatment.treatment] =
-          (acc[treatment.treatment] || 0) + (treatment.quantity || 1);
-      });
-      return acc;
-    }, {} as Record<string, number>);
-    return Object.entries(treatmentCounts).map(([name, value]) => ({
-      name,
-      value,
-    }));
+    if (!billings?.length) return { weekly: [], monthly: [], yearly: [] };
+
+    type BillingWithDate = {
+      date: string | Date;
+      treatments?: BillingTreatment[];
+    };
+
+    const getTreatmentCounts = (
+      filterFn: (billing: BillingWithDate) => boolean
+    ) => {
+      const counts = billings.filter(filterFn).reduce((acc, billing) => {
+        billing.treatments?.forEach((treatment: BillingTreatment) => {
+          acc[treatment.treatment] =
+            (acc[treatment.treatment] || 0) + (treatment.quantity || 1);
+        });
+        return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    };
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+
+    // Weekly = last 7 days
+    const weeklyData = getTreatmentCounts((billing) => {
+      const date = new Date(billing.date);
+      return date >= sevenDaysAgo && date <= now;
+    });
+
+    // Monthly = current calendar month
+    const monthlyData = getTreatmentCounts((billing) => {
+      const date = new Date(billing.date);
+      return (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth()
+      );
+    });
+
+    // Yearly = current calendar year
+    const yearlyData = getTreatmentCounts((billing) => {
+      const date = new Date(billing.date);
+      return date.getFullYear() === now.getFullYear();
+    });
+
+    return {
+      weekly: weeklyData,
+      monthly: monthlyData,
+      yearly: yearlyData,
+    };
   }, [billings]);
 
   const registrationChartData = useMemo(() => {
@@ -349,13 +388,19 @@ export default function DoctorDashboard() {
                   hoverBgColor="green"
                 />
               </div>
-              <Image
-                src="/logo1.png"
-                alt="Clinic Logo"
-                width={50}
-                height={50}
-                className="rounded-full"
-              />
+              <a
+                href="https://g.co/kgs/1FNC4r5"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Image
+                  src="/logo1.png"
+                  alt="Clinic Logo"
+                  width={50}
+                  height={50}
+                  className="rounded-full"
+                />
+              </a>
             </div>
           </div>
         )}
@@ -383,8 +428,8 @@ export default function DoctorDashboard() {
           <DashboardPieChart
             title="Treatments Taken"
             data={pieData}
-            enableTimeFrameSort={false}
-            innerRadius={0.5}
+            enableTimeFrameSort={true}
+            innerRadius={2}
             showPercentage={false}
             showLegend={false}
           />
