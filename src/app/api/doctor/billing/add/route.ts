@@ -76,6 +76,17 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     } else if (error instanceof Error) {
+      // If it was a connection‐failure after all retries, you can return 503
+      if (
+        error.message.includes("Server selection") ||
+        error.message.includes("connection") ||
+        error.message.includes("Timeout")
+      ) {
+        return NextResponse.json(
+          { message: "Database unavailable. Please try again later." },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         { message: "Error creating billing", error: error.message },
         { status: 500 }
