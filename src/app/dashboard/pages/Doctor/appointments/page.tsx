@@ -263,26 +263,29 @@ export default function DoctorAppointments() {
   };
 
   // Open modal with appointment data to edit
-  const handleEditAppointment = useCallback((appointmentId: string) => {
-    const appointmentToEdit = appointments.find(
-      (appointment) => appointment._id === appointmentId
-    );
-    if (appointmentToEdit) {
-      console.log("appointmentToEdit", appointmentToEdit);
+  const handleEditAppointment = useCallback(
+    (appointmentId: string) => {
+      const appointmentToEdit = appointments.find(
+        (appointment) => appointment._id === appointmentId
+      );
+      if (appointmentToEdit) {
+        console.log("appointmentToEdit", appointmentToEdit);
 
-      setEditForm({
-        _id: appointmentToEdit._id,
-        appointmentDate: appointmentToEdit.appointmentDate,
-        status: appointmentToEdit.status,
-        consultationType: appointmentToEdit.consultationType,
-        timeSlot: appointmentToEdit.timeSlot || "",
-        treatments: appointmentToEdit.treatments || [],
-        teeth: appointmentToEdit.teeth || [],
-      });
+        setEditForm({
+          _id: appointmentToEdit._id,
+          appointmentDate: appointmentToEdit.appointmentDate,
+          status: appointmentToEdit.status,
+          consultationType: appointmentToEdit.consultationType,
+          timeSlot: appointmentToEdit.timeSlot || "",
+          treatments: appointmentToEdit.treatments || [],
+          teeth: appointmentToEdit.teeth || [],
+        });
 
-      setIsEditModalOpen(true);
-    }
-  }, []);
+        setIsEditModalOpen(true);
+      }
+    },
+    [appointments]
+  );
 
   // Handle form field changes in the edit modal
   const handleEditFormChange = (field: string, value: string | string[]) => {
