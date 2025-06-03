@@ -1,4 +1,4 @@
-import mongoose, { Connection } from "mongoose";
+import mongoose, { Connection, ConnectOptions } from "mongoose";
 import UserModel from "../model/User.model";
 import { setSuperAdminStatus } from "./globalStore";
 
@@ -41,15 +41,15 @@ const dbConnect = async (
     // Turn off Mongoose buffering so we fail fast if the DB is unreachable
     mongoose.set("bufferCommands", false);
 
+    const options: ConnectOptions = {
+      bufferCommands: false, // do not buffer model calls
+      serverSelectionTimeoutMS: 5000, // give up if no server in 5 seconds
+      socketTimeoutMS: 45000, // close sockets after 45 seconds of inactivity
+    };
+
     // Create the connect-promise (no retry here yet—will wrap below)
     cached.promise = mongoose
-      .connect(MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        bufferCommands: false, // do not buffer model calls
-        serverSelectionTimeoutMS: 5000, // give up if no server in 5 seconds
-        socketTimeoutMS: 45000, // close sockets after 45 seconds of inactivity
-      } as any) // cast as any if TS complains about options
+      .connect(MONGODB_URI, options)
       .then((mongooseInstance) => mongooseInstance.connection)
       .catch((err) => {
         // If connect() itself errors, clear the promise so we can retry
@@ -62,7 +62,7 @@ const dbConnect = async (
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      cached.conn = await cached.promise; // either already‐in‐flight or just created
+      cached.conn = await cached.promise; // either already-in-flight or just created
       console.log("✅ MongoDB connected");
 
       // Run the SuperAdmin check exactly once:
@@ -90,14 +90,14 @@ const dbConnect = async (
 
         // Ensure promise is reset so that a fresh connect() happens next loop
         if (!cached.conn) {
+          const retryOptions: ConnectOptions = {
+            bufferCommands: false,
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
+          };
+
           cached.promise = mongoose
-            .connect(MONGODB_URI, {
-              useNewUrlParser: true,
-              useUnifiedTopology: true,
-              bufferCommands: false,
-              serverSelectionTimeoutMS: 5000,
-              socketTimeoutMS: 45000,
-            } as any)
+            .connect(MONGODB_URI, retryOptions)
             .then((mongooseInstance) => mongooseInstance.connection)
             .catch((innerErr) => {
               cached.promise = null;

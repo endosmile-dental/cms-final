@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -263,7 +263,7 @@ export default function DoctorAppointments() {
   };
 
   // Open modal with appointment data to edit
-  const handleEditAppointment = (appointmentId: string) => {
+  const handleEditAppointment = useCallback((appointmentId: string) => {
     const appointmentToEdit = appointments.find(
       (appointment) => appointment._id === appointmentId
     );
@@ -282,7 +282,7 @@ export default function DoctorAppointments() {
 
       setIsEditModalOpen(true);
     }
-  };
+  }, []);
 
   // Handle form field changes in the edit modal
   const handleEditFormChange = (field: string, value: string | string[]) => {
@@ -319,10 +319,10 @@ export default function DoctorAppointments() {
   };
 
   // Open delete confirmation modal
-  const handleDeleteAppointment = (appointmentId: string) => {
+  const handleDeleteAppointment = useCallback((appointmentId: string) => {
     setDeleteId(appointmentId);
     setIsDeleteModalOpen(true);
-  };
+  }, []);
 
   // Confirm deletion and dispatch delete action
   const confirmDelete = () => {
