@@ -71,23 +71,25 @@ const Invoice = () => {
   }, []);
 
   const generatePDFAndPrint = () => {
-    // Hide the print button
     if (buttonRef.current) buttonRef.current.style.display = "none";
 
     if (contentRef.current) {
       const doc = new jsPDF();
 
-      // Use html method to directly generate the PDF from the HTML
+      const originalZoom = document.body.style.zoom;
+      document.body.style.zoom = "1"; // Force consistent zoom level
+
       doc.html(contentRef.current, {
         callback: function (doc) {
+          document.body.style.zoom = originalZoom; // Restore zoom
           if (buttonRef.current) buttonRef.current.style.display = "block";
           doc.autoPrint();
-          doc.output("dataurlnewwindow"); // Opens the PDF in a new window
+          doc.output("dataurlnewwindow");
         },
         x: 10,
         y: 10,
         width: 180,
-        windowWidth: 800,
+        windowWidth: 800, // simulate consistent browser width
       });
     }
   };
@@ -117,16 +119,14 @@ const Invoice = () => {
             </div>
             <div className="w-1/3 flex justify-center items-center">
               <div className="w-full flex justify-center">
-                <div className="w-full max-w-[200px]">
-                  <Image
-                    src="/images/Logo.png"
-                    alt="Logo"
-                    width={200}
-                    height={100}
-                    className="w-full h-auto object-contain"
-                    priority
-                  />
-                </div>
+                <Image
+                  src="/images/Logo.png"
+                  alt="Logo"
+                  width={200}
+                  height={100}
+                  className="w-[200px] h-auto object-contain"
+                  priority
+                />
               </div>
             </div>
             <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center text-slate-100">
@@ -255,16 +255,14 @@ const Invoice = () => {
           </div>
 
           <div className="w-full text-sm flex justify-end px-24 py-20">
-            <div className="w-full max-w-[200px]">
-              <Image
-                src="/images/sign1.png"
-                alt="Logo"
-                width={200}
-                height={100}
-                className="w-full h-auto object-contain"
-                priority
-              />
-            </div>
+            <Image
+              src="/images/sign1.png"
+              alt="Logo"
+              width={200}
+              height={100}
+              className="w-[200px] h-auto object-contain"
+              priority
+            />
           </div>
 
           <div className="w-full text-sm text-center px-10">
