@@ -117,14 +117,16 @@ const Invoice = () => {
             </div>
             <div className="w-1/3 flex justify-center items-center">
               <div className="w-full flex justify-center">
-                <Image
-                  src="/images/Logo.png"
-                  alt="Logo"
-                  width={200}
-                  height={100}
-                  className="object-contain"
-                  priority
-                />
+                <div className="w-full max-w-[200px]">
+                  <Image
+                    src="/images/Logo.png"
+                    alt="Logo"
+                    width={200}
+                    height={100}
+                    className="w-full h-auto object-contain"
+                    priority
+                  />
+                </div>
               </div>
             </div>
             <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center text-slate-100">
@@ -253,14 +255,16 @@ const Invoice = () => {
           </div>
 
           <div className="w-full text-sm flex justify-end px-24 py-20">
-            <Image
-              src="/images/sign1.png"
-              alt="Signature"
-              width={200}
-              height={100}
-              className="object-contain"
-              priority
-            />
+            <div className="w-full max-w-[200px]">
+              <Image
+                src="/images/sign1.png"
+                alt="Logo"
+                width={200}
+                height={100}
+                className="w-full h-auto object-contain"
+                priority
+              />
+            </div>
           </div>
 
           <div className="w-full text-sm text-center px-10">
