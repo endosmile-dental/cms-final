@@ -6,10 +6,7 @@ import {
   selectAppointments,
 } from "@/app/redux/slices/appointmentSlice";
 import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
-import {
-  fetchPatients,
-  Patient,
-} from "@/app/redux/slices/patientSlice";
+import { fetchPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,15 +40,14 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import TwoLineDashboardChart from "../TwoLineDashboardChart";
-import {
-  ContactInfo,
-  SectionHeader,
-} from "@/app/dashboard/pages/Doctor/patientRecords/page";
+
 import DataTable from "../DataTable";
 import { format } from "date-fns";
 import EditPatientModal from "../EditPatientModal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import ContactInfo from "../ContactInfo";
+import SectionHeader from "../SectionHeader";
 
 // ... existing imports ...
 interface PatientDetailViewProps {

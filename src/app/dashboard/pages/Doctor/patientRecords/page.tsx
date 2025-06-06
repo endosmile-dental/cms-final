@@ -166,34 +166,3 @@ export default function PatientRecords() {
     </DashboardLayout>
   );
 }
-
-// ... SectionHeader and ContactInfo components remain the same ...
-export const SectionHeader = ({
-  icon,
-  title,
-}: {
-  icon: React.ReactNode;
-  title: string;
-}) => (
-  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-    {icon}
-    {title}
-  </h2>
-);
-
-export const ContactInfo = ({
-  icon,
-  title,
-  content,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  content: string;
-}) => (
-  <div>
-    <SectionHeader icon={icon} title={title} />
-    <ul className="space-y-3">
-      <li className="p-2 bg-blue-50 rounded">{content}</li>
-    </ul>
-  </div>
-);
