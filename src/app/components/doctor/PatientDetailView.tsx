@@ -9,7 +9,6 @@ import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import {
   fetchPatients,
   Patient,
-  selectPatients,
 } from "@/app/redux/slices/patientSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { Button } from "@/components/ui/button";
