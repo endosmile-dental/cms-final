@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import TwoLineDashboardChart from "../TwoLineDashboardChart";
 import {
   ContactInfo,
@@ -78,7 +78,6 @@ const PatientDetailView = ({
   const { data: session } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
 
