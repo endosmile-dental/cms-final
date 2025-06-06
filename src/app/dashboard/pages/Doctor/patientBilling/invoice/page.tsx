@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import { Treatment } from "@/app/redux/slices/billingSlice";
+import html2canvas from "html2canvas"; // Add this import
 
 const Invoice = () => {
   // Reference to the content you want to convert to PDF
@@ -74,22 +75,47 @@ const Invoice = () => {
     if (buttonRef.current) buttonRef.current.style.display = "none";
 
     if (contentRef.current) {
-      const doc = new jsPDF();
+      // Use html2canvas to capture the content as an image
+      html2canvas(contentRef.current, {
+        scale: 2, // Increase for better quality
+        useCORS: true, // Handle cross-origin images
+        logging: false, // Disable console logging
+      }).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const doc = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "a4",
+        });
 
-      const originalZoom = document.body.style.zoom;
-      document.body.style.zoom = "1"; // Force consistent zoom level
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
 
-      doc.html(contentRef.current, {
-        callback: function (doc) {
-          document.body.style.zoom = originalZoom; // Restore zoom
-          if (buttonRef.current) buttonRef.current.style.display = "block";
-          doc.autoPrint();
-          doc.output("dataurlnewwindow");
-        },
-        x: 10,
-        y: 10,
-        width: 180,
-        windowWidth: 800, // simulate consistent browser width
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+
+        const ratio = imgWidth / imgHeight;
+        const pdfWidth = pageWidth;
+        const pdfHeight = pageWidth / ratio;
+
+        let heightLeft = pdfHeight;
+        let position = 0;
+
+        doc.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+
+        // Add new pages for long content
+        while (heightLeft >= 0) {
+          position = heightLeft - pdfHeight;
+          doc.addPage();
+          doc.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Restore UI and open print dialog
+        if (buttonRef.current) buttonRef.current.style.display = "block";
+        doc.autoPrint();
+        window.open(doc.output("bloburl"), "_blank");
       });
     }
   };
@@ -99,7 +125,7 @@ const Invoice = () => {
       {dataAvailable && patientName && (
         <div
           ref={contentRef}
-          className="bg-white text-black font-sans text-base w-full pb-10 flex flex-col border border-gray-300"
+          className="bg-white text-black font-sans text-base w-full pb-10 flex flex-col"
         >
           <div className="flex bg-black px-2 py-5">
             <div className="w-1/3 text-slate-100 flex flex-col justify-center items-start">
@@ -119,13 +145,10 @@ const Invoice = () => {
             </div>
             <div className="w-1/3 flex justify-center items-center">
               <div className="w-full flex justify-center">
-                <Image
+                <img
                   src="/images/Logo.png"
                   alt="Logo"
-                  width={200}
-                  height={100}
                   className="w-[200px] h-auto object-contain"
-                  priority
                 />
               </div>
             </div>
@@ -255,13 +278,10 @@ const Invoice = () => {
           </div>
 
           <div className="w-full text-sm flex justify-end px-24 py-20">
-            <Image
+            <img
               src="/images/sign1.png"
               alt="Logo"
-              width={200}
-              height={100}
               className="w-[200px] h-auto object-contain"
-              priority
             />
           </div>
 

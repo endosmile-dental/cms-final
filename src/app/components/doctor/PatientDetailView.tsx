@@ -1,0 +1,782 @@
+"use client";
+
+import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
+import {
+  Appointment,
+  selectAppointments,
+} from "@/app/redux/slices/appointmentSlice";
+import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
+import {
+  fetchPatients,
+  Patient,
+  selectPatients,
+} from "@/app/redux/slices/patientSlice";
+import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
+import { Button } from "@/components/ui/button";
+import {
+  AlertCircle,
+  AlertOctagon,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Calendar,
+  CalendarDays,
+  ClipboardList,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Edit,
+  FileClock,
+  FileText,
+  Hash,
+  IndianRupee,
+  Info,
+  Mail,
+  MapPin,
+  Percent,
+  Printer,
+  ReceiptText,
+  Smile,
+  StickyNote,
+  Tag,
+  Wallet,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import TwoLineDashboardChart from "../TwoLineDashboardChart";
+import {
+  ContactInfo,
+  SectionHeader,
+} from "@/app/dashboard/pages/Doctor/patientRecords/page";
+import DataTable from "../DataTable";
+import { format } from "date-fns";
+import EditPatientModal from "../EditPatientModal";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+
+// ... existing imports ...
+interface PatientDetailViewProps {
+  patient: Patient;
+  onPatientUpdated: (updatedPatient: Patient) => void;
+}
+
+// New component for Patient Detail View
+const PatientDetailView = ({
+  patient,
+  onPatientUpdated,
+}: PatientDetailViewProps) => {
+  const [timeFrame, setTimeFrame] = useState<"monthly" | "yearly">("monthly");
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
+  const [openSelectedAppointment, setOpenSelectedAppointment] = useState(false);
+  const [selectedBilling, setSelectedBilling] = useState<BillingRecord | null>(
+    null
+  );
+  const [openSelectedBilling, setOpenSelectedBilling] = useState(false);
+
+  const { data: session } = useSession();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const patients = useAppSelector(selectPatients);
+  const appointments = useAppSelector(selectAppointments);
+  const billings = useAppSelector(selectBillings);
+
+  // Update selected patient when Redux data changes
+  // useEffect(() => {
+  //   const updated = patients.find((p) => p._id === patient._id);
+  //   if (updated) patient = updated;
+  // }, [patients, patient]);
+
+  // Helper functions
+  const getPatientAppointments = (patientId: string) =>
+    appointments.filter((appointment) => appointment.patient === patientId);
+
+  const getPatientBillings = (patientId: string) =>
+    billings.filter((billing) => billing.patientId === patientId);
+
+  // Static patient stats
+  const stats: Stat[] = [
+    {
+      title: "Upcoming Appointments",
+      value: appointments
+        .filter(
+          (app) =>
+            app.patient === patient._id && // Filter by selected patient
+            new Date(app.appointmentDate) >= new Date() &&
+            app.status !== "Completed" &&
+            app.status !== "Cancelled"
+        )
+        .length.toString(),
+      icon: <Calendar size={24} />,
+      color: "bg-blue-500",
+      LinkURL: "",
+    },
+    {
+      title: "Medical History",
+      value: (patient.medicalHistory?.length || 0).toString(),
+      icon: <AlertOctagon size={24} />,
+      color: "bg-purple-500",
+      LinkURL: "",
+    },
+    {
+      title: "Active Medications", // Changed from "Known Allergies"
+      value: (patient.currentMedications?.length || 0).toString(),
+      icon: <AlertOctagon size={24} />,
+      color: "bg-red-500",
+      LinkURL: "",
+    },
+    {
+      title: "Total Treatments", // Changed from "Last BMI"
+      value: billings
+        .filter((billing) => billing.patientId === patient.PatientId)
+        .reduce(
+          (total, billing) => total + (billing.treatments?.length || 0),
+          0
+        )
+        .toString(),
+      icon: <AlertOctagon size={24} />,
+      color: "bg-green-500",
+      LinkURL: "",
+    },
+  ];
+
+  const processChartData = (
+    appointments: Appointment[],
+    billings: BillingRecord[],
+    timeFrame: "monthly" | "yearly"
+  ) => {
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return timeFrame === "yearly"
+        ? `${date.getFullYear()}`
+        : `${date.getFullYear()}-${(date.getMonth() + 1)
+            .toString()
+            .padStart(2, "0")}`;
+    };
+
+    // Process appointments
+    const appointmentCounts = appointments.reduce<Record<string, number>>(
+      (acc, appointment) => {
+        const month = formatDate(appointment.appointmentDate);
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    // Process treatments from billings
+    const treatmentCounts = billings.reduce<Record<string, number>>(
+      (acc, billing) => {
+        const month = formatDate(billing.date);
+        const treatmentsCount = billing.treatments?.length || 0;
+        acc[month] = (acc[month] || 0) + treatmentsCount;
+        return acc;
+      },
+      {}
+    );
+
+    // Combine data
+    const allMonths = Array.from(
+      new Set([
+        ...Object.keys(appointmentCounts),
+        ...Object.keys(treatmentCounts),
+      ])
+    ).sort();
+
+    return allMonths.map((month) => ({
+      date: month,
+      appointments: appointmentCounts[month] || 0,
+      treatments: treatmentCounts[month] || 0,
+    }));
+  };
+
+  const handleOpenModal = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setOpenSelectedAppointment(true);
+  };
+
+  const openEditModal = () => setEditModalOpen(true);
+  const closeEditModal = () => setEditModalOpen(false);
+
+  return (
+    <>
+      {/* Patient Header Section */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="flex justify-between items-start">
+          <h1 className="text-2xl font-bold text-gray-800">
+            {patient.fullName}
+          </h1>
+          <Button variant="ghost" size="sm" onClick={openEditModal}>
+            <Edit size={16} />
+          </Button>
+        </div>
+
+        {/* Patient Metadata Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+          <div>
+            <span className="text-gray-500">Contact:</span>{" "}
+            {patient.contactNumber || "NA"}
+          </div>
+          <div>
+            <span className="text-gray-500">Gender:</span>{" "}
+            {patient.gender || "NA"}
+          </div>
+          <div>
+            <span className="text-gray-500">DOB:</span>{" "}
+            {patient.dateOfBirth
+              ? new Date(patient.dateOfBirth).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "NA"}{" "}
+          </div>
+          <div>
+            <span className="text-gray-500">Patient ID:</span>{" "}
+            {patient.PatientId}
+          </div>
+        </div>
+      </div>
+
+      <DashboardCards stats={stats} />
+
+      {/* Contact Information Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TwoLineDashboardChart
+          data={processChartData(
+            getPatientAppointments(patient._id),
+            getPatientBillings(patient.PatientId),
+            timeFrame
+          )}
+          timeFrame={timeFrame}
+          setTimeFrame={setTimeFrame}
+        />
+        <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
+          <ContactInfo
+            icon={<Mail className="text-blue-500" size={20} />}
+            title="Email"
+            content={patient.email || "NA"}
+          />
+          <ContactInfo
+            icon={<MapPin className="text-green-500" size={20} />}
+            title="Address"
+            content={`${patient.address?.street}, ${patient.address?.city}, ${patient.address?.state} - ${patient.address?.postalCode}`}
+          />
+          <ContactInfo
+            icon={<AlertOctagon className="text-red-500" size={20} />}
+            title="Emergency Contacts"
+            content={`${patient.emergencyContact?.fullName} (${patient.emergencyContact?.relationship}): ${patient.emergencyContact?.contactNumber}`}
+          />
+        </div>
+      </div>
+
+      {/* Appointment History Section */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <SectionHeader
+          icon={<Calendar className="text-purple-500" size={20} />}
+          title="Appointments"
+        />
+        <DataTable<Appointment>
+          data={getPatientAppointments(patient._id)}
+          title=""
+          showSearch={false}
+          itemsPerPage={10}
+          searchFields={["appointmentDate", "status"]}
+          columns={[
+            {
+              header: "Date",
+              accessorKey: "appointmentDate",
+              sortable: true,
+              render: (v) =>
+                typeof v === "string" || typeof v === "number"
+                  ? new Date(v).toLocaleDateString()
+                  : "N/A",
+            },
+            {
+              header: "Time",
+              accessorKey: "timeSlot",
+              sortable: true,
+            },
+            {
+              header: "Teeth",
+              accessorKey: "teeth",
+              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+            },
+            {
+              header: "Type",
+              accessorKey: "consultationType",
+              render: (v) => v || "N/A",
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              render: (v) => v || "N/A",
+            },
+            {
+              header: "Notes",
+              accessorKey: "notes",
+              render: (v) => v || "N/A",
+            },
+            {
+              header: "Actions",
+              accessorKey: "_id",
+              render: (_, row) => (
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenModal(row);
+                  }}
+                >
+                  View
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {/* Billing History Section */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <SectionHeader
+          icon={<DollarSign className="text-green-500" size={20} />}
+          title="Billings"
+        />
+        <DataTable<BillingRecord>
+          data={getPatientBillings(patient.PatientId)}
+          // ... same billing table config ...
+          title=""
+          showSearch={false}
+          itemsPerPage={10}
+          searchFields={["date", "treatments"]}
+          columns={[
+            {
+              header: "Date",
+              accessorKey: "date",
+              sortable: true,
+              render: (v) =>
+                typeof v === "string" || typeof v === "number"
+                  ? new Date(v).toLocaleDateString()
+                  : "N/A",
+            },
+            {
+              header: "Treatments",
+              accessorKey: "treatments",
+              sortable: true,
+              render: (v) =>
+                Array.isArray(v) ? v.map((t) => t.treatment).join(", ") : "N/A",
+            },
+            {
+              header: "Amount",
+              accessorKey: "totalAmount",
+              render: (v) => (typeof v === "number" ? v.toFixed(2) : "N/A"),
+            },
+            {
+              header: "Discount",
+              accessorKey: "discount",
+            },
+            {
+              header: "Mode of Payment",
+              accessorKey: "modeOfPayment",
+            },
+            {
+              header: "Actions",
+              accessorKey: "_id",
+              render: (_, row) => (
+                <>
+                  <div
+                    className="flex space-x-2"
+                    onClick={(e) => e.stopPropagation()} // Stop row click
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedBilling(row);
+                        setOpenSelectedBilling(true);
+                      }}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const formattedRow = {
+                          ...row,
+                          date: format(new Date(row.date), "dd MMM yyyy"), // Format ISO date to YYYY-MM-DD
+                          patientName: patient?.fullName || "", // Add patient name
+                          contactNumber: patient?.contactNumber || "", // Add contact
+                          gender: patient?.gender || "", // Add gender
+                          email: patient?.email,
+                        };
+
+                        // Only add email if it exists
+                        if (patient?.email) {
+                          formattedRow.email = patient.email;
+                        }
+
+                        sessionStorage.setItem(
+                          "formData",
+                          JSON.stringify(formattedRow)
+                        );
+
+                        router.push(
+                          "/dashboard/pages/Doctor/patientBilling/invoice"
+                        );
+                      }}
+                    >
+                      <Printer size={16} />
+                    </Button>
+                  </div>
+                </>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {/* Edit Patient Modal */}
+      <EditPatientModal
+        isOpen={isEditModalOpen}
+        onClose={closeEditModal}
+        patient={patient}
+        onPatientUpdated={(updatedPatient: Patient) => {
+          onPatientUpdated(updatedPatient);
+          if (session?.user.id) {
+            dispatch(
+              fetchPatients({ userId: session.user.id, role: "Doctor" })
+            );
+          }
+        }}
+      />
+
+      {/* Appointment Details Dialog  */}
+
+      <Dialog
+        open={openSelectedAppointment}
+        onOpenChange={setOpenSelectedAppointment}
+      >
+        <DialogContent className="max-w-2xl animate-fade-in">
+          <DialogTitle className="text-2xl font-bold mb-4">
+            <ClipboardList className="inline-block mr-2 h-6 w-6" />
+            Appointment Details
+          </DialogTitle>
+
+          {selectedAppointment ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {/* Appointment ID */}
+              <div className="flex items-start gap-2 col-span-2">
+                <Hash className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Appointment ID</p>
+                  <p className="font-medium">
+                    {selectedAppointment._id.slice(-5)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div className="flex items-start gap-2">
+                <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p className="font-medium">
+                    {new Date(
+                      selectedAppointment.appointmentDate
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="flex items-start gap-2">
+                <Clock className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Time</p>
+                  <p className="font-medium">{selectedAppointment.timeSlot}</p>
+                </div>
+              </div>
+
+              {/* Teeth */}
+              <div className="flex items-start gap-2">
+                <Smile className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Teeth</p>
+                  <p className="font-medium">
+                    {selectedAppointment.teeth?.join(", ") || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Consultation Type */}
+              <div className="flex items-start gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Consultation Type</p>
+                  <p className="font-medium">
+                    {selectedAppointment.consultationType || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-start gap-2">
+                <Info className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <Badge
+                    variant={
+                      selectedAppointment.status === "Cancelled"
+                        ? "destructive"
+                        : selectedAppointment.status === "Completed"
+                        ? "default"
+                        : "secondary"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedAppointment.status}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Payment Status */}
+              <div className="flex items-start gap-2">
+                <IndianRupee className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Payment</p>
+                  <Badge
+                    variant={
+                      selectedAppointment.paymentStatus === "Pending"
+                        ? "secondary"
+                        : "default"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedAppointment.paymentStatus}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Treatments */}
+              <div className="flex items-start gap-2 col-span-2">
+                <Tag className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Treatments</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedAppointment ? (
+                      selectedAppointment.treatments!.map(
+                        (treatment: string) => (
+                          <Badge key={treatment} variant="outline">
+                            {treatment}
+                          </Badge>
+                        )
+                      )
+                    ) : (
+                      <p className="font-medium">N/A</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="flex items-start gap-2 col-span-2">
+                <StickyNote className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Notes</p>
+                  <p className="font-medium">
+                    {selectedAppointment.notes || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Created At */}
+              <div className="flex items-start gap-2">
+                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Created At</p>
+                  <p className="font-medium">
+                    {new Date(selectedAppointment.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Updated At */}
+              <div className="flex items-start gap-2">
+                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Updated At</p>
+                  <p className="font-medium">
+                    {new Date(selectedAppointment.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              No appointment selected.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Billing Details Dialog */}
+
+      <Dialog open={openSelectedBilling} onOpenChange={setOpenSelectedBilling}>
+        <DialogContent className="max-w-2xl animate-fade-in">
+          <DialogTitle className="text-2xl font-bold mb-4">
+            <ReceiptText className="inline-block mr-2 h-6 w-6" />
+            Billing Details
+          </DialogTitle>
+
+          {selectedBilling ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {/* Date */}
+              <div className="flex items-start gap-2">
+                <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Date</p>
+                  <p className="font-medium">
+                    {new Date(selectedBilling.date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Invoice ID */}
+              <div className="flex items-start gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Invoice ID</p>
+                  <p className="font-medium">{selectedBilling.invoiceId}</p>
+                </div>
+              </div>
+
+              {/* Treatments */}
+              <div className="flex items-start gap-2 col-span-2">
+                <ReceiptText className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Treatments</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedBilling.treatments?.map((t, idx) => (
+                      <Badge key={idx} variant="outline">
+                        {t.treatment} (₹{t.price} * {t.quantity})
+                      </Badge>
+                    )) || "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Amount Before Discount */}
+              <div className="flex items-start gap-2">
+                <DollarSign className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">
+                    Amount Before Discount
+                  </p>
+                  <p className="font-medium">
+                    ₹{selectedBilling.amountBeforeDiscount?.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Discount */}
+              <div className="flex items-start gap-2">
+                <Percent className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Discount</p>
+                  <p className="font-medium">
+                    ₹{selectedBilling.discount || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total Amount */}
+              <div className="flex items-start gap-2">
+                <Wallet className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Total Amount</p>
+                  <p className="font-medium">
+                    ₹{selectedBilling.totalAmount.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Advance */}
+              <div className="flex items-start gap-2">
+                <ArrowUpCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Advance</p>
+                  <p className="font-medium">
+                    ₹{selectedBilling.advance?.toFixed(2) || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Amount Received */}
+              <div className="flex items-start gap-2">
+                <ArrowDownCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Amount Received</p>
+                  <p className="font-medium">
+                    ₹{selectedBilling.amountReceived?.toFixed(2) || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Amount Due */}
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Amount Due</p>
+                  <p
+                    className={`font-medium ${
+                      selectedBilling.amountDue < 0 ? "text-red-500" : ""
+                    }`}
+                  >
+                    ₹{selectedBilling.amountDue?.toFixed(2) || 0}
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode of Payment */}
+              <div className="flex items-start gap-2 col-span-2">
+                <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Mode of Payment</p>
+                  <p className="font-medium">
+                    {selectedBilling.modeOfPayment || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-start gap-2 col-span-2">
+                <ClipboardList className="h-5 w-5 text-muted-foreground mt-1" />
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+                  <Badge
+                    variant={
+                      selectedBilling.status === "Pending"
+                        ? "secondary"
+                        : "default"
+                    }
+                    className="capitalize"
+                  >
+                    {selectedBilling.status}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              No billing selected.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default PatientDetailView;
