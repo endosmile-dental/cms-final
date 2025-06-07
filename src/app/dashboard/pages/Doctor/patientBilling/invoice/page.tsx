@@ -126,18 +126,18 @@ const Invoice = () => {
           ref={contentRef}
           className="bg-white text-black font-sans text-base w-full pb-10 flex flex-col"
         >
-          <div className="flex bg-black px-2 py-5">
-            <div className="w-1/3 text-slate-100 flex flex-col justify-center items-start">
+          <div className="flex p-2 border-b border-gray-300">
+            <div className="w-1/3 flex flex-col justify-center items-start">
               <ul className="flex flex-col justify-center items-start py-2">
                 <li className="text-base font-bold tracking-wide">
                   Dr. Sumit Dinkar
                 </li>
-                <li className="text-xs">BDS, MDS (MAIDS - Delhi)</li>
-                <li className="text-xs">
+                <li className="text-sm">BDS, MDS (MAIDS - Delhi)</li>
+                <li className="text-sm">
                   Conservative Dentistry And Endodontics
                 </li>
-                <li className="text-xs">Ex- Senior Resident (MAIDS - Delhi)</li>
-                <li className="text-xs">
+                <li className="text-sm">Ex- Senior Resident (MAIDS - Delhi)</li>
+                <li className="text-sm">
                   Ex- Resident (Dr. RML Hospital - New Delhi)
                 </li>
               </ul>
@@ -145,32 +145,36 @@ const Invoice = () => {
             <div className="w-1/3 flex justify-center items-center">
               <div className="w-full flex justify-center">
                 <img
-                  src="/images/Logo.png"
+                  src="/images/white_logo.jpeg"
                   alt="Logo"
                   className="w-[200px] h-auto object-contain"
                 />
               </div>
             </div>
-            <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center text-slate-100">
-              <ul className="text-xs">
-                <li>Phone: +91-83688 47831</li>
+            <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center">
+              <ul className="text-sm">
                 <li>
-                  Add: Plot No. 203, NX One Service Ln,
-                  <br /> Iteda, Greater Noida, U.P
+                  <span className="font-bold">Phone:</span> +91-83688 47831
                 </li>
-                <li>Website: www.endosmiledentalcare.in</li>
+                <li>
+                  <span className="font-bold">Add:</span>
+                  Plot No. 203, Techzone-IV, Near NX-One,
+                  <br /> Iteda, Greater Noida West, G.B. Nagar - 201016,
+                  <br /> Uttar Pradesh
+                </li>
+                <li><span className="font-bold">Website:</span> www.endosmiledentalcare.in</li>
               </ul>
             </div>
           </div>
 
-          <div className="flex w-full px-2 justify-end text-xs">
+          <div className="flex w-full p-2 justify-end text-sm">
             <p>
               <strong>Invoice Id : &nbsp;&nbsp;</strong>
               {invoiceId}
             </p>
           </div>
 
-          <div className="mb-6 px-10 gap-x-5 flex text-sm font-normal">
+          <div className="mb-6 px-10 gap-x-5 flex font-normal">
             <ul className="flex flex-col justify-end font-semibold">
               <li>Date:</li>
               <li>Patient Id:</li>
@@ -195,7 +199,7 @@ const Invoice = () => {
 
           <div className="px-10">
             <table className="w-full border-collapse border border-gray-300 mb-6">
-              <thead className="border border-gray-300 text-sm">
+              <thead className="border border-gray-300 text-base">
                 <tr>
                   <th className="px-4 py-2 text-center">S.No.</th>
                   <th className="px-4 py-2 text-center">Treatment/Service</th>
@@ -205,7 +209,7 @@ const Invoice = () => {
                   <th className="px-4 py-2 text-center">Total Cost INR</th>
                 </tr>
               </thead>
-              <tbody className="text-sm font-normal">
+              <tbody className="text-base font-normal">
                 {treatments.map((treatment, index) => (
                   <tr key={index}>
                     <td className="px-4 py-2 text-center">{index + 1}</td>
@@ -226,7 +230,7 @@ const Invoice = () => {
             </table>
           </div>
 
-          <div className="mb-6 gap-x-5 flex text-sm font-normal justify-end px-24">
+          <div className="mb-6 gap-x-5 flex text-base font-normal justify-end px-24">
             <ul className="flex flex-col justify-end font-semibold">
               <li>Grand Total:</li>
               <li>Discount:</li>
@@ -255,7 +259,7 @@ const Invoice = () => {
             PAYMENT DETAILS
           </h3>
 
-          <div className="px-10 text-sm">
+          <div className="px-10 text-base">
             <table className="w-full border-collapse border border-gray-300">
               <thead className="border border-gray-300 text-center">
                 <tr>
@@ -265,7 +269,7 @@ const Invoice = () => {
                   <th className="px-4 py-2">Amount Paid INR</th>
                 </tr>
               </thead>
-              <tbody className="text-sm font-normal text-center">
+              <tbody className="text-base font-normal text-center">
                 <tr>
                   <td className="px-4 py-2">1</td>
                   <td className="px-4 py-2">{date}</td>
@@ -276,7 +280,7 @@ const Invoice = () => {
             </table>
           </div>
 
-          <div className="w-full text-sm flex justify-end px-24 py-20">
+          <div className="w-full flex justify-end px-24 py-20">
             <img
               src="/images/sign1.png"
               alt="Logo"
@@ -284,7 +288,7 @@ const Invoice = () => {
             />
           </div>
 
-          <div className="w-full text-sm text-center px-10">
+          <div className="w-full text-sm font-bold text-center px-10">
             <p>Not valid for Medico Legal Case</p>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>
