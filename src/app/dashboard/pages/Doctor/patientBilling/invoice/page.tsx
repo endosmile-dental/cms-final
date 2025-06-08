@@ -124,22 +124,18 @@ const Invoice = () => {
       {dataAvailable && patientName && (
         <div
           ref={contentRef}
-          className="bg-white text-black font-sans text-base w-full pb-10 flex flex-col"
+          className="bg-white text-black font-sans text-lg w-full px-5 flex flex-col"
         >
           <div className="flex p-2 border-b border-gray-300">
             <div className="w-1/3 flex flex-col justify-center items-start">
-              <ul className="flex flex-col justify-center items-start py-2">
-                <li className="text-base font-bold tracking-wide">
+              <ul className="flex flex-col justify-center items-start py-2 text-base">
+                <li className="text-lg font-bold tracking-wide">
                   Dr. Sumit Dinkar
                 </li>
-                <li className="text-sm">BDS, MDS (MAIDS - Delhi)</li>
-                <li className="text-sm">
-                  Conservative Dentistry And Endodontics
-                </li>
-                <li className="text-sm">Ex- Senior Resident (MAIDS - Delhi)</li>
-                <li className="text-sm">
-                  Ex- Resident (Dr. RML Hospital - New Delhi)
-                </li>
+                <li>BDS, MDS (MAIDS - Delhi)</li>
+                <li>Conservative Dentistry And Endodontics</li>
+                <li>Ex- Senior Resident (MAIDS - Delhi)</li>
+                <li>Ex- Resident (Dr. RML Hospital - New Delhi)</li>
               </ul>
             </div>
             <div className="w-1/3 flex justify-center items-center">
@@ -152,7 +148,7 @@ const Invoice = () => {
               </div>
             </div>
             <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center">
-              <ul className="text-sm">
+              <ul className="text-base">
                 <li>
                   <span className="font-bold">Phone:</span> +91-83688 47831
                 </li>
@@ -162,12 +158,15 @@ const Invoice = () => {
                   <br /> Iteda, Greater Noida West, G.B. Nagar - 201016,
                   <br /> Uttar Pradesh
                 </li>
-                <li><span className="font-bold">Website:</span> www.endosmiledentalcare.in</li>
+                <li>
+                  <span className="font-bold">Website:</span>{" "}
+                  www.endosmiledentalcare.in
+                </li>
               </ul>
             </div>
           </div>
 
-          <div className="flex w-full p-2 justify-end text-sm">
+          <div className="flex w-full pr-5 pt-3 justify-end text-base">
             <p>
               <strong>Invoice Id : &nbsp;&nbsp;</strong>
               {invoiceId}
@@ -195,11 +194,11 @@ const Invoice = () => {
             </ul>
           </div>
 
-          <h3 className="text-center text-base font-bold mb-4">INVOICE</h3>
+          <h3 className="text-center text-lg font-bold mb-4">INVOICE</h3>
 
           <div className="px-10">
             <table className="w-full border-collapse border border-gray-300 mb-6">
-              <thead className="border border-gray-300 text-base">
+              <thead className="border border-gray-300 text-lg">
                 <tr>
                   <th className="px-4 py-2 text-center">S.No.</th>
                   <th className="px-4 py-2 text-center">Treatment/Service</th>
@@ -209,7 +208,7 @@ const Invoice = () => {
                   <th className="px-4 py-2 text-center">Total Cost INR</th>
                 </tr>
               </thead>
-              <tbody className="text-base font-normal">
+              <tbody className="text-lg font-normal">
                 {treatments.map((treatment, index) => (
                   <tr key={index}>
                     <td className="px-4 py-2 text-center">{index + 1}</td>
@@ -230,7 +229,7 @@ const Invoice = () => {
             </table>
           </div>
 
-          <div className="mb-6 gap-x-5 flex text-base font-normal justify-end px-24">
+          <div className="mb-6 gap-x-5 flex text-lg font-normal justify-end px-24">
             <ul className="flex flex-col justify-end font-semibold">
               <li>Grand Total:</li>
               <li>Discount:</li>
@@ -255,11 +254,11 @@ const Invoice = () => {
             </ul>
           </div>
 
-          <h3 className="text-center text-base font-bold mb-4">
+          <h3 className="text-center text-lg font-bold mb-4">
             PAYMENT DETAILS
           </h3>
 
-          <div className="px-10 text-base">
+          <div className="px-10 text-lg">
             <table className="w-full border-collapse border border-gray-300">
               <thead className="border border-gray-300 text-center">
                 <tr>
@@ -269,7 +268,7 @@ const Invoice = () => {
                   <th className="px-4 py-2">Amount Paid INR</th>
                 </tr>
               </thead>
-              <tbody className="text-base font-normal text-center">
+              <tbody className="text-lg font-normal text-center">
                 <tr>
                   <td className="px-4 py-2">1</td>
                   <td className="px-4 py-2">{date}</td>
@@ -288,7 +287,7 @@ const Invoice = () => {
             />
           </div>
 
-          <div className="w-full text-sm font-bold text-center px-10">
+          <div className="w-full text-base font-bold text-center px-10">
             <p>Not valid for Medico Legal Case</p>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>
