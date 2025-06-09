@@ -49,14 +49,17 @@ export default function PatientRecords() {
       );
 
       if (createBilling.fulfilled.match(resultAction)) {
-        const sanitize = (data: Record<string, any>) =>
+        const sanitize = <T extends Record<string, unknown>>(
+          data: T
+        ): Partial<T> =>
           Object.fromEntries(
             Object.entries(data).filter(
-              ([_, value]) => value !== null && value !== undefined
+              ([, value]) => value !== null && value !== undefined
             )
-          );
+          ) as Partial<T>;
 
         const sanitizedData = sanitize(data);
+
         sessionStorage.setItem("formData", JSON.stringify(sanitizedData));
         router.push("/dashboard/pages/Doctor/patientBilling/invoice");
       }

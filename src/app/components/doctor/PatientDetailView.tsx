@@ -407,13 +407,18 @@ const PatientDetailView = ({
                         };
 
                         // Arrow function to sanitize null/undefined
-                        const sanitizeFormData = (data: Record<string, any>) =>
+
+                        const sanitizeFormData = <
+                          T extends Record<string, unknown>
+                        >(
+                          data: T
+                        ): Partial<T> =>
                           Object.fromEntries(
                             Object.entries(data).filter(
-                              ([_, value]) =>
+                              ([, value]) =>
                                 value !== null && value !== undefined
                             )
-                          );
+                          ) as Partial<T>;
 
                         const sanitizedData = sanitizeFormData(formattedRow);
 

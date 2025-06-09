@@ -87,12 +87,12 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
         )
         .slice(0, 3);
 
-      const sanitize = (data: Record<string, any>) =>
+      const sanitize = (data: BillingRecord): Partial<BillingRecord> =>
         Object.fromEntries(
           Object.entries(data).filter(
-            ([_, value]) => value !== null && value !== undefined
+            ([, value]) => value !== null && value !== undefined
           )
-        );
+        ) as Partial<BillingRecord>;
 
       const sanitized = latestThreeBillings.map(sanitize);
 

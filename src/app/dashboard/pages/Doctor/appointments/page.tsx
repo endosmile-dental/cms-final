@@ -31,7 +31,6 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select";
 import DataTable from "@/app/components/DataTable";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import FrequencyCard from "@/app/components/FrequencyCard";
 import { DialogFooterActions } from "@/app/components/DialogFooterActions";
