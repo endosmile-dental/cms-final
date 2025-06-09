@@ -284,7 +284,7 @@ const Invoice = () => {
             />
           </div>
 
-          <div className="w-full text-lg font-bold text-center px-10">
+          <div className="w-full text-lg font-bold text-center px-10 py-2">
             <p>Not valid for Medico Legal Case</p>
           </div>
           <button ref={buttonRef} onClick={generatePDFAndPrint}>
