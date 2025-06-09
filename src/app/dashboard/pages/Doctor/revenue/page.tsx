@@ -14,9 +14,9 @@ import {
 import { format } from "date-fns";
 import {
   ReceiptIndianRupee,
-  DollarSign,
   TrendingUp,
   PieChart,
+  IndianRupee,
 } from "lucide-react";
 import DataTable, { ColumnDef } from "@/app/components/DataTable";
 import EditBillingDialog from "@/app/components/doctor/EditBillingDialog";
@@ -154,7 +154,7 @@ export default function RevenueDashboard() {
     {
       title: "Amount Received",
       value: `${analytics.totalReceived.toLocaleString()}`,
-      icon: <DollarSign size={24} color="white" />,
+      icon: <IndianRupee size={24} color="white" />,
       color: "bg-green-500",
       LinkURL: "",
     },

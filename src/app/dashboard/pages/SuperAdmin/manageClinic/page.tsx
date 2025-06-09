@@ -4,11 +4,11 @@ import Link from "next/link";
 import {
   PlusCircle,
   Activity,
-  DollarSign,
   Stethoscope,
   Clock,
   User,
   AlertOctagon,
+  IndianRupee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
@@ -186,7 +186,7 @@ export default function ClinicsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 bg-white rounded-xl shadow-sm">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <DollarSign className="text-purple-500" size={20} />
+              <IndianRupee className="text-purple-500" size={20} />
               Financial Overview
             </h2>
             <div className="space-y-4">
