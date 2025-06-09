@@ -37,6 +37,33 @@ export async function POST(request: Request) {
       );
     }
 
+    const appointmentDateObj = new Date(appointmentDate);
+    console.log("appointmentDate", appointmentDate);
+    console.log("appointmentDateObj", appointmentDateObj);
+    console.log("Current date", new Date());
+    const now = new Date();
+    const nowStartOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
+    const appointmentStartOfDay = new Date(
+      appointmentDateObj.getFullYear(),
+      appointmentDateObj.getMonth(),
+      appointmentDateObj.getDate()
+    );
+
+    console.log("nowStartOfDay", nowStartOfDay);
+    console.log("appointmentStartOfDay", appointmentStartOfDay);
+    
+
+    if (appointmentStartOfDay < nowStartOfDay) {
+      return NextResponse.json(
+        { error: "Appointment date must be today or in the future" },
+        { status: 400 }
+      );
+    }
+
     // Fetch doctor info to extract internal ID and clinic ID
     const doctorInfo = await DoctorModel.findOne({ userId: doctor });
     if (!doctorInfo) {
@@ -58,7 +85,6 @@ export async function POST(request: Request) {
     });
 
     console.log("appointment", appointment);
-    
 
     const savedAppointment = await appointment.save();
 

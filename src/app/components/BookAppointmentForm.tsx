@@ -354,6 +354,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
               setAppointmentData((prev) => ({ ...prev, appointmentDate: date }))
             }
             defaultMonth={new Date()}
+            disabled={{ before: new Date() }}
           />
         </div>
 

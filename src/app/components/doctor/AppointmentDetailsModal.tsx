@@ -19,6 +19,7 @@ import { DialogDescription } from "@radix-ui/react-dialog";
 
 interface Appointment {
   patientName: string;
+  contactNumber?: string;
   timeSlot?: string;
   teeth?: string[] | string;
   treatments?: string[] | string;
@@ -55,6 +56,7 @@ const AppointmentDetailsModal = ({
                 <TableRow>
                   <TableHead className="text-left">Patient Name</TableHead>
                   <TableHead className="text-left">Appointment Time</TableHead>
+                  <TableHead className="text-left">Contact Number</TableHead>
                   <TableHead className="text-left">Teeth</TableHead>
                   <TableHead className="text-left">Treatments</TableHead>
                 </TableRow>
@@ -72,6 +74,9 @@ const AppointmentDetailsModal = ({
                       </TableCell>
                       <TableCell className="text-sm">
                         {appointment?.timeSlot || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {appointment?.contactNumber || "N/A"}
                       </TableCell>
 
                       <TableCell className="text-sm">

@@ -24,6 +24,7 @@ export interface AppointmentDateDetailed {
   count: number;
   appointments: {
     patientName: string;
+    contactNumber?: string;
     timeSlot: string;
     treatments: string[];
     teeth: string[];
@@ -62,38 +63,79 @@ export default function DashboardCalendar({
   const CustomDay = ({ date }: { date: Date }) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const detail = dateToDetailsMap.get(dateStr);
+    const isToday =
+      format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
     const dayNum = date.getDate();
 
-    if (!detail) {
+    const baseStyle =
+      "w-9 h-9 flex items-center justify-center text-sm rounded cursor-pointer";
+
+    // Case: Today with appointments
+    if (detail && isToday) {
       return (
-        <div className="w-9 h-9 flex items-center justify-center text-sm">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={`${baseStyle} bg-primary text-white ring-2 ring-offset-2 ring-blue-500`}
+              onClick={() => handleDateClick(date)}
+            >
+              {dayNum}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            <div>
+              <strong>
+                {detail.count}{" "}
+                {detail.count === 1 ? "appointment" : "appointments"}
+              </strong>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    // Case: Today without appointments
+    if (!detail && isToday) {
+      return (
+        <div
+          className={`${baseStyle} text-gray-900 bg-white ring-2 ring-offset-2 ring-blue-500`}
+        >
           {dayNum}
         </div>
       );
     }
 
+    // Case: Not today but has appointments
+    if (detail) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={`${baseStyle} bg-primary text-white`}
+              onClick={() => handleDateClick(date)}
+            >
+              {dayNum}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            <div>
+              <strong>
+                {detail.count}{" "}
+                {detail.count === 1 ? "appointment" : "appointments"}
+              </strong>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    // Default day (not today, no appointments)
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            className="w-9 h-9 flex items-center justify-center text-white bg-primary rounded cursor-pointer"
-            onClick={() => handleDateClick(date)}
-          >
-            {dayNum}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          <div>
-            <strong>
-              {detail.count}{" "}
-              {detail.count === 1 ? "appointment" : "appointments"}
-            </strong>
-          </div>
-        </TooltipContent>
-      </Tooltip>
+      <div className="w-9 h-9 flex items-center justify-center text-sm">
+        {dayNum}
+      </div>
     );
   };
-
   return (
     <Card className="p-4">
       <CardHeader className="flex justify-between">
@@ -118,8 +160,7 @@ export default function DashboardCalendar({
               caption: "flex justify-center pt-1 relative items-center",
               caption_label: "text-gray-900 font-medium",
               nav: "flex gap-1 absolute top-1 right-1",
-              nav_button:
-                "h-8 w-40 md:w-64 bg-transparent p-0 rounded-md",
+              nav_button: "h-8 w-64 bg-transparent p-0 rounded-md",
               nav_button_next: "absolute -left-5 -top-1",
               nav_button_previous: "absolute right-1 -top-1",
               table: "w-full border-collapse space-y-1",

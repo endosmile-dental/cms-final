@@ -399,21 +399,27 @@ const PatientDetailView = ({
                       onClick={() => {
                         const formattedRow = {
                           ...row,
-                          date: format(new Date(row.date), "dd MMM yyyy"), // Format ISO date to YYYY-MM-DD
-                          patientName: patient?.fullName || "", // Add patient name
-                          contactNumber: patient?.contactNumber || "", // Add contact
-                          gender: patient?.gender || "", // Add gender
+                          date: format(new Date(row.date), "dd MMM yyyy"),
+                          patientName: patient?.fullName || "",
+                          contactNumber: patient?.contactNumber || "",
+                          gender: patient?.gender || "",
                           email: patient?.email,
                         };
 
-                        // Only add email if it exists
-                        if (patient?.email) {
-                          formattedRow.email = patient.email;
-                        }
+                        // Arrow function to sanitize null/undefined
+                        const sanitizeFormData = (data: Record<string, any>) =>
+                          Object.fromEntries(
+                            Object.entries(data).filter(
+                              ([_, value]) =>
+                                value !== null && value !== undefined
+                            )
+                          );
+
+                        const sanitizedData = sanitizeFormData(formattedRow);
 
                         sessionStorage.setItem(
                           "formData",
-                          JSON.stringify(formattedRow)
+                          JSON.stringify(sanitizedData)
                         );
 
                         router.push(

@@ -35,38 +35,39 @@ const Invoice = () => {
   useEffect(() => {
     const formData = sessionStorage.getItem("formData");
 
-    if (formData) {
-      setDataAvailable(true);
-      const dataObject = JSON.parse(formData);
-      console.log("dataObject", dataObject);
+    if (formData && formData !== "undefined") {
+      try {
+        const dataObject = JSON.parse(formData);
+        setDataAvailable(true);
+        console.log("dataObject", dataObject);
 
-      setPatientName(dataObject.patientName || "NA");
-      setPatientId(dataObject.patientId || "NA");
-      setInvoiceId(dataObject.invoiceId || "NA");
-      setGender(dataObject.gender || "NA");
-      setDate(dataObject.date || "NA");
-      setEmail(dataObject.email || "NA");
-      setContactNumber(dataObject.contactNumber || "NA");
-      setAddress(dataObject.address || "NA");
-      // Use the correctly spelled field from session storage.
-      setAmountReceived(dataObject.amountReceived || "0");
-      setModeOfPayment(dataObject.modeOfPayment || "NA");
-      setAdvance(dataObject.advance || "0");
-      setDiscount(dataObject.discount || "0");
-      setTreatments(dataObject.treatments || []);
+        setPatientName(dataObject.patientName || "NA");
+        setPatientId(dataObject.patientId || "NA");
+        setInvoiceId(dataObject.invoiceId || "NA");
+        setGender(dataObject.gender || "NA");
+        setDate(dataObject.date || "NA");
+        setEmail(dataObject.email || "NA");
+        setContactNumber(dataObject.contactNumber || "NA");
+        setAddress(dataObject.address || "NA");
+        setAmountReceived(dataObject.amountReceived || "0");
+        setModeOfPayment(dataObject.modeOfPayment || "NA");
+        setAdvance(dataObject.advance || "0");
+        setDiscount(dataObject.discount || "0");
+        setTreatments(dataObject.treatments || []);
 
-      const treatmentsData = dataObject.treatments || [];
-      // Calculate grand total from treatments
-      const totalAmount = treatmentsData.reduce(
-        (total: number, treatment: Treatment) => {
-          const quantity = Number(treatment.quantity) || 0;
-          const price = Number(treatment.price) || 0;
-          return total + quantity * price;
-        },
-        0
-      );
-      console.log("totalAmount", totalAmount);
-      setGrandTotal(safeNumberToString(totalAmount));
+        const treatmentsData = dataObject.treatments || [];
+        const totalAmount = treatmentsData.reduce(
+          (total: number, treatment: Treatment) => {
+            const quantity = Number(treatment.quantity) || 0;
+            const price = Number(treatment.price) || 0;
+            return total + quantity * price;
+          },
+          0
+        );
+        setGrandTotal(safeNumberToString(totalAmount));
+      } catch (err) {
+        console.error("Invalid JSON in sessionStorage:", err);
+      }
     }
   }, []);
 

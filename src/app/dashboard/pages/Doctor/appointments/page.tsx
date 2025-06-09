@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import FrequencyCard from "@/app/components/FrequencyCard";
+import { DialogFooterActions } from "@/app/components/DialogFooterActions";
 
 interface ModalProps {
   isOpen: boolean;
@@ -84,6 +85,8 @@ export default function DoctorAppointments() {
   } | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const [openAppointmentDialog, setOpenAppointmentDialog] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
@@ -240,22 +243,22 @@ export default function DoctorAppointments() {
     appointments: Appointment[]
   ): TransformedAppointment[] => {
     return appointments.map((appointment) => {
-      const patientInfo = appointment.patient
+      const patientInfo = appointment?.patient
         ? getPatientInfo(appointment.patient)
         : null;
 
       return {
         _id: appointment._id,
-        patientId: patientInfo?.PatientId || "NA",
-        patientName: patientInfo?.fullName || "NA",
+        patientId: patientInfo?.PatientId ?? "NA",
+        patientName: patientInfo?.fullName ?? "NA",
         date: format(new Date(appointment.appointmentDate), "yyyy-MM-dd"),
-        timeSlot: appointment.timeSlot || "NA",
-        contactNumber: patientInfo?.contactNumber || "NA",
+        timeSlot: appointment.timeSlot ?? "NA",
+        contactNumber: patientInfo?.contactNumber ?? "NA",
         consultationType: appointment.consultationType,
         status: appointment.status,
-        treatments: appointment.treatments || [],
-        teeth: appointment.teeth || [],
-        notes: appointment.notes || "",
+        treatments: appointment.treatments ?? [],
+        teeth: appointment.teeth ?? [],
+        notes: appointment.notes ?? "",
         createdAt: appointment.createdAt,
         updatedAt: appointment.updatedAt,
       };
@@ -721,118 +724,117 @@ export default function DoctorAppointments() {
         open={openAppointmentDialog}
         onOpenChange={setOpenAppointmentDialog}
       >
-        <DialogContent className="max-w-2xl animate-fade-in">
+        <DialogContent ref={dialogRef} className="max-w-2xl animate-fade-in">
           <DialogTitle className="text-2xl font-bold mb-4">
             <CalendarDays className="inline-block mr-2 h-6 w-6" />
             Appointment Details
           </DialogTitle>
 
           {selectedAppointment ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Appointment ID</p>
-                <p className="font-medium">
-                  {selectedAppointment._id.slice(-5)}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">Date</p>
-                <p className="font-medium">
-                  {new Date(selectedAppointment.date).toLocaleDateString()}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">Time Slot</p>
-                <p className="font-medium">
-                  {selectedAppointment.timeSlot || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">Consultation Type</p>
-                <p className="font-medium">
-                  {selectedAppointment.consultationType}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-muted-foreground">Status</p>
-                <Badge
-                  variant={
-                    selectedAppointment.status === "Scheduled"
-                      ? "secondary"
-                      : "default"
-                  }
-                  className="capitalize"
-                >
-                  {selectedAppointment.status}
-                </Badge>
-              </div>
-
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Treatments</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedAppointment.treatments?.length > 0 ? (
-                    selectedAppointment.treatments.map((t) => (
-                      <Badge key={t} variant="outline">
-                        {t}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="font-medium">N/A</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Teeth</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedAppointment.teeth?.length > 0 ? (
-                    selectedAppointment.teeth.map((tooth) => (
-                      <Badge key={tooth} variant="outline">
-                        {tooth}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="font-medium">N/A</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="col-span-2">
-                <p className="text-muted-foreground">Notes</p>
-                <p className="font-medium">
-                  {selectedAppointment.notes || "N/A"}
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Created At</p>
+            <>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Appointment ID</p>
                   <p className="font-medium">
-                    {new Date(
-                      selectedAppointment.createdAt || ""
-                    ).toLocaleString()}
+                    {selectedAppointment._id.slice(-5)}
                   </p>
                 </div>
-              </div>
 
-              {/* Updated At */}
-              <div className="flex items-start gap-2">
-                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
                 <div>
-                  <p className="text-muted-foreground">Updated At</p>
-                  <p className="font-medium">
-                    {new Date(
-                      selectedAppointment.updatedAt || ""
-                    ).toLocaleString()}{" "}
+                  <p className="text-muted-foreground">Date</p>
+                  <p className="font-bold">
+                    {new Date(selectedAppointment.date).toLocaleDateString()}
                   </p>
                 </div>
+
+                <div>
+                  <p className="text-muted-foreground">Time Slot</p>
+                  <p className="font-bold">
+                    {selectedAppointment.timeSlot || "N/A"}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Consultation Type</p>
+                  <p className="font-medium">
+                    {selectedAppointment.consultationType}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-muted-foreground">Status</p>
+
+                  <p className="font-medium">{selectedAppointment.status}</p>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Treatments</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedAppointment.treatments?.length > 0 ? (
+                      selectedAppointment.treatments.map((t) => (
+                        <p key={t} className="font-bold">
+                          {t},
+                        </p>
+                      ))
+                    ) : (
+                      <p className="font-medium">N/A</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Teeth</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {selectedAppointment.teeth?.length > 0 ? (
+                      selectedAppointment.teeth.map((tooth) => (
+                        <p key={tooth} className="font-bold">
+                          {tooth},
+                        </p>
+                      ))
+                    ) : (
+                      <p className="font-medium">N/A</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-muted-foreground">Notes</p>
+                  <p className="font-medium">
+                    {selectedAppointment.notes || "N/A"}
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2 no-capture">
+                  <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Created At</p>
+                    <p className="font-medium">
+                      {new Date(
+                        selectedAppointment.createdAt || ""
+                      ).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Updated At */}
+                <div className="flex items-start gap-2 no-capture">
+                  <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Updated At</p>
+                    <p className="font-medium">
+                      {new Date(
+                        selectedAppointment.updatedAt || ""
+                      ).toLocaleString()}{" "}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              <DialogFooterActions
+                captureRef={dialogRef}
+                className="no-capture"
+              />
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground">
               No appointment selected.

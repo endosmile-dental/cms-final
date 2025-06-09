@@ -51,13 +51,5 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
   { timestamps: true }
 );
 
-// Prevent past appointments from being created
-AppointmentSchema.pre("save", function (next) {
-  if (this.isNew && this.appointmentDate < new Date()) {
-    return next(new Error("Appointment date must be in the future"));
-  }
-  next();
-});
-
 export default mongoose.models.Appointment ||
   model<IAppointment>("Appointment", AppointmentSchema);

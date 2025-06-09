@@ -79,6 +79,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       const filteredBillings = billings.filter(
         (bill) => bill.patientId === patient._id
       );
+
       const latestThreeBillings = filteredBillings
         .sort(
           (a, b) =>
@@ -86,10 +87,16 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
         )
         .slice(0, 3);
 
-      sessionStorage.setItem(
-        "lastThreeBillings",
-        JSON.stringify(latestThreeBillings)
-      );
+      const sanitize = (data: Record<string, any>) =>
+        Object.fromEntries(
+          Object.entries(data).filter(
+            ([_, value]) => value !== null && value !== undefined
+          )
+        );
+
+      const sanitized = latestThreeBillings.map(sanitize);
+
+      sessionStorage.setItem("lastThreeBillings", JSON.stringify(sanitized));
     }
   }, [patient, billings, form]);
 

@@ -49,7 +49,15 @@ export default function PatientRecords() {
       );
 
       if (createBilling.fulfilled.match(resultAction)) {
-        sessionStorage.setItem("formData", JSON.stringify(data));
+        const sanitize = (data: Record<string, any>) =>
+          Object.fromEntries(
+            Object.entries(data).filter(
+              ([_, value]) => value !== null && value !== undefined
+            )
+          );
+
+        const sanitizedData = sanitize(data);
+        sessionStorage.setItem("formData", JSON.stringify(sanitizedData));
         router.push("/dashboard/pages/Doctor/patientBilling/invoice");
       }
     } catch (error: unknown) {

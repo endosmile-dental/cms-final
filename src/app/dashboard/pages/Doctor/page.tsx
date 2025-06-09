@@ -237,6 +237,7 @@ export default function DoctorDashboard() {
         count: number;
         appointments: {
           patientName: string;
+          contactNumber?: string;
           timeSlot: string;
           treatments: string[];
           teeth: string[];
@@ -253,15 +254,17 @@ export default function DoctorDashboard() {
         (p) => p._id === appointment.patient
       );
       const patientName = matchedPatient?.fullName || "Unknown";
+      const contactNumber = matchedPatient?.contactNumber || "N/A";
 
       if (!dateMap[dateStr]) dateMap[dateStr] = { count: 0, appointments: [] };
 
       dateMap[dateStr].count++;
       dateMap[dateStr].appointments.push({
         patientName,
-        timeSlot: appointment.timeSlot || "09:00 AM",
-        teeth: appointment.teeth || [],
-        treatments: appointment.treatments || [],
+        contactNumber,
+        timeSlot: appointment?.timeSlot || "09:00 AM",
+        teeth: appointment?.teeth || [],
+        treatments: appointment?.treatments || [],
       });
     });
 
