@@ -13,13 +13,11 @@ import {
   AlertCircle,
   AlertOctagon,
   ArrowDownCircle,
-  ArrowUpCircle,
   Calendar,
   CalendarDays,
   ClipboardList,
   Clock,
   CreditCard,
-  DollarSign,
   Edit,
   FileClock,
   FileText,
@@ -38,16 +36,16 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import TwoLineDashboardChart from "../TwoLineDashboardChart";
 
 import DataTable from "../DataTable";
 import { format } from "date-fns";
 import EditPatientModal from "../EditPatientModal";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import ContactInfo from "../ContactInfo";
 import SectionHeader from "../SectionHeader";
+import { DialogFooterActions } from "../DialogFooterActions";
 
 // ... existing imports ...
 interface PatientDetailViewProps {
@@ -75,6 +73,9 @@ const PatientDetailView = ({
   const router = useRouter();
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
+
+  const appointmentDialogRef = useRef<HTMLDivElement>(null);
+  const billingDialogRef = useRef<HTMLDivElement>(null);
 
   // Update selected patient when Redux data changes
   // useEffect(() => {
@@ -334,7 +335,7 @@ const PatientDetailView = ({
       {/* Billing History Section */}
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <SectionHeader
-          icon={<DollarSign className="text-green-500" size={20} />}
+          icon={<IndianRupee className="text-green-500" size={20} />}
           title="Billings"
         />
         <DataTable<BillingRecord>
@@ -463,161 +464,156 @@ const PatientDetailView = ({
         open={openSelectedAppointment}
         onOpenChange={setOpenSelectedAppointment}
       >
-        <DialogContent className="max-w-2xl animate-fade-in">
+        <DialogContent
+          ref={appointmentDialogRef}
+          className="max-w-2xl animate-fade-in"
+        >
           <DialogTitle className="text-2xl font-bold mb-4">
             <ClipboardList className="inline-block mr-2 h-6 w-6" />
             Appointment Details
           </DialogTitle>
 
           {selectedAppointment ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {/* Appointment ID */}
-              <div className="flex items-start gap-2 col-span-2">
-                <Hash className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Appointment ID</p>
-                  <p className="font-medium">
-                    {selectedAppointment._id.slice(-5)}
-                  </p>
+            <>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {/* Appointment ID */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <Hash className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Appointment ID</p>
+                    <p className="font-medium">
+                      {selectedAppointment._id.slice(-5)}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Date */}
-              <div className="flex items-start gap-2">
-                <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p className="font-medium">
-                    {new Date(
-                      selectedAppointment.appointmentDate
-                    ).toLocaleDateString()}
-                  </p>
+                {/* Date */}
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Date</p>
+                    <p className="font-medium">
+                      {new Date(
+                        selectedAppointment.appointmentDate
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Time */}
-              <div className="flex items-start gap-2">
-                <Clock className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Time</p>
-                  <p className="font-medium">{selectedAppointment.timeSlot}</p>
+                {/* Time */}
+                <div className="flex items-start gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Time</p>
+                    <p className="font-medium">
+                      {selectedAppointment.timeSlot}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Teeth */}
-              <div className="flex items-start gap-2">
-                <Smile className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Teeth</p>
-                  <p className="font-medium">
-                    {selectedAppointment.teeth?.join(", ") || "N/A"}
-                  </p>
+                {/* Teeth */}
+                <div className="flex items-start gap-2">
+                  <Smile className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Teeth</p>
+                    <p className="font-medium">
+                      {selectedAppointment.teeth?.join(", ") || "N/A"}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Consultation Type */}
-              <div className="flex items-start gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Consultation Type</p>
-                  <p className="font-medium">
-                    {selectedAppointment.consultationType || "N/A"}
-                  </p>
+                {/* Consultation Type */}
+                <div className="flex items-start gap-2">
+                  <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Consultation Type</p>
+                    <p className="font-medium">
+                      {selectedAppointment.consultationType || "N/A"}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Status */}
-              <div className="flex items-start gap-2">
-                <Info className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Status</p>
-                  <Badge
-                    variant={
-                      selectedAppointment.status === "Cancelled"
-                        ? "destructive"
-                        : selectedAppointment.status === "Completed"
-                        ? "default"
-                        : "secondary"
-                    }
-                    className="capitalize"
-                  >
-                    {selectedAppointment.status}
-                  </Badge>
+                {/* Status */}
+                <div className="flex items-start gap-2">
+                  <Info className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <p className="capitalize font-bold">
+                      {selectedAppointment.status}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Payment Status */}
-              <div className="flex items-start gap-2">
-                <IndianRupee className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Payment</p>
-                  <Badge
-                    variant={
-                      selectedAppointment.paymentStatus === "Pending"
-                        ? "secondary"
-                        : "default"
-                    }
-                    className="capitalize"
-                  >
-                    {selectedAppointment.paymentStatus}
-                  </Badge>
+                {/* Payment Status */}
+                <div className="flex items-start gap-2">
+                  <IndianRupee className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Payment</p>
+                    <p className="capitalize font-bold">
+                      {selectedAppointment.paymentStatus}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Treatments */}
-              <div className="flex items-start gap-2 col-span-2">
-                <Tag className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Treatments</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedAppointment ? (
-                      selectedAppointment.treatments!.map(
-                        (treatment: string) => (
-                          <Badge key={treatment} variant="outline">
-                            {treatment}
-                          </Badge>
+                {/* Treatments */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <Tag className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Treatments</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedAppointment ? (
+                        selectedAppointment.treatments!.map(
+                          (treatment: string) => (
+                            <p key={treatment} className="font-bold">
+                              {treatment},
+                            </p>
+                          )
                         )
-                      )
-                    ) : (
-                      <p className="font-medium">N/A</p>
-                    )}
+                      ) : (
+                        <p className="font-medium">N/A</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <StickyNote className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Notes</p>
+                    <p className="font-medium">
+                      {selectedAppointment.notes || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Created At */}
+                <div className="flex items-start gap-2 no-capture">
+                  <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Created At</p>
+                    <p className="font-medium">
+                      {new Date(selectedAppointment.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Updated At */}
+                <div className="flex items-start gap-2 no-capture">
+                  <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Updated At</p>
+                    <p className="font-medium">
+                      {new Date(selectedAppointment.updatedAt).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </div>
-
-              {/* Notes */}
-              <div className="flex items-start gap-2 col-span-2">
-                <StickyNote className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Notes</p>
-                  <p className="font-medium">
-                    {selectedAppointment.notes || "N/A"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Created At */}
-              <div className="flex items-start gap-2">
-                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Created At</p>
-                  <p className="font-medium">
-                    {new Date(selectedAppointment.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              {/* Updated At */}
-              <div className="flex items-start gap-2">
-                <FileClock className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Updated At</p>
-                  <p className="font-medium">
-                    {new Date(selectedAppointment.updatedAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
+              <DialogFooterActions
+                captureRef={appointmentDialogRef}
+                className="no-capture"
+              />
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground">
               No appointment selected.
@@ -629,150 +625,141 @@ const PatientDetailView = ({
       {/* Billing Details Dialog */}
 
       <Dialog open={openSelectedBilling} onOpenChange={setOpenSelectedBilling}>
-        <DialogContent className="max-w-2xl animate-fade-in">
+        <DialogContent
+          ref={billingDialogRef}
+          className="max-w-2xl animate-fade-in"
+        >
           <DialogTitle className="text-2xl font-bold mb-4">
             <ReceiptText className="inline-block mr-2 h-6 w-6" />
             Billing Details
           </DialogTitle>
 
           {selectedBilling ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {/* Date */}
-              <div className="flex items-start gap-2">
-                <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Date</p>
-                  <p className="font-medium">
-                    {new Date(selectedBilling.date).toLocaleDateString()}
-                  </p>
+            <>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {/* Date */}
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Date</p>
+                    <p className="font-medium">
+                      {new Date(selectedBilling.date).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Invoice ID */}
-              <div className="flex items-start gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Invoice ID</p>
-                  <p className="font-medium">{selectedBilling.invoiceId}</p>
+                {/* Invoice ID */}
+                <div className="flex items-start gap-2">
+                  <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Invoice ID</p>
+                    <p className="font-medium">{selectedBilling.invoiceId}</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Treatments */}
-              <div className="flex items-start gap-2 col-span-2">
-                <ReceiptText className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Treatments</p>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedBilling.treatments?.map((t, idx) => (
-                      <Badge key={idx} variant="outline">
-                        {t.treatment} (₹{t.price} * {t.quantity})
-                      </Badge>
-                    )) || "N/A"}
+                {/* Treatments */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <ReceiptText className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Treatments</p>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {selectedBilling.treatments?.map((t, idx) => (
+                        <p key={idx} className="font-bold">
+                          {t.treatment} (₹{t.price} * {t.quantity})
+                        </p>
+                      )) || "N/A"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Before Discount */}
+                <div className="flex items-start gap-2">
+                  <IndianRupee className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">
+                      Amount Before Discount
+                    </p>
+                    <p className="font-medium">
+                      ₹{selectedBilling.amountBeforeDiscount?.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Discount */}
+                <div className="flex items-start gap-2">
+                  <Percent className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Discount</p>
+                    <p className="font-medium">
+                      ₹{selectedBilling.discount || 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Total Amount */}
+                <div className="flex items-start gap-2">
+                  <Wallet className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Total Amount</p>
+                    <p className="font-medium">
+                      ₹{selectedBilling.totalAmount.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Amount Received */}
+                <div className="flex items-start gap-2">
+                  <ArrowDownCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Amount Received</p>
+                    <p className="font-medium">
+                      ₹{selectedBilling.amountReceived?.toFixed(2) || 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Amount Due */}
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Amount Due</p>
+                    <p
+                      className={`font-medium ${
+                        selectedBilling.amountDue < 0 ? "text-red-500" : ""
+                      }`}
+                    >
+                      ₹{selectedBilling.amountDue?.toFixed(2) || 0}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mode of Payment */}
+                <div className="flex items-start gap-2">
+                  <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Mode of Payment</p>
+                    <p className="font-medium">
+                      {selectedBilling.modeOfPayment || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <ClipboardList className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <p className="capitalize font-bold">
+                      {selectedBilling.status}
+                    </p>
                   </div>
                 </div>
               </div>
-
-              {/* Amount Before Discount */}
-              <div className="flex items-start gap-2">
-                <DollarSign className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">
-                    Amount Before Discount
-                  </p>
-                  <p className="font-medium">
-                    ₹{selectedBilling.amountBeforeDiscount?.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Discount */}
-              <div className="flex items-start gap-2">
-                <Percent className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Discount</p>
-                  <p className="font-medium">
-                    ₹{selectedBilling.discount || 0}
-                  </p>
-                </div>
-              </div>
-
-              {/* Total Amount */}
-              <div className="flex items-start gap-2">
-                <Wallet className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Total Amount</p>
-                  <p className="font-medium">
-                    ₹{selectedBilling.totalAmount.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Advance */}
-              <div className="flex items-start gap-2">
-                <ArrowUpCircle className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Advance</p>
-                  <p className="font-medium">
-                    ₹{selectedBilling.advance?.toFixed(2) || 0}
-                  </p>
-                </div>
-              </div>
-
-              {/* Amount Received */}
-              <div className="flex items-start gap-2">
-                <ArrowDownCircle className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Amount Received</p>
-                  <p className="font-medium">
-                    ₹{selectedBilling.amountReceived?.toFixed(2) || 0}
-                  </p>
-                </div>
-              </div>
-
-              {/* Amount Due */}
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Amount Due</p>
-                  <p
-                    className={`font-medium ${
-                      selectedBilling.amountDue < 0 ? "text-red-500" : ""
-                    }`}
-                  >
-                    ₹{selectedBilling.amountDue?.toFixed(2) || 0}
-                  </p>
-                </div>
-              </div>
-
-              {/* Mode of Payment */}
-              <div className="flex items-start gap-2 col-span-2">
-                <CreditCard className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Mode of Payment</p>
-                  <p className="font-medium">
-                    {selectedBilling.modeOfPayment || "N/A"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-start gap-2 col-span-2">
-                <ClipboardList className="h-5 w-5 text-muted-foreground mt-1" />
-                <div>
-                  <p className="text-muted-foreground">Status</p>
-                  <Badge
-                    variant={
-                      selectedBilling.status === "Pending"
-                        ? "secondary"
-                        : "default"
-                    }
-                    className="capitalize"
-                  >
-                    {selectedBilling.status}
-                  </Badge>
-                </div>
-              </div>
-            </div>
+              <DialogFooterActions
+                captureRef={billingDialogRef}
+                className="no-capture"
+              />
+            </>
           ) : (
             <p className="text-center text-sm text-muted-foreground">
               No billing selected.

@@ -366,24 +366,26 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
 
         {/* Payment Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <FormField
-            control={form.control}
-            name="advance"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Advance (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter advance"
-                    {...field}
-                    min="0"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="hidden">
+            <FormField
+              control={form.control}
+              name="advance"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Advance (₹)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Enter advance"
+                      {...field}
+                      min="0"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <FormField
             control={form.control}
