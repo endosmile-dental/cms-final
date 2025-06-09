@@ -23,7 +23,6 @@ const Invoice = () => {
   // Rename amountRecieved to amountReceived for consistency.
   const [amountReceived, setAmountReceived] = useState<string>("0");
   const [modeOfPayment, setModeOfPayment] = useState<string>("NA");
-  const [advance, setAdvance] = useState<string>("0");
   const [discount, setDiscount] = useState<string>("0");
   const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [grandTotal, setGrandTotal] = useState<string>("0");
@@ -51,7 +50,6 @@ const Invoice = () => {
         setAddress(dataObject.address || "NA");
         setAmountReceived(dataObject.amountReceived || "0");
         setModeOfPayment(dataObject.modeOfPayment || "NA");
-        setAdvance(dataObject.advance || "0");
         setDiscount(dataObject.discount || "0");
         setTreatments(dataObject.treatments || []);
 
