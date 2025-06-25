@@ -79,7 +79,7 @@ const Invoice = () => {
         useCORS: true, // Handle cross-origin images
         logging: false, // Disable console logging
       }).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/jpeg");
         const doc = new jsPDF({
           orientation: "portrait",
           unit: "mm",
@@ -99,14 +99,14 @@ const Invoice = () => {
         let heightLeft = pdfHeight;
         let position = 0;
 
-        doc.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+        doc.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
         heightLeft -= pageHeight;
 
         // Add new pages for long content
         while (heightLeft >= 0) {
           position = heightLeft - pdfHeight;
           doc.addPage();
-          doc.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+          doc.addImage(imgData, "JPEG", 0, position, pdfWidth, pdfHeight);
           heightLeft -= pageHeight;
         }
 
