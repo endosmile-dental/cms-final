@@ -7,9 +7,9 @@ export function SignIn() {
         "use server";
         await signIn();
       }}
-      className="w-full flex items-center justify-center"
+      className="w-full h-screen flex flex-col items-center justify-center text-white"
     >
-      <h1 className="text-7xl tracking-wide">CMS</h1>
+      <h1 className="text-7xl font-bold tracking-wide">CMS</h1>
       <h2 className="text-xl mb-10">A complete clinic solution</h2>
       <button
         type="submit"
