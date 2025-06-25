@@ -142,7 +142,7 @@ const Invoice = () => {
                 <img
                   src="/images/white_logo.jpeg"
                   alt="Logo"
-                  className="w-[200px] h-auto object-contain"
+                  className="w-[240px] h-auto object-contain"
                 />
               </div>
             </div>
@@ -280,7 +280,7 @@ const Invoice = () => {
             <img
               src="/images/sign1.png"
               alt="Logo"
-              className="w-[200px] h-auto object-contain"
+              className="w-[250px] h-auto object-contain"
             />
           </div>
 

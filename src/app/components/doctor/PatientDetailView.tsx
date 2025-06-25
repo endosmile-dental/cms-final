@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import TwoLineDashboardChart from "../TwoLineDashboardChart";
 
 import DataTable from "../DataTable";
@@ -77,68 +77,72 @@ const PatientDetailView = ({
   const appointmentDialogRef = useRef<HTMLDivElement>(null);
   const billingDialogRef = useRef<HTMLDivElement>(null);
 
-  // Update selected patient when Redux data changes
-  // useEffect(() => {
-  //   const updated = patients.find((p) => p._id === patient._id);
-  //   if (updated) patient = updated;
-  // }, [patients, patient]);
+  const { patientAppointments, patientBillings, stats } = useMemo(() => {
+    const patientAppointments = appointments.filter(
+      (appointment) => appointment.patient === patient._id
+    );
 
-  // Helper functions
-  const getPatientAppointments = (patientId: string) =>
-    appointments.filter((appointment) => appointment.patient === patientId);
+    const patientBillings = billings.filter(
+      (billing) => billing.patientId === patient.PatientId
+    );
 
-  const getPatientBillings = (patientId: string) =>
-    billings.filter((billing) => billing.patientId === patientId);
+    const upcomingAppointments = patientAppointments.filter(
+      (app) =>
+        new Date(app.appointmentDate) >= new Date() &&
+        app.status !== "Completed" &&
+        app.status !== "Cancelled"
+    );
 
-  // Static patient stats
-  const stats: Stat[] = [
-    {
-      title: "Upcoming Appointments",
-      value: appointments
-        .filter(
-          (app) =>
-            app.patient === patient._id && // Filter by selected patient
-            new Date(app.appointmentDate) >= new Date() &&
-            app.status !== "Completed" &&
-            app.status !== "Cancelled"
-        )
-        .length.toString(),
-      icon: <Calendar size={24} />,
-      color: "bg-blue-500",
-      LinkURL: "",
-    },
-    {
-      title: "Medical History",
-      value: (patient.medicalHistory?.length || 0).toString(),
-      icon: <AlertOctagon size={24} />,
-      color: "bg-purple-500",
-      LinkURL: "",
-    },
-    {
-      title: "Active Medications", // Changed from "Known Allergies"
-      value: (patient.currentMedications?.length || 0).toString(),
-      icon: <AlertOctagon size={24} />,
-      color: "bg-red-500",
-      LinkURL: "",
-    },
-    {
-      title: "Total Treatments", // Changed from "Last BMI"
-      value: billings
-        .filter((billing) => billing.patientId === patient.PatientId)
-        .reduce(
-          (total, billing) => total + (billing.treatments?.length || 0),
-          0
-        )
-        .toString(),
-      icon: <AlertOctagon size={24} />,
-      color: "bg-green-500",
-      LinkURL: "",
-    },
-  ];
+    const totalTreatments = patientBillings.reduce(
+      (total, billing) => total + (billing.treatments?.length || 0),
+      0
+    );
+
+    const stats: Stat[] = [
+      {
+        title: "Upcoming Appointments",
+        value: upcomingAppointments.length.toString(),
+        icon: <Calendar size={24} />,
+        color: "bg-blue-500",
+        onClickFunction: () => {
+          console.log("Upcoming Appointments Clicked", upcomingAppointments);
+        },
+      },
+      {
+        title: "Medical History",
+        value: (patient.medicalHistory?.length || 0).toString(),
+        icon: <AlertOctagon size={24} />,
+        color: "bg-purple-500",
+        onClickFunction: () => {
+          console.log("Medical History Clicked", patient.medicalHistory);
+        }
+      },
+      {
+        title: "Active Medications",
+        value: (patient.currentMedications?.length || 0).toString(),
+        icon: <AlertOctagon size={24} />,
+        color: "bg-red-500",
+        onClickFunction: () => {
+          console.log("Active Medications Clicked", patient.currentMedications);
+        }
+      },
+      {
+        title: "Total Treatments",
+        value: totalTreatments.toString(),
+        icon: <AlertOctagon size={24} />,
+        color: "bg-green-500",
+        onClickFunction: () => {
+          console.log("Total Treatments Clicked", totalTreatments);
+        }
+      },
+    ];
+
+    return { patientAppointments, patientBillings, stats };
+  }, [appointments, billings, patient]);
 
   const processChartData = (
-    appointments: Appointment[],
-    billings: BillingRecord[],
+    patientAppointments: Appointment[],
+    patientBillings: BillingRecord[],
     timeFrame: "monthly" | "yearly"
   ) => {
     const formatDate = (dateString: string) => {
@@ -151,17 +155,16 @@ const PatientDetailView = ({
     };
 
     // Process appointments
-    const appointmentCounts = appointments.reduce<Record<string, number>>(
-      (acc, appointment) => {
-        const month = formatDate(appointment.appointmentDate);
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      },
-      {}
-    );
+    const appointmentCounts = patientAppointments.reduce<
+      Record<string, number>
+    >((acc, appointment) => {
+      const month = formatDate(appointment.appointmentDate);
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {});
 
     // Process treatments from billings
-    const treatmentCounts = billings.reduce<Record<string, number>>(
+    const treatmentCounts = patientBillings.reduce<Record<string, number>>(
       (acc, billing) => {
         const month = formatDate(billing.date);
         const treatmentsCount = billing.treatments?.length || 0;
@@ -240,8 +243,8 @@ const PatientDetailView = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TwoLineDashboardChart
           data={processChartData(
-            getPatientAppointments(patient._id),
-            getPatientBillings(patient.PatientId),
+            patientAppointments,
+            patientBillings,
             timeFrame
           )}
           timeFrame={timeFrame}
@@ -273,7 +276,7 @@ const PatientDetailView = ({
           title="Appointments"
         />
         <DataTable<Appointment>
-          data={getPatientAppointments(patient._id)}
+          data={patientAppointments}
           title=""
           showSearch={false}
           itemsPerPage={10}
@@ -339,7 +342,7 @@ const PatientDetailView = ({
           title="Billings"
         />
         <DataTable<BillingRecord>
-          data={getPatientBillings(patient.PatientId)}
+          data={patientBillings}
           // ... same billing table config ...
           title=""
           showSearch={false}
