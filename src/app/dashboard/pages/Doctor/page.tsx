@@ -363,7 +363,7 @@ export default function DoctorDashboard() {
                 return `Good ${
                   hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"
                 }, 
-                ${profile.fullName.split(" ")[0]} 1`;
+                ${profile.fullName.split(" ")[0]}`;
               })()}
             </h1>
             <div className="flex pr-5 gap-x-5">
