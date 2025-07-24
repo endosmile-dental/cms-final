@@ -11,6 +11,10 @@ import {
 } from "@/app/redux/slices/appointmentSlice";
 import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
 import { fetchDoctors } from "@/app/redux/slices/doctorSlice";
+import {
+  fetchLabWorks,
+  selectAllLabWorks,
+} from "@/app/redux/slices/labWorkSlice";
 
 export default function DashboardLayout({
   children,
@@ -27,6 +31,7 @@ export default function DashboardLayout({
   const profile = useAppSelector((state) => {
     return state?.profile?.profile as ProfileData;
   });
+  const labWorks = useAppSelector(selectAllLabWorks);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -48,6 +53,10 @@ export default function DashboardLayout({
           );
         }
 
+        if (!labWorks?.length) {
+          fetchTasks.push(() => dispatch(fetchLabWorks({ userId: id, role })));
+        }
+
         if (!profile) {
           fetchTasks.push(() => dispatch(fetchProfile({ userId: id, role })));
         }
@@ -67,6 +76,9 @@ export default function DashboardLayout({
           console.error(`❌ Task ${i + 1} failed:`, result.reason);
         }
       });
+
+      console.log("fetchTasks", results);
+      console.log("labworks", labWorks);
     };
 
     fetchUserData();

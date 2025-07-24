@@ -203,4 +203,12 @@ const profileSlice = createSlice({
 });
 
 export const { clearProfile } = profileSlice.actions;
+// Selectors
+export const selectProfile = (state: { profile: ProfileState }) =>
+  state.profile.profile;
+export const selectProfileLoading = (state: { profile: ProfileState }) =>
+  state.profile.loading;
+export const selectProfileError = (state: { profile: ProfileState }) =>
+  state.profile.error;
+
 export default profileSlice.reducer;

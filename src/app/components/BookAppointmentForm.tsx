@@ -64,43 +64,41 @@ export const timeSlots = [
   "08:00 PM",
 ];
 export const treatmentOptions = [
-  "Consultation",
-  "Follow-up",
-  "RVG/Digital X-ray",
-  "Multi-Visit Root Canal Treatment",
-  "Single-Visit Root Canal Treatment",
-  "Complex Anatomy and Calcified Canals",
-  "Re-Treatment / Re-RCT",
-  "Veneers (Porcelain/Lithium Disilicate)",
-  "Composite",
-  "Restoration",
-  "Denture (Indian)",
-  "Denture (German)",
-  "Zirconia (Basic)",
-  "Zirconia (Vita)",
-  "Zirconia (3M Lava)",
-  "PFM (Normal)",
-  "PFM (Warranty)",
-  "Metal Crown (Normal)",
-  "Metal Crown (DMLS)",
-  "E-Max",
-  "Neodent (Basic)",
-  "Ostem",
-  "Strauman (Brazilian)",
-  "Novel Bio",
-  "Metal Braces",
+  "Aligners(Invisalign)",
+  "Aligners(Toothsi)",
   "Ceramic Braces",
-  "Aligners (Toothsi)",
-  "Aligners (Invisalign)",
-  "Normal Extraction",
+  "Composite Restoration",
+  "Consultation",
+  "Crown & Bridge (2 unit)",
+  "Crown & Bridge (3 unit)",
+  "Crown & Bridge (4 unit)",
+  "Crown & Bridge (5 unit)",
+  "Dental Implant(Active Novel Bio)",
+  "Dental Implant(Ostem)",
+  "Dental Implant(Strauman)",
+  "Denture",
+  "Extraction",
+  "Follow-up",
+  "GIC Restoration",
   "Grossly Decayed Extraction",
   "Impaction",
-  "GIC",
-  "Scaling with Polishing",
-  "Scaling with Chair-side Teeth Whitening",
-  "Air Prophylaxis",
-  "Professional Teeth Whitening with Kit",
+  "Metal Braces",
+  "Multi-Visit Root Canal Treatment",
+  "Oral Prophylaxis with Polishing",
+  "Oral Prophylaxis with Polishing & Teeth Whitening",
+  "PFM Crown(DMLS)",
+  "PFM Crown(Normal)",
+  "Re-Restoration(Composite)",
+  "Re-Restoration(GIC)",
+  "Re-Treatment / Re-RCT",
+  "RPD",
+  "RVG/Digital X-ray",
+  "Single-Visit Root Canal Treatment",
+  "Veneers Lithium Disilicate",
+  "Veneers Porcelain",
+  "Zirconia Crown",
 ];
+
 export const teethOptions = [
   "11",
   "12",
@@ -165,6 +163,7 @@ interface AppointmentFormState {
   timeSlot: string;
   treatments: string[];
   teeth: string[];
+  contactNumber: string; // Optional field for contact number
 }
 
 export default function BookAppointmentForm({ onCancel = () => {} }) {
@@ -176,6 +175,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
     timeSlot: "",
     treatments: [],
     teeth: [],
+    contactNumber: "", // Initialize contact number
   });
 
   const [patientQuery, setPatientQuery] = useState("");
@@ -241,7 +241,11 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
 
   const handleSelectPatient = useCallback((patient: Patient) => {
     setPatientQuery(`${patient.fullName} (${patient.PatientId})`);
-    setAppointmentData((prev) => ({ ...prev, patient: patient._id }));
+    setAppointmentData((prev) => ({
+      ...prev,
+      patient: patient._id,
+      contactNumber: patient.contactNumber || "",
+    }));
     setVerifiedPatient(true);
   }, []);
 
@@ -294,10 +298,37 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
         createdBy: doctorId,
       };
 
+      console.log("previewData", previewData);
+
       const result = await dispatch(createAppointment(payload));
       if (createAppointment.fulfilled.match(result)) {
         router.push("/dashboard/pages/Doctor/appointments");
         setShowPreviewModal(false);
+        // Send SMS asynchronously
+        try {
+          const smsPayload = {
+            phoneNumber: `+91${previewData.contactNumber}`, // Ensure E.164 format
+            message: `Your appointment is confirmed for ${format(
+              previewData.appointmentDate,
+              "MMM dd, yyyy 'at' hh:mm a"
+            )}. Clinic: EndoSmile Dental Care, Iteda, Greater Noida(W)`,
+          };
+
+          const response = await fetch("/api/sms/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(smsPayload),
+          });
+          if (response.ok && response.status === 200) {
+            alert("SMS sent successfully!");
+          } else {
+            const errData = await response.json();
+            alert(`SMS failed: ${errData.error || "Unknown error"}`);
+          }
+        } catch (smsError) {
+          console.error("SMS failed:", smsError);
+          // Implement retry logic or logging
+        }
       } else {
         setModalError("Failed to create appointment");
       }

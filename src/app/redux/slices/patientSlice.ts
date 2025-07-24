@@ -170,4 +170,6 @@ const patientSlice = createSlice({
 export const { addPatient, updatePatient, deletePatient } =
   patientSlice.actions;
 export const selectPatients = (state: RootState) => state.patient.patients;
+export const selectPatientLoading = (state: RootState) => state.patient.loading;
+export const selectPatientError = (state: RootState) => state.patient.error;
 export default patientSlice.reducer;

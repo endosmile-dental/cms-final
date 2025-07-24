@@ -68,12 +68,13 @@ export default function PatientRecords() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
+        <h1 className="text-3xl font-bold">Medical Records</h1>
         {/* Search Section */}
-        <div className="flex justify-between items-end gap-x-2 bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex justify-between items-center gap-x-2 bg-white p-2 md:p-4 rounded-lg shadow-sm">
           <Button
             variant="ghost"
-            className="flex items-center gap-2 text-sm"
+            className="flex items-center gap-0 md:gap-2 text-sm"
             onClick={() => setSelectedPatient(null)}
           >
             <ArrowLeft size={20} />
@@ -109,7 +110,7 @@ export default function PatientRecords() {
             )}
           </div>
           <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
-            <Button className="mt-3 md:mt-0 md:ml-4 flex items-center gap-2">
+            <Button className="md:ml-4 flex items-center gap-2">
               <UserPlus size={18} />
               <span className="hidden md:block">Add Patient</span>
             </Button>

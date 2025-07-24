@@ -261,5 +261,9 @@ export const { addBilling, updateBilling, deleteBilling } =
   billingSlice.actions;
 export const selectBillings = (state: RootState) =>
   state.billing.billingRecords;
+export const selectBillingsLoading = (state: RootState) =>
+  state.billing.loading;
+export const selectBillingsError = (state: RootState) =>
+  state.billing.error;
 
 export default billingSlice.reducer;

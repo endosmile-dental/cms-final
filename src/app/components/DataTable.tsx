@@ -109,7 +109,7 @@ const DataTable = <T extends object>({
 
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-x-2">
         {/* Conditionally render search bar */}
         {showSearch && (
           <Input
@@ -119,7 +119,7 @@ const DataTable = <T extends object>({
             className="w-full max-w-sm"
           />
         )}
-        {title && <h2 className="text-xl font-semibold">{title}</h2>}
+        {title && <h2 className="text-base md:text-xl font-semibold">{title}</h2>}
       </div>
 
       <div className="w-full overflow-x-auto rounded-lg border">

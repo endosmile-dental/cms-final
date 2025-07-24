@@ -1,25 +1,37 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useSession } from "next-auth/react";
 import { createBilling, selectBillings } from "@/app/redux/slices/billingSlice";
 import Loading from "@/app/components/loading/Loading";
-import SelectPatientMessage from "@/app/components/SelectPatientMessage";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import PatientBillingForm, {
   FormValues,
 } from "@/app/components/doctor/PatientBillingForm";
+import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import BillingAnalytics from "@/app/components/doctor/BillingAnalytics";
+import BillingNote from "@/app/components/doctor/BillingNote";
 
 export default function PatientRecords() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const billings = useAppSelector(selectBillings);
   const patients = useAppSelector(selectPatients);
+  const appointments = useAppSelector(selectAppointments);
+
+  useEffect(() => {
+    if (appointments || patients || billings) {
+      console.log("appointments", appointments);
+      console.log("patients", patients);
+      console.log("billings", billings);
+    }
+  }, [appointments, billings, patients]);
+
   const { data: session } = useSession();
 
   // State for search input and suggestions
@@ -110,7 +122,7 @@ export default function PatientRecords() {
     <DashboardLayout>
       <div className="w-full p-6 space-y-6">
         {isLoading ? (
-          <Loading />
+          <Loading loadingMessage={true} />
         ) : (
           <>
             {/* Search Section */}
@@ -151,7 +163,10 @@ export default function PatientRecords() {
                 isLoading={isLoading}
               />
             ) : (
-              <SelectPatientMessage />
+              <>
+                <BillingNote />
+                <BillingAnalytics />
+              </>
             )}
           </>
         )}

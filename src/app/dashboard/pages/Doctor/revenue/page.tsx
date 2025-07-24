@@ -12,12 +12,7 @@ import {
   updateBillingRecord,
 } from "@/app/redux/slices/billingSlice";
 import { format } from "date-fns";
-import {
-  ReceiptIndianRupee,
-  TrendingUp,
-  PieChart,
-  IndianRupee,
-} from "lucide-react";
+import { ReceiptIndianRupee, PieChart, IndianRupee } from "lucide-react";
 import DataTable, { ColumnDef } from "@/app/components/DataTable";
 import EditBillingDialog from "@/app/components/doctor/EditBillingDialog";
 
@@ -41,7 +36,6 @@ export default function RevenueDashboard() {
       return {
         totalRevenue: 0,
         totalReceived: 0,
-        totalOutstanding: 0,
         averageInvoice: 0,
         averageDiscount: 0,
         revenueByPaymentMode: {} as Record<string, number>,
@@ -51,7 +45,6 @@ export default function RevenueDashboard() {
 
     let totalRevenue = 0;
     let totalReceived = 0;
-    let totalOutstanding = 0;
     let totalDiscount = 0;
     let invoiceCount = 0;
     const revenueByPaymentMode: Record<string, number> = {};
@@ -61,7 +54,6 @@ export default function RevenueDashboard() {
       // totalAmount is already computed in the model (amountBeforeDiscount - discount)
       totalRevenue += billing.totalAmount;
       totalReceived += billing.amountReceived;
-      totalOutstanding += billing.amountDue;
       totalDiscount += billing.discount || 0;
       invoiceCount += 1;
 
@@ -79,7 +71,6 @@ export default function RevenueDashboard() {
     return {
       totalRevenue,
       totalReceived,
-      totalOutstanding,
       averageInvoice: invoiceCount ? totalRevenue / invoiceCount : 0,
       averageDiscount: invoiceCount ? totalDiscount / invoiceCount : 0,
       revenueByPaymentMode,
@@ -156,13 +147,6 @@ export default function RevenueDashboard() {
       value: `${analytics.totalReceived.toLocaleString()}`,
       icon: <IndianRupee size={24} color="white" />,
       color: "bg-green-500",
-      LinkURL: "",
-    },
-    {
-      title: "Outstanding",
-      value: `${analytics.totalOutstanding.toLocaleString()}`,
-      icon: <TrendingUp size={24} color="white" />,
-      color: "bg-red-500",
       LinkURL: "",
     },
     {

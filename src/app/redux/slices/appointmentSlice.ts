@@ -271,6 +271,10 @@ export const { addAppointment, updateAppointment, deleteAppointment } =
   appointmentSlice.actions;
 export const selectAppointments = (state: RootState) =>
   state.appointment.appointments;
+export const selectAppointmentsLoading = (state: RootState) =>
+  state.appointment.loading;
+export const selectAppointmentsError = (state: RootState) =>
+  state.appointment.error;
 export const selectBookedSlots = (state: RootState) =>
   state.appointment.bookedSlots;
 export default appointmentSlice.reducer;
