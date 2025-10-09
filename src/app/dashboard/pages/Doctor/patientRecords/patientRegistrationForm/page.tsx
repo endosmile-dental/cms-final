@@ -298,7 +298,6 @@ export default function PatientRegistrationForm() {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
-                      type="password"
                       placeholder="Enter password"
                       {...field}
                     />

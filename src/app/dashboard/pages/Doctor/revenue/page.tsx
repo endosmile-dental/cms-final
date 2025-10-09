@@ -15,10 +15,12 @@ import { format } from "date-fns";
 import { ReceiptIndianRupee, PieChart, IndianRupee } from "lucide-react";
 import DataTable, { ColumnDef } from "@/app/components/DataTable";
 import EditBillingDialog from "@/app/components/doctor/EditBillingDialog";
+import { selectPatients } from "@/app/redux/slices/patientSlice";
 
 export default function RevenueDashboard() {
   const dispatch = useAppDispatch();
   const billings = useAppSelector(selectBillings);
+  const patients = useAppSelector(selectPatients);
 
   const [selectedBilling, setSelectedBilling] = useState<BillingRecord | null>(
     null
@@ -29,6 +31,18 @@ export default function RevenueDashboard() {
     setSelectedBilling(billing);
     setDialogOpen(true);
   };
+
+  const mappedBillings = useMemo(() => {
+    if (!billings || !patients) return [];
+
+    return billings.map((billing) => {
+      const patient = patients.find((p) => p._id === billing.patientId);
+      return {
+        ...billing,
+        patientName: patient ? patient.fullName : "Unknown",
+      };
+    });
+  }, [billings, patients]);
 
   // Compute advanced analytics from the billing data
   const analytics = useMemo(() => {
@@ -91,6 +105,12 @@ export default function RevenueDashboard() {
       render: (value) =>
         value ? new Date(value as string).toLocaleDateString() : "N/A",
     },
+    {
+      header: "Patient Name",
+      accessorKey: "patientName",
+      sortable: true,
+    },
+
     {
       header: "Total Amount",
       accessorKey: "totalAmount",
@@ -209,11 +229,13 @@ export default function RevenueDashboard() {
         <div>
           <DataTable
             title="Billing Details"
-            data={billings}
+            data={mappedBillings}
             columns={billingTableColumns}
             searchFields={["invoiceId", "date", "modeOfPayment", "status"]}
             showSearch={true}
             onRowClick={handleRowClick}
+            enableDateFilter
+            dateField="date"
           />
         </div>
 

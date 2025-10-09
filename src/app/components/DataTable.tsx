@@ -12,6 +12,13 @@ import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type ColumnDef<T, K extends keyof T = keyof T> = {
   header: string;
@@ -26,7 +33,10 @@ type DataTableProps<T> = {
   columns: ColumnDef<T>[];
   searchFields?: (keyof T)[];
   itemsPerPage?: number;
-  showSearch?: boolean; // Add this prop
+  showSearch?: boolean;
+  enableDateFilter?: boolean;
+  dateField?: keyof T;
+  filterMode?: "this month" | "this year" | "past year" | "all";
   onRowClick?: (row: T) => void;
 };
 
@@ -38,11 +48,40 @@ const DataTable = <T extends object>({
   showSearch = true,
   itemsPerPage = 10,
   onRowClick,
+  enableDateFilter = false,
+  dateField,
 }: DataTableProps<T>) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [filterMode, setFilterMode] = useState<
+    "this month" | "this year" | "past year" | "all"
+  >("all");
+
+  // Helper function to parse dd/mm/yyyy format
+  const parseDate = (val: unknown): Date | null => {
+    if (val == null) return null;
+
+    if (typeof val === "string") {
+      // Handle dd/mm/yyyy format
+      const match = val.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (match) {
+        const [, day, month, year] = match;
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+
+      // Try parsing as ISO or other date formats
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? null : date;
+    }
+
+    if (val instanceof Date) {
+      return isNaN(val.getTime()) ? null : val;
+    }
+
+    return null;
+  };
 
   const filteredData = useMemo(() => {
     let result = [...data];
@@ -57,36 +96,71 @@ const DataTable = <T extends object>({
       );
     }
 
+    // Date filtering implementation
+    if (enableDateFilter && dateField) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth(); // 0-indexed (0 = January)
+
+      result = result.filter((item) => {
+        const itemDate = parseDate(item[dateField]);
+        if (!itemDate) return filterMode === "all"; // Include if no date and filter is "all"
+
+        const itemYear = itemDate.getFullYear();
+        const itemMonth = itemDate.getMonth();
+
+        if (filterMode === "this month") {
+          return itemMonth === currentMonth && itemYear === currentYear;
+        }
+        if (filterMode === "this year") {
+          return itemYear === currentYear;
+        }
+        if (filterMode === "past year") {
+          return itemYear === currentYear - 1;
+        }
+        return true; // "all"
+      });
+    }
+
     // Sorting implementation
     if (sortKey) {
       result.sort((a, b) => {
         const valA = a[sortKey];
         const valB = b[sortKey];
 
-        // Determine type of value for dynamic comparison
-        const isNumber = typeof valA === "number" && typeof valB === "number";
-        const isDate = valA instanceof Date && valB instanceof Date;
-
-        if (isNumber) {
-          return sortOrder === "asc"
-            ? (valA as number) - (valB as number)
-            : (valB as number) - (valA as number);
-        } else if (isDate) {
-          return sortOrder === "asc"
-            ? (valA as Date).getTime() - (valB as Date).getTime()
-            : (valB as Date).getTime() - (valA as Date).getTime();
-        } else {
-          const strA = String(valA).toLowerCase();
-          const strB = String(valB).toLowerCase();
-          return sortOrder === "asc"
-            ? strA.localeCompare(strB)
-            : strB.localeCompare(strA);
+        // For date sorting, parse the dates
+        if (sortKey === dateField) {
+          const dateA = parseDate(valA)?.getTime() || 0;
+          const dateB = parseDate(valB)?.getTime() || 0;
+          return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         }
+
+        // Numeric comparison
+        if (typeof valA === "number" && typeof valB === "number") {
+          return sortOrder === "asc" ? valA - valB : valB - valA;
+        }
+
+        // String comparison (fallback)
+        const strA = String(valA ?? "").toLowerCase();
+        const strB = String(valB ?? "").toLowerCase();
+        return sortOrder === "asc"
+          ? strA.localeCompare(strB)
+          : strB.localeCompare(strA);
       });
     }
 
     return result;
-  }, [data, search, sortKey, sortOrder, searchFields, columns]);
+  }, [
+    data,
+    search,
+    sortKey,
+    sortOrder,
+    searchFields,
+    columns,
+    enableDateFilter,
+    dateField,
+    filterMode,
+  ]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
@@ -105,21 +179,44 @@ const DataTable = <T extends object>({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, filterMode]);
 
   return (
     <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
       <div className="flex justify-between items-center gap-x-2">
         {/* Conditionally render search bar */}
-        {showSearch && (
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full max-w-sm"
-          />
+        <div className="flex gap-x-1">
+          {showSearch && (
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full max-w-sm"
+            />
+          )}
+          {enableDateFilter && (
+            <Select
+              value={filterMode}
+              onValueChange={(
+                v: "this month" | "this year" | "past year" | "all"
+              ) => setFilterMode(v)}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Filter by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="this month">This Month</SelectItem>
+                <SelectItem value="this year">This Year</SelectItem>
+                <SelectItem value="past year">Past Year</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        {title && (
+          <h2 className="text-base md:text-xl font-semibold">{title}</h2>
         )}
-        {title && <h2 className="text-base md:text-xl font-semibold">{title}</h2>}
       </div>
 
       <div className="w-full overflow-x-auto rounded-lg border">
@@ -160,7 +257,7 @@ const DataTable = <T extends object>({
                   >
                     {column.render
                       ? column.render(row[column.accessorKey], row)
-                      : String(row[column.accessorKey])}
+                      : String(row[column.accessorKey] ?? "N/A")}
                   </TableCell>
                 ))}
               </TableRow>

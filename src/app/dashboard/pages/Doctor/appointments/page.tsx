@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -214,13 +219,47 @@ export default function DoctorAppointments() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  const parseTimeSlot = (timeSlot: string): number => {
+    // Extract start time (e.g. "10:00 AM" from "10:00 AM - 10:30 AM")
+    const [startTime] = timeSlot.split(" - ");
+    const date = new Date(`1970-01-01T${convertTo24Hour(startTime)}:00`);
+    return date.getTime();
+  };
+
+  const convertTo24Hour = (time12h: string): string => {
+    // Convert "3:30 PM" → "15:30"
+    const [time, modifier] = time12h.split(" ");
+    const [hours, minutes] = time.split(":");
+
+    let h = parseInt(hours, 10);
+    if (modifier === "PM" && h !== 12) h += 12;
+    if (modifier === "AM" && h === 12) h = 0;
+
+    return `${String(h).padStart(2, "0")}:${minutes}`;
+  };
+
   const today = new Date();
-  const upcomingAppointments = filteredAppointments.filter(
-    (appointment) => new Date(appointment.appointmentDate) >= today
-  );
-  const pastAppointments = filteredAppointments.filter(
-    (appointment) => new Date(appointment.appointmentDate) < today
-  );
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingAppointments = filteredAppointments
+    .filter((appointment) => new Date(appointment.appointmentDate) >= today)
+    .sort((a, b) => {
+      const dateA = new Date(a.appointmentDate).getTime();
+      const dateB = new Date(b.appointmentDate).getTime();
+
+      if (dateA !== dateB) return dateA - dateB;
+      return parseTimeSlot(a.timeSlot) - parseTimeSlot(b.timeSlot);
+    });
+
+  const pastAppointments = filteredAppointments
+    .filter((appointment) => new Date(appointment.appointmentDate) < today)
+    .sort((a, b) => {
+      const dateA = new Date(a.appointmentDate).getTime();
+      const dateB = new Date(b.appointmentDate).getTime();
+
+      if (dateA !== dateB) return dateB - dateA; // latest first
+      return parseTimeSlot(b.timeSlot) - parseTimeSlot(a.timeSlot);
+    });
 
   const transformData = (
     appointments: Appointment[]
@@ -234,7 +273,7 @@ export default function DoctorAppointments() {
         _id: appointment._id,
         patientId: patientInfo?.PatientId ?? "NA",
         patientName: patientInfo?.fullName ?? "NA",
-        date: format(new Date(appointment.appointmentDate), "yyyy-MM-dd"),
+        date: new Date(appointment.appointmentDate).toLocaleDateString("en-GB"),
         timeSlot: appointment.timeSlot ?? "NA",
         contactNumber: patientInfo?.contactNumber ?? "NA",
         consultationType: appointment.consultationType,
@@ -497,6 +536,8 @@ export default function DoctorAppointments() {
             setSelectedAppointment(row);
             setOpenAppointmentDialog(true);
           }}
+          enableDateFilter
+          dateField="date"
         />
 
         <DataTable
@@ -516,6 +557,8 @@ export default function DoctorAppointments() {
             setSelectedAppointment(row);
             setOpenAppointmentDialog(true);
           }}
+          enableDateFilter
+          dateField="date"
         />
 
         {/* Time Slot Utilization Chart   */}

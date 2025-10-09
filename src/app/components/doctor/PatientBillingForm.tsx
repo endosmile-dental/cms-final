@@ -43,7 +43,8 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
     defaultValues: {
       patientName: "",
       contactNumber: "",
-      patientId: "",
+      patientId: "",  // visible Patient ID
+      hiddenPatientId: "", // internal ID for backend
       invoiceId: "",
       date: "",
       gender: "",
@@ -62,6 +63,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       form.setValue("patientName", patient.fullName);
       form.setValue("contactNumber", patient.contactNumber);
       form.setValue("patientId", patient.PatientId);
+      form.setValue("hiddenPatientId", patient._id); // internal ID for backend
       form.setValue("gender", patient.gender);
       form.setValue("email", patient.email);
 

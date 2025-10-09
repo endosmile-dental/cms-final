@@ -53,9 +53,31 @@ export default function DashboardCalendar({
     const dateStr = format(date, "yyyy-MM-dd");
     const detail = dateToDetailsMap.get(dateStr);
 
+    // helper: returns minutes since midnight or Infinity if unparsable
+    const parseTimeToMinutes = (time?: string) => {
+      if (!time) return Infinity;
+      const m = time.trim().match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+      if (!m) return Infinity;
+      let hour = parseInt(m[1], 10);
+      const minute = parseInt(m[2], 10);
+      const ampm = m[3].toUpperCase();
+      if (ampm === "PM" && hour !== 12) hour += 12;
+      if (ampm === "AM" && hour === 12) hour = 0;
+      return hour * 60 + minute;
+    };
+
     if (detail) {
+      console.log("Clicked date with appointments:", detail.appointments);
+      console.log("Detail:", detail.date);
+
       setSelectedDate(date);
-      setSelectedAppointments(detail.appointments);
+      // use a copy to avoid mutating original array
+      setSelectedAppointments(
+        [...detail.appointments].sort(
+          (a, b) =>
+            parseTimeToMinutes(a.timeSlot) - parseTimeToMinutes(b.timeSlot)
+        )
+      );
       setIsDialogOpen(true);
     }
   };

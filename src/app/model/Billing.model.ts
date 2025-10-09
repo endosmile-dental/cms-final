@@ -15,7 +15,7 @@ export interface ITreatment {
  */
 export interface IBilling extends Document {
   invoiceId: string;
-  patientId: string;
+  patientId: mongoose.Types.ObjectId;
   doctorId: mongoose.Types.ObjectId;
   clinicId: mongoose.Types.ObjectId;
   date: Date;
@@ -60,7 +60,11 @@ const BillingSchema: Schema<IBilling> = new Schema(
       unique: true,
       default: () => "INV-" + nanoid(10),
     },
-    patientId: { type: String, required: true },
+    patientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Patient",
+      required: true,
+    },
     doctorId: { type: Schema.Types.ObjectId, ref: "Doctor", required: true },
     clinicId: { type: Schema.Types.ObjectId, ref: "Clinic", required: true },
     date: { type: Date, required: true },

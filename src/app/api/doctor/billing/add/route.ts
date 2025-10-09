@@ -25,6 +25,13 @@ export async function POST(request: Request) {
 
     // Parse and validate the request body using the Zod schema.
     const body = await request.json();
+
+    // Replace patientId with hiddenPatientId and remove original patientId
+    if (body.hiddenPatientId) {
+      body.patientId = body.hiddenPatientId; // Set as actual ObjectId
+    }
+
+    // Now run Zod validation
     const data = zodBillingSchema.parse(body);
     console.log("Parsed Billing Data:", data);
 

@@ -16,6 +16,7 @@ import {
   ClipboardPlus,
   LucideFlaskConical,
   FlaskConical,
+  CalendarCheck,
 } from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import {
@@ -141,6 +142,7 @@ export default function DoctorDashboard() {
       followUps: 0,
       pending: 0,
       upcoming: 0,
+      todayAppointments: 0, // ✅ NEW FIELD
       monthly: {} as Record<string, { completed: number; scheduled: number }>,
       weekly: {} as Record<string, { completed: number; scheduled: number }>,
       yearly: {} as Record<string, { completed: number; scheduled: number }>,
@@ -149,24 +151,68 @@ export default function DoctorDashboard() {
 
     if (!appointments || appointments.length === 0) return result;
 
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.toDateString()); // midnight of today
+
+    const convertTo24Hour = (time12h: string): string => {
+      const [time, modifier] = time12h.split(" ");
+      const [hours, minutes] = time.split(":");
+
+      let h = parseInt(hours, 10);
+      if (modifier === "PM" && h !== 12) h += 12;
+      if (modifier === "AM" && h === 12) h = 0;
+
+      return `${String(h).padStart(2, "0")}:${minutes}`;
+    };
+
+    const parseTimeSlot = (timeSlot: string): number => {
+      const [startTime] = timeSlot.split(" - ");
+      const date = new Date(`1970-01-01T${convertTo24Hour(startTime)}:00`);
+      return date.getTime();
+    };
+
+    const currentSlotTime = new Date(
+      `1970-01-01T${convertTo24Hour(
+        now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+      )}:00`
+    ).getTime();
 
     appointments.forEach((appointment) => {
       const appointmentDate = new Date(appointment.appointmentDate);
+      const appointmentDay = new Date(appointmentDate.toDateString());
 
+      // ✅ Count today's appointments (regardless of status/time)
+      if (appointmentDay.getTime() === today.getTime()) {
+        result.todayAppointments++;
+      }
+
+      // Categorize follow-ups & new appointments
       if (appointment.consultationType === "Follow-up") result.followUps++;
       else if (appointment.consultationType === "New") result.pending++;
 
-      if (
-        appointmentDate >= today &&
-        !["Completed", "Cancelled"].includes(appointment.status)
-      ) {
-        result.upcoming++;
+      // ✅ Upcoming logic with time slot consideration
+      if (!["Completed", "Cancelled"].includes(appointment.status)) {
+        if (appointmentDay > today) {
+          // Future date
+          result.upcoming++;
+        } else if (appointmentDay.getTime() === today.getTime()) {
+          // Same-day — check timeslot
+          if (appointment.timeSlot) {
+            const slotTime = parseTimeSlot(appointment.timeSlot);
+            if (slotTime >= currentSlotTime) result.upcoming++;
+          }
+        }
       }
 
+      // Monthly / Weekly / Yearly Aggregation
       const month = format(appointmentDate, "MMM");
       const week = format(appointmentDate, "wo");
       const year = format(appointmentDate, "yyyy");
+
       result.uniqueDates.add(format(appointmentDate, "yyyy-MM-dd"));
 
       result.monthly[month] = result.monthly[month] || {
@@ -205,8 +251,8 @@ export default function DoctorDashboard() {
       LinkURL: "/dashboard/pages/Doctor/patientRecords",
     },
     {
-      title: "Total Appointments",
-      value: appointments?.length?.toString() || "N/A",
+      title: "Upcoming Appointments",
+      value: aggregatedAppointments?.upcoming.toString() || "N/A",
       icon: <Syringe size={24} color="white" />,
       color: "bg-blue-500",
       LinkURL: "/dashboard/pages/Doctor/appointments",
@@ -219,9 +265,9 @@ export default function DoctorDashboard() {
       LinkURL: "/dashboard/pages/Doctor/labWork",
     },
     {
-      title: "Upcoming Consultations",
-      value: aggregatedAppointments.upcoming.toString(),
-      icon: <AlertTriangle size={24} color="white" />,
+      title: "Today's Appointments",
+      value: aggregatedAppointments?.todayAppointments.toString() || "N/A",
+      icon: <CalendarCheck size={24} color="white" />,
       color: "bg-red-500",
       LinkURL: "/dashboard/pages/Doctor/appointments",
     },
@@ -448,18 +494,18 @@ export default function DoctorDashboard() {
                       className="text-red-500 group-hover:text-white"
                     />
                   }
-                  hoverBgColor="red"
+                  hoverBgColor="#dc2626" // red-600
                 />
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/appointments/bookAppointment"
                   tooltip="Book Appointment"
+                  hoverBgColor="#2563eb" // blue-600
                   icon={
                     <ClipboardPlus
                       size={18}
                       className="text-teal-600 group-hover:text-white"
                     />
                   }
-                  hoverBgColor="teal"
                 />
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm"
@@ -470,7 +516,7 @@ export default function DoctorDashboard() {
                       className="text-green-600 group-hover:text-white"
                     />
                   }
-                  hoverBgColor="green"
+                  hoverBgColor="#16a34a" // green-600
                 />
               </div>
               <a
@@ -534,7 +580,9 @@ export default function DoctorDashboard() {
                 fullName: item.patient,
                 contactNumber: item.contact,
                 dob: item.dob,
-                registeredAt: item.registeredAt,
+                registeredAt: new Date(item.registeredAt).toLocaleDateString(
+                  "en-GB"
+                ),
               }))}
             title="Recent Patient Registrations"
             itemsPerPage={10}
@@ -581,6 +629,8 @@ export default function DoctorDashboard() {
                 ),
               },
             ]}
+            enableDateFilter
+            dateField="registeredAt"
           />
         </div>
       </div>

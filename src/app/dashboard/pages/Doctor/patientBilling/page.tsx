@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { selectPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useSession } from "next-auth/react";
@@ -13,7 +13,6 @@ import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import PatientBillingForm, {
   FormValues,
 } from "@/app/components/doctor/PatientBillingForm";
-import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
 import BillingAnalytics from "@/app/components/doctor/BillingAnalytics";
 import BillingNote from "@/app/components/doctor/BillingNote";
 
@@ -22,15 +21,6 @@ export default function PatientRecords() {
   const dispatch = useAppDispatch();
   const billings = useAppSelector(selectBillings);
   const patients = useAppSelector(selectPatients);
-  const appointments = useAppSelector(selectAppointments);
-
-  useEffect(() => {
-    if (appointments || patients || billings) {
-      console.log("appointments", appointments);
-      console.log("patients", patients);
-      console.log("billings", billings);
-    }
-  }, [appointments, billings, patients]);
 
   const { data: session } = useSession();
 

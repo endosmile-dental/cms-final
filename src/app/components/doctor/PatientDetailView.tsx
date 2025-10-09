@@ -3,9 +3,14 @@
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import {
   Appointment,
+  fetchAppointments,
   selectAppointments,
 } from "@/app/redux/slices/appointmentSlice";
-import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
+import {
+  BillingRecord,
+  fetchBillings,
+  selectBillings,
+} from "@/app/redux/slices/billingSlice";
 import { fetchPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { Button } from "@/components/ui/button";
@@ -27,11 +32,14 @@ import {
   Mail,
   MapPin,
   Percent,
+  Pill,
   Printer,
   ReceiptText,
   Smile,
+  Stethoscope,
   StickyNote,
   Tag,
+  Trash,
   Wallet,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -46,6 +54,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import ContactInfo from "../ContactInfo";
 import SectionHeader from "../SectionHeader";
 import { DialogFooterActions } from "../DialogFooterActions";
+import DeletePatientModal from "../DeletePatientModal";
+import { fetchLabWorks } from "@/app/redux/slices/labWorkSlice";
+import IconButtonWithTooltip from "../IconButtonWithTooltip";
 
 // ... existing imports ...
 interface PatientDetailViewProps {
@@ -60,6 +71,7 @@ const PatientDetailView = ({
 }: PatientDetailViewProps) => {
   const [timeFrame, setTimeFrame] = useState<"monthly" | "yearly">("monthly");
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [openSelectedAppointment, setOpenSelectedAppointment] = useState(false);
@@ -111,29 +123,29 @@ const PatientDetailView = ({
       {
         title: "Medical History",
         value: (patient.medicalHistory?.length || 0).toString(),
-        icon: <AlertOctagon size={24} />,
+        icon: <FileText size={24} />,
         color: "bg-purple-500",
         onClickFunction: () => {
           console.log("Medical History Clicked", patient.medicalHistory);
-        }
+        },
       },
       {
         title: "Active Medications",
         value: (patient.currentMedications?.length || 0).toString(),
-        icon: <AlertOctagon size={24} />,
+        icon: <Pill size={24} />,
         color: "bg-red-500",
         onClickFunction: () => {
           console.log("Active Medications Clicked", patient.currentMedications);
-        }
+        },
       },
       {
         title: "Total Treatments",
         value: totalTreatments.toString(),
-        icon: <AlertOctagon size={24} />,
+        icon: <Stethoscope size={24} />,
         color: "bg-green-500",
         onClickFunction: () => {
           console.log("Total Treatments Clicked", totalTreatments);
-        }
+        },
       },
     ];
 
@@ -197,6 +209,11 @@ const PatientDetailView = ({
   const openEditModal = () => setEditModalOpen(true);
   const closeEditModal = () => setEditModalOpen(false);
 
+  const openDeleteModal = () => {
+    setIsDeleteModalOpen(true);
+  };
+  const closeDeleteModal = () => setIsDeleteModalOpen(false);
+
   return (
     <>
       {/* Patient Header Section */}
@@ -205,9 +222,25 @@ const PatientDetailView = ({
           <h1 className="text-2xl font-bold text-gray-800">
             {patient.fullName}
           </h1>
-          <Button variant="ghost" size="sm" onClick={openEditModal}>
-            <Edit size={16} />
-          </Button>
+          <div className="flex gap-3">
+            <div onClick={openEditModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="#38bdf8"
+                tooltip="Edit"
+                icon={<Edit size={16} />}
+              />
+            </div>
+
+            <div onClick={openDeleteModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="#f87171"
+                tooltip="Delete"
+                icon={<Trash size={16} />}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Patient Metadata Grid */}
@@ -445,6 +478,29 @@ const PatientDetailView = ({
           ]}
         />
       </div>
+
+      {/* Delete Patient Modal */}
+      <DeletePatientModal
+        isOpen={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+        patient={patient}
+        onPatientDeleted={() => {
+          if (session?.user.id) {
+            dispatch(
+              fetchPatients({ userId: session.user.id, role: "Doctor" })
+            );
+            dispatch(
+              fetchAppointments({ userId: session.user.id, role: "Doctor" })
+            );
+            dispatch(
+              fetchBillings({ userId: session.user.id, role: "Doctor" })
+            );
+            dispatch(
+              fetchLabWorks({ userId: session.user.id, role: "Doctor" })
+            );
+          }
+        }}
+      />
 
       {/* Edit Patient Modal */}
       <EditPatientModal

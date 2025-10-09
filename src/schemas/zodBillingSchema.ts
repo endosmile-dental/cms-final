@@ -11,6 +11,7 @@ export const zodBillingSchema = z.object({
     .max(10, "Contact Number should not exceed 10 digits")
     .optional(),
   patientId: z.string().nonempty("Patient ID is required"),
+  hiddenPatientId: z.string(), // backend internal use
   invoiceId: z.string().nonempty("Invoice ID is required"),
   date: z.string().nonempty("Date is required"),
   gender: z.string().nonempty("Gender is required"),

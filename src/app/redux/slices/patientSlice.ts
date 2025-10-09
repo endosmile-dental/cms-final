@@ -106,6 +106,29 @@ export const updatePatientAsync = createAsyncThunk(
   }
 );
 
+export const deletePatientAsync = createAsyncThunk(
+  "patient/deletePatientAsync",
+  async (patientId: string, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/doctor/deletePatient/${patientId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return rejectWithValue(errorData.error);
+      }
+
+      return patientId; // return ID so we can remove from state
+    } catch {
+      return rejectWithValue("Failed to delete patient");
+    }
+  }
+);
+
 const patientSlice = createSlice({
   name: "patient",
   initialState,
@@ -161,6 +184,23 @@ const patientSlice = createSlice({
         }
       )
       .addCase(updatePatientAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(deletePatientAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        deletePatientAsync.fulfilled,
+        (state, action: PayloadAction<string>) => {
+          state.loading = false;
+          state.patients = state.patients.filter(
+            (patient) => patient._id !== action.payload
+          );
+        }
+      )
+      .addCase(deletePatientAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

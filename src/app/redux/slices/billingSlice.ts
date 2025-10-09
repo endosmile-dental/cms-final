@@ -16,6 +16,7 @@ export interface Treatment {
 export interface BillingRecord {
   _id: string;
   invoiceId: string;
+  patientName: string;
   patientId: string;
   doctorId: string;
   clinicId: string;
