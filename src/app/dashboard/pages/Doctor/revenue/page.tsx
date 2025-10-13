@@ -37,6 +37,10 @@ export default function RevenueDashboard() {
 
     return billings.map((billing) => {
       const patient = patients.find((p) => p._id === billing.patientId);
+      // console.log("Mapping billing:", billing, "to patient:", patient);
+
+      const result = { ...billing, patientName: patient ? patient.fullName : "Unknown" };
+      console.log("Mapped billing record:", result);      
       return {
         ...billing,
         patientName: patient ? patient.fullName : "Unknown",
@@ -231,7 +235,7 @@ export default function RevenueDashboard() {
             title="Billing Details"
             data={mappedBillings}
             columns={billingTableColumns}
-            searchFields={["invoiceId", "date", "modeOfPayment", "status"]}
+            searchFields={["patientName","invoiceId", "date", "modeOfPayment", "status"]}
             showSearch={true}
             onRowClick={handleRowClick}
             enableDateFilter
