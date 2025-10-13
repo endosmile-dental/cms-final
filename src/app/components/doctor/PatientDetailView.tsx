@@ -95,7 +95,7 @@ const PatientDetailView = ({
     );
 
     const patientBillings = billings.filter(
-      (billing) => billing.patientId === patient.PatientId
+      (billing) => billing.patientId === patient._id
     );
 
     const upcomingAppointments = patientAppointments.filter(
