@@ -156,7 +156,7 @@ export default function BillingAnalytics() {
 
     // Create patient data with safe values
     for (const [patientId, count] of Object.entries(patientCounts)) {
-      const patient = patients.find((p) => p.PatientId === patientId);
+      const patient = patients.find((p) => p._id === patientId);
       const patientBillings = billings.filter((b) => b.patientId === patientId);
 
       // Sort billings safely
@@ -165,7 +165,7 @@ export default function BillingAnalytics() {
       );
 
       patientData.push({
-        patientId,
+        patientId: patient?.PatientId,
         name: patient ? patient.fullName : patientId,
         count,
         lastBillingDate: patientBillings[0]?.date || null,
@@ -217,11 +217,13 @@ export default function BillingAnalytics() {
     if (!searchQuery) return patientBillingAnalysis.patientData;
 
     const query = searchQuery.toLowerCase();
-    return patientBillingAnalysis.patientData.filter(
-      (p) =>
+    return patientBillingAnalysis.patientData.filter((p) => {
+      if (!p.name || !p.patientId) return false;
+      return (
         p.name.toLowerCase().includes(query) ||
         p.patientId.toLowerCase().includes(query)
-    );
+      );
+    });
   }, [patientBillingAnalysis.patientData, searchQuery]);
 
   // 3. Patient Billing Cohort Analysis
