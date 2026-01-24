@@ -53,6 +53,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/archiver": "^7.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/html2canvas": "^1.0.0",
     "@types/js-cookie": "^3.0.6",
