@@ -26,6 +26,7 @@ import {
   Edit,
   FileClock,
   FileText,
+  FlaskConical,
   Hash,
   IndianRupee,
   Info,
@@ -50,12 +51,21 @@ import TwoLineDashboardChart from "../TwoLineDashboardChart";
 import DataTable from "../DataTable";
 import { format } from "date-fns";
 import EditPatientModal from "../EditPatientModal";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import ContactInfo from "../ContactInfo";
 import SectionHeader from "../SectionHeader";
 import { DialogFooterActions } from "../DialogFooterActions";
 import DeletePatientModal from "../DeletePatientModal";
-import { fetchLabWorks } from "@/app/redux/slices/labWorkSlice";
+import {
+  fetchLabWorks,
+  ILabWork,
+  selectAllLabWorks,
+} from "@/app/redux/slices/labWorkSlice";
 import IconButtonWithTooltip from "../IconButtonWithTooltip";
 
 // ... existing imports ...
@@ -80,77 +90,101 @@ const PatientDetailView = ({
   );
   const [openSelectedBilling, setOpenSelectedBilling] = useState(false);
 
+  const [selectedLabwork, setSelectedLabwork] = useState<ILabWork | null>(null);
+  const [openSelectedLabwork, setOpenSelectedLabwork] = useState(false);
+  const [openStatDialog, setOpenStatDialog] = useState<null | string>(null);
+
   const { data: session } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const appointments = useAppSelector(selectAppointments);
   const billings = useAppSelector(selectBillings);
+  const labWorks = useAppSelector(selectAllLabWorks);
 
   const appointmentDialogRef = useRef<HTMLDivElement>(null);
   const billingDialogRef = useRef<HTMLDivElement>(null);
+  const labworkDialogRef = useRef<HTMLDivElement>(null);
 
-  const { patientAppointments, patientBillings, stats } = useMemo(() => {
-    const patientAppointments = appointments.filter(
-      (appointment) => appointment.patient === patient._id
-    );
+  // Safe date formatting utility functions
+  const safeFormatDate = (dateValue: unknown): string => {
+    if (!dateValue) return "N/A";
 
-    const patientBillings = billings.filter(
-      (billing) => billing.patientId === patient._id
-    );
+    try {
+      if (dateValue instanceof Date) {
+        return dateValue.toLocaleDateString();
+      }
 
-    const upcomingAppointments = patientAppointments.filter(
-      (app) =>
-        new Date(app.appointmentDate) >= new Date() &&
-        app.status !== "Completed" &&
-        app.status !== "Cancelled"
-    );
+      if (typeof dateValue === "string" || typeof dateValue === "number") {
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
+      }
 
-    const totalTreatments = patientBillings.reduce(
-      (total, billing) => total + (billing.treatments?.length || 0),
-      0
-    );
+      return "N/A";
+    } catch {
+      return "N/A";
+    }
+  };
 
-    const stats: Stat[] = [
-      {
-        title: "Upcoming Appointments",
-        value: upcomingAppointments.length.toString(),
-        icon: <Calendar size={24} />,
-        color: "bg-blue-500",
-        onClickFunction: () => {
-          console.log("Upcoming Appointments Clicked", upcomingAppointments);
+  const { patientAppointments, patientBillings, patientLabworks, stats } =
+    useMemo(() => {
+      const patientAppointments = appointments.filter(
+        (appointment) => appointment.patient === patient._id
+      );
+
+      const patientBillings = billings.filter(
+        (billing) => billing.patientId === patient._id
+      );
+
+      // ✅ Filter labworks for the current patient
+      const patientLabworks = labWorks.filter(
+        (labwork) => labwork.patientId?._id === patient._id
+      );
+
+      const upcomingAppointments = patientAppointments.filter(
+        (app) =>
+          new Date(app.appointmentDate) >= new Date() &&
+          app.status !== "Completed" &&
+          app.status !== "Cancelled"
+      );
+
+      const totalTreatments = patientBillings.reduce(
+        (total, billing) => total + (billing.treatments?.length || 0),
+        0
+      );
+
+      const stats: Stat[] = [
+        {
+          title: "Upcoming Appointments",
+          value: upcomingAppointments.length.toString(),
+          icon: <Calendar size={24} />,
+          color: "bg-blue-500",
+          onClickFunction: () => setOpenStatDialog("Upcoming Appointments"),
         },
-      },
-      {
-        title: "Medical History",
-        value: (patient.medicalHistory?.length || 0).toString(),
-        icon: <FileText size={24} />,
-        color: "bg-purple-500",
-        onClickFunction: () => {
-          console.log("Medical History Clicked", patient.medicalHistory);
+        {
+          title: "Medical History",
+          value: (patient.medicalHistory?.length || 0).toString(),
+          icon: <FileText size={24} />,
+          color: "bg-purple-500",
+          onClickFunction: () => setOpenStatDialog("Medical History"),
         },
-      },
-      {
-        title: "Active Medications",
-        value: (patient.currentMedications?.length || 0).toString(),
-        icon: <Pill size={24} />,
-        color: "bg-red-500",
-        onClickFunction: () => {
-          console.log("Active Medications Clicked", patient.currentMedications);
+        {
+          title: "Active Medications",
+          value: (patient.currentMedications?.length || 0).toString(),
+          icon: <Pill size={24} />,
+          color: "bg-red-500",
+          onClickFunction: () => setOpenStatDialog("Active Medications"),
         },
-      },
-      {
-        title: "Total Treatments",
-        value: totalTreatments.toString(),
-        icon: <Stethoscope size={24} />,
-        color: "bg-green-500",
-        onClickFunction: () => {
-          console.log("Total Treatments Clicked", totalTreatments);
+        {
+          title: "Total Treatments",
+          value: totalTreatments.toString(),
+          icon: <Stethoscope size={24} />,
+          color: "bg-green-500",
+          onClickFunction: () => setOpenStatDialog("Total Treatments"),
         },
-      },
-    ];
+      ];
 
-    return { patientAppointments, patientBillings, stats };
-  }, [appointments, billings, patient]);
+      return { patientAppointments, patientBillings, patientLabworks, stats };
+    }, [appointments, billings, labWorks, patient]);
 
   const processChartData = (
     patientAppointments: Appointment[],
@@ -162,8 +196,8 @@ const PatientDetailView = ({
       return timeFrame === "yearly"
         ? `${date.getFullYear()}`
         : `${date.getFullYear()}-${(date.getMonth() + 1)
-            .toString()
-            .padStart(2, "0")}`;
+          .toString()
+          .padStart(2, "0")}`;
     };
 
     // Process appointments
@@ -206,6 +240,11 @@ const PatientDetailView = ({
     setOpenSelectedAppointment(true);
   };
 
+  const handleOpenLabworkModal = (labwork: ILabWork) => {
+    setSelectedLabwork(labwork);
+    setOpenSelectedLabwork(true);
+  };
+
   const openEditModal = () => setEditModalOpen(true);
   const closeEditModal = () => setEditModalOpen(false);
 
@@ -244,7 +283,7 @@ const PatientDetailView = ({
         </div>
 
         {/* Patient Metadata Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 text-sm">
           <div>
             <span className="text-gray-500">Contact:</span>{" "}
             {patient.contactNumber || "NA"}
@@ -254,13 +293,17 @@ const PatientDetailView = ({
             {patient.gender || "NA"}
           </div>
           <div>
+            <span className="text-gray-500">Age:</span>{" "}
+            {patient.age || "NA"}
+          </div>
+          <div>
             <span className="text-gray-500">DOB:</span>{" "}
             {patient.dateOfBirth
               ? new Date(patient.dateOfBirth).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
               : "NA"}{" "}
           </div>
           <div>
@@ -473,6 +516,99 @@ const PatientDetailView = ({
                     </Button>
                   </div>
                 </>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {/* Labworks Section */}
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <SectionHeader
+          icon={<FlaskConical className="text-orange-500" size={20} />} // or Beaker / TestTube from lucide-react
+          title="Labworks"
+        />
+
+        <DataTable<ILabWork>
+          data={patientLabworks}
+          title=""
+          showSearch={false}
+          itemsPerPage={10}
+          searchFields={["orderType", "status", "labName", "material"]}
+          columns={[
+            {
+              header: "Lab Name",
+              accessorKey: "labName",
+              sortable: true,
+            },
+            {
+              header: "Order Type",
+              accessorKey: "orderType",
+              sortable: true,
+            },
+            {
+              header: "Material",
+              accessorKey: "material",
+            },
+            {
+              header: "Shade",
+              accessorKey: "shade",
+            },
+            {
+              header: "Tooth Numbers",
+              accessorKey: "toothNumbers",
+              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+            },
+            {
+              header: "Impressions Taken On",
+              accessorKey: "impressionsTakenOn",
+              sortable: true,
+              render: (v) => safeFormatDate(v),
+            },
+            {
+              header: "Expected Delivery",
+              accessorKey: "expectedDeliveryDate",
+              sortable: true,
+              render: (v) => safeFormatDate(v),
+            },
+            {
+              header: "Status",
+              accessorKey: "status",
+              render: (v) => {
+                const statusValue = typeof v === "string" ? v : "N/A";
+                return (
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${v === "Pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : v === "Received"
+                        ? "bg-blue-100 text-blue-700"
+                        : v === "Fitted"
+                          ? "bg-green-100 text-green-700"
+                          : v === "Rework"
+                            ? "bg-orange-100 text-orange-700"
+                            : v === "Cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-gray-100 text-gray-700"
+                      }`}
+                  >
+                    {statusValue}
+                  </span>
+                );
+              },
+            },
+            {
+              header: "Actions",
+              accessorKey: "_id",
+              render: (_, row) => (
+                <Button
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenLabworkModal(row);
+                  }}
+                >
+                  View
+                </Button>
               ),
             },
           ]}
@@ -783,9 +919,8 @@ const PatientDetailView = ({
                   <div>
                     <p className="text-muted-foreground">Amount Due</p>
                     <p
-                      className={`font-medium ${
-                        selectedBilling.amountDue < 0 ? "text-red-500" : ""
-                      }`}
+                      className={`font-medium ${selectedBilling.amountDue < 0 ? "text-red-500" : ""
+                        }`}
                     >
                       ₹{selectedBilling.amountDue?.toFixed(2) || 0}
                     </p>
@@ -823,6 +958,237 @@ const PatientDetailView = ({
             <p className="text-center text-sm text-muted-foreground">
               No billing selected.
             </p>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Labwork Details Dialog */}
+      <Dialog open={openSelectedLabwork} onOpenChange={setOpenSelectedLabwork}>
+        <DialogContent
+          ref={labworkDialogRef}
+          className="max-w-2xl animate-fade-in"
+        >
+          <DialogTitle className="text-2xl font-bold mb-4">
+            <FlaskConical className="inline-block mr-2 h-6 w-6" />
+            Labwork Details
+          </DialogTitle>
+
+          {selectedLabwork ? (
+            <>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {/* Lab Name */}
+                <div className="flex items-start gap-2">
+                  <FlaskConical className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Lab Name</p>
+                    <p className="font-medium">
+                      {selectedLabwork.labName || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Order Type */}
+                <div className="flex items-start gap-2">
+                  <ClipboardList className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Order Type</p>
+                    <p className="font-medium">
+                      {selectedLabwork.orderType || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Material */}
+                <div className="flex items-start gap-2">
+                  <Tag className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Material</p>
+                    <p className="font-medium">
+                      {selectedLabwork.material || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Shade */}
+                <div className="flex items-start gap-2">
+                  <StickyNote className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Shade</p>
+                    <p className="font-medium">
+                      {selectedLabwork.shade || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tooth Numbers */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <Smile className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Tooth Numbers</p>
+                    <p className="font-medium">
+                      {Array.isArray(selectedLabwork.toothNumbers)
+                        ? selectedLabwork.toothNumbers.join(", ")
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Impressions Taken On */}
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">
+                      Impressions Taken On
+                    </p>
+                    <p className="font-medium">
+                      {safeFormatDate(selectedLabwork.impressionsTakenOn)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Expected Delivery */}
+                <div className="flex items-start gap-2">
+                  <Clock className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Expected Delivery</p>
+                    <p className="font-medium">
+                      {safeFormatDate(selectedLabwork.expectedDeliveryDate)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-start gap-2 col-span-2">
+                  <Info className="h-5 w-5 text-muted-foreground mt-1" />
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${selectedLabwork.status === "Pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : selectedLabwork.status === "Received"
+                          ? "bg-blue-100 text-blue-700"
+                          : selectedLabwork.status === "Fitted"
+                            ? "bg-green-100 text-green-700"
+                            : selectedLabwork.status === "Rework"
+                              ? "bg-orange-100 text-orange-700"
+                              : selectedLabwork.status === "Cancelled"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
+                        }`}
+                    >
+                      {selectedLabwork.status || "N/A"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Remarks */}
+                {selectedLabwork.remarks && (
+                  <div className="flex items-start gap-2 col-span-2">
+                    <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+                    <div>
+                      <p className="text-muted-foreground">Remarks</p>
+                      <p className="font-medium">{selectedLabwork.remarks}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <DialogFooterActions
+                captureRef={labworkDialogRef}
+                className="no-capture"
+              />
+            </>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground">
+              No labwork selected.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!openStatDialog}
+        onOpenChange={() => setOpenStatDialog(null)}
+      >
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{openStatDialog}</DialogTitle>
+          </DialogHeader>
+
+          {/* Render content dynamically based on which stat is open */}
+          {openStatDialog === "Upcoming Appointments" && (
+            <div className="space-y-3">
+              {patientAppointments.length > 0 ? (
+                patientAppointments.map((app) => (
+                  <div
+                    key={app._id}
+                    className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handleOpenModal(app)}
+                  >
+                    <p className="font-medium">
+                      {safeFormatDate(app.appointmentDate)}
+                    </p>
+                    <p className="text-sm text-gray-500">{app.status}</p>
+                    <p className="text-sm text-gray-500">{app.treatments}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No upcoming appointments.
+                </p>
+              )}
+            </div>
+          )}
+
+          {openStatDialog === "Medical History" && (
+            <ul className="list-disc pl-5 space-y-2">
+              {patient.medicalHistory?.length ? (
+                patient.medicalHistory.map((h, i) => (
+                  <li key={i} className="text-gray-700">
+                    {h}
+                  </li>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No medical history available.
+                </p>
+              )}
+            </ul>
+          )}
+
+          {openStatDialog === "Active Medications" && (
+            <ul className="list-disc pl-5 space-y-2">
+              {patient.currentMedications?.length ? (
+                patient.currentMedications.map((m, i) => (
+                  <li key={i} className="text-gray-700">
+                    {m}
+                  </li>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No active medications.</p>
+              )}
+            </ul>
+          )}
+
+          {openStatDialog === "Total Treatments" && (
+            <div className="space-y-3">
+              {patientBillings.length > 0 ? (
+                patientBillings.map((bill) => (
+                  <div
+                    key={bill._id}
+                    className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedBilling(bill)}
+                  >
+                    <p className="font-medium">{safeFormatDate(bill.date)}</p>
+                    <p className="text-sm text-gray-500">
+                      Treatments: {bill.treatments?.length || 0}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No billing records found.
+                </p>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>

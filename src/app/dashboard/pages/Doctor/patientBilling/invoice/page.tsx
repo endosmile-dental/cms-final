@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import { Treatment } from "@/app/redux/slices/billingSlice";
 import html2canvas from "html2canvas"; // Add this import
+import Image from "next/image";
 
 const Invoice = () => {
   // Reference to the content you want to convert to PDF
@@ -139,10 +140,12 @@ const Invoice = () => {
             </div>
             <div className="w-1/3 flex justify-center items-center">
               <div className="w-full flex justify-center">
-                <img
+                <Image
                   src="/images/white_logo.jpeg"
                   alt="Logo"
                   className="w-[240px] h-auto object-contain"
+                  width={240}
+                  height={240}
                 />
               </div>
             </div>
@@ -277,10 +280,12 @@ const Invoice = () => {
           </div>
 
           <div className="w-full flex justify-end px-24 py-20">
-            <img
+            <Image
               src="/images/sign1.png"
               alt="Logo"
               className="w-[250px] h-auto object-contain"
+              width={250}
+              height={250}
             />
           </div>
 

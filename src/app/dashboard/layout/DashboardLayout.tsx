@@ -15,6 +15,7 @@ import {
   fetchLabWorks,
   selectAllLabWorks,
 } from "@/app/redux/slices/labWorkSlice";
+import GlobalOverlay from "@/app/components/doctor/GlobalOverlay";
 
 export default function DashboardLayout({
   children,
@@ -86,13 +87,14 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex w-full min-h-screen bg-gray-100">
+      <div className="flex w-full min-h-screen bg-gray-50">
         <AppSidebar />
 
         {/* Main Content */}
         <main className="flex-1 px-1 md:px-2 w-full overflow-auto">
           <SidebarTrigger />
           {children}
+          <GlobalOverlay />
         </main>
       </div>
     </SidebarProvider>

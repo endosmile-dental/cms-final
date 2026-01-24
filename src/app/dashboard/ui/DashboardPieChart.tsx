@@ -98,7 +98,7 @@ export default function DashboardPieChart({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {chartData.length > 0 ? (
           <>
             <ResponsiveContainer width="100%" height={300}>

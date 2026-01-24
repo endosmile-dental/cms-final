@@ -39,6 +39,7 @@ import LabDashboardAnalytics from "@/app/components/doctor/LabDashboardAnalytics
 import { Attachment } from "@/app/model/LabWork.model";
 import ViewAttachment from "@/app/components/doctor/ViewAttachment";
 import { useSession } from "next-auth/react";
+import Image from "next/image";
 
 // Update interface to match actual data structure
 export interface LabWorkItem {
@@ -149,7 +150,8 @@ const LabWork: React.FC = () => {
     if (session) {
       const { id, role } = session.user;
       if (role === "Doctor" || role === "Patient") {
-        dispatch(fetchLabWorks({ userId: id, role }));
+        const lbwork = dispatch(fetchLabWorks({ userId: id, role }));
+        console.log("Fetched lab works:", lbwork);
       } else {
         console.warn("Unsupported role:", role);
       }
@@ -270,24 +272,31 @@ const LabWork: React.FC = () => {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-2xl font-semibold text-primary">
-            <FlaskConical className="text-primary" />
-            Lab Work Orders
+          {/* Left Section */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <FlaskConical className="text-purple-600" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Lab Work Orders
+              </h1>
+              <p className="text-gray-600">
+                Manage and track all patient lab work orders efficiently
+              </p>
+            </div>
           </div>
+
+          {/* Right Section */}
           <Button
-            className="hidden md:flex gap-2"
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
             onClick={() => setIsAddModalOpen(true)}
           >
             <PlusCircle size={18} />
-            Add New Lab Work
+            <span className="hidden sm:inline">Add Lab Work</span>
           </Button>
 
-          <Button
-            className="flex md:hidden gap-2"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <PlusCircle size={18} />
-          </Button>
+          {/* Modal */}
           <Modal
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
@@ -715,7 +724,7 @@ const LabWork: React.FC = () => {
                                   }}
                                 >
                                   {isImage ? (
-                                    <img
+                                    <Image
                                       src={attachment.url}
                                       alt={attachment.original_filename}
                                       className="w-full h-24 object-cover cursor-pointer"

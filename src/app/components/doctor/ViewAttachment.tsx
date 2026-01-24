@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Trash2, Loader2 } from "lucide-react";
 import { Attachment } from "@/app/model/LabWork.model";
+import Image from "next/image";
 
 interface ViewAttachmentProps {
   attachment: Attachment;
@@ -48,7 +49,7 @@ const ViewAttachment: React.FC<ViewAttachmentProps> = ({
 
       <div className="flex-1 overflow-auto flex justify-center items-center">
         {isImage ? (
-          <img
+          <Image
             src={attachment.url}
             alt={attachment.original_filename}
             className="max-w-full max-h-[70vh] object-contain"

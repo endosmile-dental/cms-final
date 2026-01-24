@@ -19,7 +19,8 @@ const editPatientSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   contactNumber: z.string().min(1, "Contact number is required"),
   gender: z.enum(["Male", "Female", "Other"]),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  age: z.string().min(1, "Age is required"),
+  dateOfBirth: z.string().optional(),
   password: z.string().optional(),
   address: z
     .object({
@@ -149,6 +150,15 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
           </select>
           {errors.gender && (
             <p className="text-red-500 text-sm">{errors.gender.message}</p>
+          )}
+
+          <label className="block mb-2">Age</label>
+          <input
+            {...register("age")}
+            className="w-full p-2 border rounded mb-2"
+          />
+          {errors.age && (
+            <p className="text-red-500 text-sm">{errors.age.message}</p>
           )}
 
           <label className="block mb-2">Date of Birth</label>

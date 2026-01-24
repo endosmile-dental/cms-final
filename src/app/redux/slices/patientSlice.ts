@@ -13,6 +13,7 @@ export interface Patient {
   fullName: string;
   contactNumber: string;
   gender: "Male" | "Female" | "Other";
+  age: string;
   dateOfBirth: string; // ISO date string
   address?: {
     street?: string;

@@ -18,6 +18,30 @@ import { zodBillingSchema } from "@/schemas/zodBillingSchema";
 import { BillingRecord } from "@/app/redux/slices/billingSlice";
 import Loading from "@/app/components/loading/Loading";
 import { Patient } from "@/app/redux/slices/patientSlice";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  User,
+  FileText,
+  Calendar,
+  CreditCard,
+  Stethoscope,
+  Plus,
+  Trash2,
+  DollarSign,
+  Percent,
+  MapPin,
+  Mail,
+  Phone,
+} from "lucide-react";
 
 export type FormValues = z.infer<typeof zodBillingSchema>;
 
@@ -27,6 +51,45 @@ interface PatientBillingFormProps {
   onSubmit: (data: FormValues) => void;
   isLoading: boolean;
 }
+
+const treatmentOptions = [
+  "Consultation",
+  "Follow-up",
+  "RVG/Digital X-ray",
+  "Multi-Visit Root Canal Treatment",
+  "Single-Visit Root Canal Treatment",
+  "Complex Anatomy and Calcified Canals",
+  "Re-Treatment / Re-RCT",
+  "Veneers (Porcelain/Lithium Disilicate)",
+  "Composite Restoration",
+  "Denture (Indian)",
+  "Denture (German)",
+  "Zirconia (Basic)",
+  "Zirconia (Vita)",
+  "Zirconia (3M Lava)",
+  "PFM (Normal)",
+  "PFM (Warranty)",
+  "Metal Crown (Normal)",
+  "Metal Crown (DMLS)",
+  "E-Max",
+  "Neodent (Basic)",
+  "Ostem",
+  "Strauman (Brazilian)",
+  "Novel Bio",
+  "Metal Braces",
+  "Ceramic Braces",
+  "Aligners (Toothsi)",
+  "Aligners (Invisalign)",
+  "Normal Extraction",
+  "Grossly Decayed Extraction",
+  "Impaction",
+  "GIC",
+  "Composite",
+  "Scaling with Polishing",
+  "Scaling with Chair-side Teeth Whitening",
+  "Air Prophylaxis",
+  "Professional Teeth Whitening with Kit",
+];
 
 const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   patient,
@@ -43,10 +106,10 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
     defaultValues: {
       patientName: "",
       contactNumber: "",
-      patientId: "",  // visible Patient ID
-      hiddenPatientId: "", // internal ID for backend
+      patientId: "",
+      hiddenPatientId: "",
       invoiceId: "",
-      date: "",
+      date: new Date().toISOString().split("T")[0],
       gender: "",
       email: "",
       treatments: treatments,
@@ -63,7 +126,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       form.setValue("patientName", patient.fullName);
       form.setValue("contactNumber", patient.contactNumber);
       form.setValue("patientId", patient.PatientId);
-      form.setValue("hiddenPatientId", patient._id); // internal ID for backend
+      form.setValue("hiddenPatientId", patient._id);
       form.setValue("gender", patient.gender);
       form.setValue("email", patient.email);
 
@@ -97,7 +160,6 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
         ) as Partial<BillingRecord>;
 
       const sanitized = latestThreeBillings.map(sanitize);
-
       sessionStorage.setItem("lastThreeBillings", JSON.stringify(sanitized));
     }
   }, [patient, billings, form]);
@@ -109,6 +171,14 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
     ];
     setTreatments(newTreatments);
     form.setValue("treatments", newTreatments);
+  };
+
+  const handleRemoveField = (index: number) => {
+    if (treatments.length > 1) {
+      const newTreatments = treatments.filter((_, i) => i !== index);
+      setTreatments(newTreatments);
+      form.setValue("treatments", newTreatments);
+    }
   };
 
   const handleTreatmentChange = (index: number, value: string) => {
@@ -140,352 +210,455 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
     form.setValue(`treatments.${index}.quantity`, value);
   };
 
+  // Calculate totals
+  const subtotal = treatments.reduce(
+    (sum, treatment) => sum + treatment.price * treatment.quantity,
+    0
+  );
+  const discount = form.watch("discount") || 0;
+  const total = subtotal - discount;
+
   return (
-    <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="bg-white p-6 rounded-lg shadow-md w-full mx-auto"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-gray-700 text-center">
-          Billing Form
-        </h2>
-
-        {/* Form fields */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Patient Name */}
-          <FormField
-            control={form.control}
-            name="patientName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Patient Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter patient name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Contact Number */}
-          <FormField
-            control={form.control}
-            name="contactNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Number</FormLabel>
-                <FormControl>
-                  <Input
-                    type="text"
-                    placeholder="Enter contact number"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Patient ID */}
-          <FormField
-            control={form.control}
-            name="patientId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Patient ID</FormLabel>
-                <FormControl>
-                  <Input placeholder="Patient ID" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Invoice ID */}
-          <FormField
-            control={form.control}
-            name="invoiceId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Invoice ID</FormLabel>
-                <FormControl>
-                  <Input placeholder="Invoice ID" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Date */}
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Gender */}
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Email */}
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="Enter email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <div className="space-y-6 max-w-6xl mx-auto p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Billing Form</h1>
+          <p className="text-gray-600">
+            Generate invoice and process patient billing
+          </p>
         </div>
+        {patient && (
+          <Badge variant="secondary" className="text-sm">
+            Patient: {patient.fullName}
+          </Badge>
+        )}
+      </div>
 
-        {/* Treatments Section */}
-        <div className="mt-6 mb-4">
-          <h3 className="text-lg font-semibold mb-3">Treatments</h3>
-          {treatments.map((field, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 items-end"
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* Patient & Invoice Information */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Patient Information Card */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center text-lg">
+                  <User className="w-5 h-5 mr-2 text-blue-600" />
+                  Patient Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="patientName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        Patient Name
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter patient name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="contactNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center">
+                          <Phone className="w-4 h-4 mr-2" />
+                          Contact
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="Contact number"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select gender" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <Mail className="w-4 h-4 mr-2" />
+                        Email
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="Enter email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Address
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Invoice Information Card */}
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center text-lg">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Invoice Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="patientId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Patient ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Patient ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="invoiceId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Invoice ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Invoice ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Date
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="modeOfPayment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Payment Mode</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select mode" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Debit/Credit">
+                              Debit/Credit
+                            </SelectItem>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="UPI">UPI</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Treatments Section */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg">
+                <Stethoscope className="w-5 h-5 mr-2 text-blue-600" />
+                Treatments & Services
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="treatments" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="treatments">Treatments</TabsTrigger>
+                  <TabsTrigger value="summary">Cost Summary</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="treatments" className="space-y-4 pt-4">
+                  {treatments.map((field, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 p-4 border border-gray-200 rounded-lg"
+                    >
+                      <div className="md:col-span-5">
+                        <FormLabel>Treatment</FormLabel>
+                        <Select
+                          value={field.treatment}
+                          onValueChange={(value) =>
+                            handleTreatmentChange(index, value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select treatment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {treatmentOptions.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <FormLabel>Quantity</FormLabel>
+                        <Input
+                          type="number"
+                          placeholder="Qty"
+                          value={field.quantity}
+                          onChange={(e) => handleQuantityChange(index, e)}
+                          min="1"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <FormLabel className="flex items-center">
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Price (₹)
+                        </FormLabel>
+                        <Input
+                          type="number"
+                          placeholder="Price"
+                          value={field.price}
+                          onChange={(e) => handlePriceChange(index, e)}
+                          min="0"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 flex items-end space-x-2">
+                        {treatments.length > 1 && (
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveField(index)}
+                            variant="outline"
+                            size="icon"
+                            className="h-10 text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {index === treatments.length - 1 && (
+                          <Button
+                            type="button"
+                            onClick={handleAddField}
+                            variant="outline"
+                            size="icon"
+                            className="h-10"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </TabsContent>
+
+                <TabsContent value="summary" className="space-y-4 pt-4">
+                  <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="font-semibold">
+                        ₹{subtotal.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 flex items-center">
+                        <Percent className="w-4 h-4 mr-1" />
+                        Discount:
+                      </span>
+                      <span className="font-semibold text-red-600">
+                        -₹{discount.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="border-t pt-2 flex justify-between items-center text-lg font-bold">
+                      <span>Total Amount:</span>
+                      <span className="text-blue-600">₹{total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Payment Section */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-lg">
+                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
+                Payment Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="discount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <Percent className="w-4 h-4 mr-2" />
+                        Discount (₹)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Enter discount"
+                          {...field}
+                          min="0"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="amountReceived"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Amount Received (₹)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Enter amount received"
+                          {...field}
+                          min="0"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex items-end">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg w-full">
+                    <div className="text-sm text-blue-600 font-medium">
+                      Balance Due
+                    </div>
+                    <div className="text-2xl font-bold text-blue-700">
+                      ₹
+                      {(total - (form.watch("amountReceived") || 0)).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="flex justify-end pt-6">
+            <Button
+              type="submit"
+              size="lg"
+              className="min-w-[200px] bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading}
             >
-              <div className="md:col-span-5">
-                <FormLabel>Treatment</FormLabel>
-                <input
-                  list={`treatment-options-${index}`}
-                  value={field.treatment}
-                  onChange={(e) => handleTreatmentChange(index, e.target.value)}
-                  placeholder="Select a treatment"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-                <datalist id={`treatment-options-${index}`}>
-                  <option value="Consultation" />
-                  <option value="Follow-up" />
-                  <option value="RVG/Digital X-ray" />
-                  <option value="Multi-Visit Root Canal Treatment" />
-                  <option value="Single-Visit Root Canal Treatment" />
-                  <option value="Complex Anatomy and Calcified Canals" />
-                  <option value="Re-Treatment / Re-RCT" />
-                  <option value="Veneers (Porcelain/Lithium Disilicate)" />
-                  <option value="Composite" />
-                  <option value="Restoration" />
-                  <option value="Denture (Indian)" />
-                  <option value="Denture (German)" />
-                  <option value="Zirconia (Basic)" />
-                  <option value="Zirconia (Vita)" />
-                  <option value="Zirconia (3M Lava)" />
-                  <option value="PFM (Normal)" />
-                  <option value="PFM (Warranty)" />
-                  <option value="Metal Crown (Normal)" />
-                  <option value="Metal Crown (DMLS)" />
-                  <option value="E-Max" />
-                  <option value="Neodent (Basic)" />
-                  <option value="Ostem" />
-                  <option value="Strauman (Brazilian)" />
-                  <option value="Novel Bio" />
-                  <option value="Metal Braces" />
-                  <option value="Ceramic Braces" />
-                  <option value="Aligners (Toothsi)" />
-                  <option value="Aligners (Invisalign)" />
-                  <option value="Normal Extraction" />
-                  <option value="Grossly Decayed Extraction" />
-                  <option value="Impaction" />
-                  <option value="GIC" />
-                  <option value="Composite" />
-                  <option value="Scaling with Polishing" />
-                  <option value="Scaling with Chair-side Teeth Whitening" />
-                  <option value="Air Prophylaxis" />
-                  <option value="Professional Teeth Whitening with Kit" />
-                </datalist>
-              </div>
-
-              <div className="md:col-span-3">
-                <FormLabel>Quantity</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="Qty"
-                  value={field.quantity}
-                  onChange={(e) => handleQuantityChange(index, e)}
-                  min="1"
-                />
-              </div>
-
-              <div className="md:col-span-3">
-                <FormLabel>Price (₹)</FormLabel>
-                <Input
-                  type="number"
-                  placeholder="Price"
-                  value={field.price}
-                  onChange={(e) => handlePriceChange(index, e)}
-                  min="0"
-                />
-              </div>
-
-              <div className="md:col-span-1 flex justify-end">
-                {index === treatments.length - 1 && (
-                  <Button
-                    type="button"
-                    onClick={handleAddField}
-                    variant="outline"
-                    className="h-10 w-10 p-0"
-                  >
-                    +
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Payment Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <div className="hidden">
-            <FormField
-              control={form.control}
-              name="advance"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Advance (₹)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="Enter advance"
-                      {...field}
-                      min="0"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Loading />
+                  Generating Bill...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <FileText className="w-5 h-5 mr-2" />
+                  Generate Bill
+                </span>
               )}
-            />
+            </Button>
           </div>
-
-          <FormField
-            control={form.control}
-            name="discount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Discount (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter discount"
-                    {...field}
-                    min="0"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="amountReceived"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Amount Received (₹)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter amount received"
-                    {...field}
-                    min="0"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="modeOfPayment"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mode of Payment</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value="">Select Mode</option>
-                    <option value="Debit/Credit">Debit/Credit</option>
-                    <option value="Cash">Cash</option>
-                    <option value="UPI">UPI</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="md:col-span-2">
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter your address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="mt-8">
-          <Button
-            type="submit"
-            className="w-full py-6 text-lg"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loading />
-                Generating bill...
-              </span>
-            ) : (
-              "Generate Bill"
-            )}
-          </Button>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+    </div>
   );
 };
 

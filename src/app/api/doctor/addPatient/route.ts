@@ -13,7 +13,8 @@ const patientRegistrationSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   contactNumber: z.string().min(1, "Contact number is required"),
   gender: z.enum(["Male", "Female", "Other"]),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  age: z.string().min(1, "Age must be a positive number"),
+  dateOfBirth: z.string().optional(),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   address: z
@@ -82,7 +83,10 @@ export async function POST(request: Request) {
       email: data.email,
       contactNumber: data.contactNumber,
       gender: data.gender,
-      dateOfBirth: new Date(data.dateOfBirth),
+      age: data.age,
+      ...(data.dateOfBirth && {
+        dateOfBirth: new Date(data.dateOfBirth),
+      }),
       address: data.address,
       medicalHistory: data.medicalHistory
         ? data.medicalHistory.split(",").map((s: string) => s.trim())

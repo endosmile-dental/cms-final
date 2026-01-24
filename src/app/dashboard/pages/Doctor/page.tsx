@@ -17,6 +17,7 @@ import {
   LucideFlaskConical,
   FlaskConical,
   CalendarCheck,
+  Smile,
 } from "lucide-react";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import {
@@ -95,7 +96,7 @@ export default function DoctorDashboard() {
       patient: string;
       contact: string;
       gender: "Male" | "Female" | "Other";
-      dob: string;
+      age: string;
       registeredAt: string;
     }[]
   >([]);
@@ -120,10 +121,7 @@ export default function DoctorDashboard() {
           patient: patient.fullName,
           contact: patient.contactNumber,
           gender: patient.gender,
-          dob: new Date(patient.dateOfBirth).toLocaleDateString(
-            "en-US",
-            options
-          ),
+          age: patient.age,
           registeredAt: new Date(patient.createdAt).toLocaleDateString(
             "en-US",
             options
@@ -473,25 +471,41 @@ export default function DoctorDashboard() {
     <DashboardLayout>
       <div className="px-1 space-y-3">
         {session && profile && (
-          <div className="w-full flex justify-between items-end">
-            <h1 className="text-base md:text-2xl font-semibold tracking-wide font-sans">
-              {(() => {
-                const hour = new Date().getHours();
-                return `Good ${
-                  hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"
-                }, 
-                ${profile.fullName.split(" ")[0]}`;
-              })()}
-            </h1>
-            <div className="flex pr-5 gap-x-5">
-              <div className="hidden md:flex gap-x-3 items-end">
+          <div className="flex md:flex-row items-start md:items-center justify-between w-full">
+            {/* Greeting + Subtitle */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <Smile className="text-indigo-600" size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+                  {(() => {
+                    const hour = new Date().getHours();
+                    return `Good ${hour < 12
+                      ? "morning"
+                      : hour < 18
+                        ? "afternoon"
+                        : "evening"
+                      }, ${profile.fullName.split(" ")[0]}`;
+                  })()}
+                </h1>
+                <p className="text-gray-600 text-sm w-72 md:w-full">
+                  Manage appointments, lab work, and patient records from one
+                  place
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons + Logo */}
+            <div className="flex items-center gap-x-4 mt-4 md:mt-0">
+              <div className="hidden md:flex gap-x-3">
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/labWork"
                   tooltip="Add Lab Work"
                   icon={
                     <FlaskConical
                       size={18}
-                      className="text-red-500 group-hover:text-white"
+                      className="text-red-600 group-hover:text-white"
                     />
                   }
                   hoverBgColor="#dc2626" // red-600
@@ -499,13 +513,13 @@ export default function DoctorDashboard() {
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/appointments/bookAppointment"
                   tooltip="Book Appointment"
-                  hoverBgColor="#2563eb" // blue-600
                   icon={
                     <ClipboardPlus
                       size={18}
-                      className="text-teal-600 group-hover:text-white"
+                      className="text-blue-600 group-hover:text-white"
                     />
                   }
+                  hoverBgColor="#2563eb" // blue-600
                 />
                 <IconButtonWithTooltip
                   href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm"
@@ -519,17 +533,19 @@ export default function DoctorDashboard() {
                   hoverBgColor="#16a34a" // green-600
                 />
               </div>
+
               <a
                 href="https://g.co/kgs/1FNC4r5"
                 target="_blank"
                 rel="noreferrer"
+                className="shrink-0"
               >
                 <Image
                   src="/logo1.png"
                   alt="Clinic Logo"
-                  width={50}
-                  height={50}
-                  className="rounded-full"
+                  width={48}
+                  height={48}
+                  className="rounded-full border border-gray-200 shadow-sm"
                 />
               </a>
             </div>
@@ -546,7 +562,7 @@ export default function DoctorDashboard() {
           <DashboardBarChart
             data={appointmentStats}
             config={barChartConfig}
-            className="min-h-[200px] max-h-[355px] w-full"
+            className="min-h-[200px] max-h-[555px] w-full bg-white p-4 rounded-xl border border-gray-200 shadow-sm"
             barRadius={8}
           />
         </div>
@@ -579,7 +595,7 @@ export default function DoctorDashboard() {
                 id: item.id,
                 fullName: item.patient,
                 contactNumber: item.contact,
-                dob: item.dob,
+                age: item.age,
                 registeredAt: new Date(item.registeredAt).toLocaleDateString(
                   "en-GB"
                 ),
@@ -601,8 +617,8 @@ export default function DoctorDashboard() {
                 render: (value) => value || "N/A",
               },
               {
-                header: "Date of Birth",
-                accessorKey: "dob",
+                header: "Age",
+                accessorKey: "age",
                 render: (value) => value || "N/A",
               },
               {

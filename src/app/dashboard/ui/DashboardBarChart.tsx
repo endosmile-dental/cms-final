@@ -46,7 +46,7 @@ export function DashboardBarChart({
 
   return (
     <div className={className}>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 bg-transparent">
         <h2 className="text-lg font-semibold">Appointment Statistics</h2>
         <Select
           onValueChange={(value: "monthly" | "weekly" | "yearly") =>
@@ -65,7 +65,7 @@ export function DashboardBarChart({
         </Select>
       </div>
 
-      <ChartContainer config={config} className={className}>
+      <ChartContainer config={config}>
         <BarChart accessibilityLayer data={data[timeFrame]}>
           <CartesianGrid vertical={false} />
           <XAxis

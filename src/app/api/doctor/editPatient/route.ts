@@ -9,7 +9,8 @@ const editPatientSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   contactNumber: z.string().min(1, "Contact number is required"),
   gender: z.enum(["Male", "Female", "Other"]),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  age: z.string().min(1, "Age is required"),
+  dateOfBirth: z.string().optional(),
   address: z
     .object({
       street: z.string().optional(),

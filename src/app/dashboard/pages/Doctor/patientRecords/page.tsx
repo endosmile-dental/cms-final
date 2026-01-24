@@ -6,12 +6,36 @@ import { Patient, selectPatients } from "@/app/redux/slices/patientSlice";
 import { useAppSelector } from "@/app/redux/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, UserPlus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  FileText,
+  Search,
+  UserPlus,
+  Calendar,
+  Phone,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-// Main component remains with search and list view
+type ContactValue =
+  | string
+  | string[]
+  | {
+    fullName?: string;
+    contactNumber?: string;
+    relationship?: string;
+  }
+  | {
+    street?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+  }
+  | undefined;
+
 export default function PatientRecords() {
   const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState("");
@@ -21,7 +45,6 @@ export default function PatientRecords() {
 
   const patients = useAppSelector(selectPatients);
 
-  // ... useEffect for closing suggestions ...
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -36,12 +59,10 @@ export default function PatientRecords() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Search Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchInput(value);
 
-    // Filter patients based on ID or name
     const filtered = patients.filter((patient) =>
       value.startsWith("ES") || /\d/.test(value[0])
         ? patient.PatientId.toLowerCase().includes(value.toLowerCase())
@@ -57,7 +78,6 @@ export default function PatientRecords() {
     setSuggestions([]);
   };
 
-  // Initialize from URL param
   useEffect(() => {
     const patientId = searchParams.get("patientId");
     if (patientId && patients.length > 0) {
@@ -69,53 +89,99 @@ export default function PatientRecords() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Medical Records</h1>
-        {/* Search Section */}
-        <div className="flex justify-between items-center gap-x-2 bg-white p-2 md:p-4 rounded-lg shadow-sm">
-          <Button
-            variant="ghost"
-            className="flex items-center gap-0 md:gap-2 text-sm"
-            onClick={() => setSelectedPatient(null)}
-          >
-            <ArrowLeft size={20} />
-          </Button>
-          <div className="relative w-full">
-            <Search
-              className="absolute left-3 top-2.5 text-gray-400"
-              size={18}
-            />
-            <Input
-              placeholder="Search patients..."
-              value={searchInput}
-              onChange={handleSearchChange}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-
-            {/* Search Suggestions */}
-            {suggestions.length > 0 && (
-              <ul
-                ref={suggestionBoxRef}
-                className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-auto"
-              >
-                {suggestions.map((patient, index) => (
-                  <li
-                    key={index}
-                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                    onClick={() => handleSelectSuggestion(patient)}
-                  >
-                    {patient.fullName} ({patient.PatientId})
-                  </li>
-                ))}
-              </ul>
-            )}
+        {/* Updated Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <FileText className="text-blue-600" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Patient Records
+              </h1>
+              <p className="text-gray-600">
+                Manage patient information and medical records
+              </p>
+            </div>
           </div>
+
           <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
-            <Button className="md:ml-4 flex items-center gap-2">
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
               <UserPlus size={18} />
-              <span className="hidden md:block">Add Patient</span>
+              <span>Add Patient</span>
             </Button>
           </Link>
         </div>
+
+        {/* Search Section in Card */}
+        <Card className="bg-white shadow-sm border-0">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {selectedPatient && (
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 shrink-0"
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    setSearchInput("");
+                  }}
+                >
+                  <ArrowLeft size={16} />
+                  Back to List
+                </Button>
+              )}
+
+              <div className="relative flex-1 w-full">
+                <Search
+                  className="absolute left-3 top-3 text-gray-400"
+                  size={18}
+                />
+                <Input
+                  placeholder="Search patients by name or ID..."
+                  value={searchInput}
+                  onChange={handleSearchChange}
+                  className="pl-10 pr-4 py-2 w-full border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+
+                {/* Enhanced Suggestions */}
+                {suggestions.length > 0 && (
+                  <ul
+                    ref={suggestionBoxRef}
+                    className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-2 shadow-lg max-h-60 overflow-auto"
+                  >
+                    {suggestions.map((patient, index) => (
+                      <li
+                        key={index}
+                        className="px-4 py-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                        onClick={() => handleSelectSuggestion(patient)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {patient.fullName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              ID: {patient.PatientId}
+                            </p>
+                          </div>
+                          <Badge variant="secondary" className="bg-gray-100">
+                            {patient.gender}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Phone size={12} />
+                            <span>{patient.contactNumber}</span>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {selectedPatient ? (
           <PatientDetailView
@@ -123,45 +189,116 @@ export default function PatientRecords() {
             onPatientUpdated={setSelectedPatient}
           />
         ) : (
-          /* Patient List View */
-          <DataTable<Patient>
-            data={patients}
-            title="Patient Records"
-            itemsPerPage={20}
-            searchFields={["fullName", "PatientId"]}
-            onRowClick={setSelectedPatient}
-            columns={[
-              { header: "Full Name", accessorKey: "fullName", sortable: true },
-              {
-                header: "Patient ID",
-                accessorKey: "PatientId",
-                sortable: true,
-              },
-              {
-                header: "Contact",
-                accessorKey: "contactNumber",
-              },
-              {
-                header: "Gender",
-                accessorKey: "gender",
-              },
-              {
-                header: "Actions",
-                accessorKey: "_id",
-                render: (_, row) => (
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPatient(row);
-                    }}
-                  >
-                    View
-                  </Button>
-                ),
-              },
-            ]}
-          />
+          /* Updated Patient List in Card */
+          <Card className="bg-white shadow-sm border-0">
+            <CardContent className="p-0">
+              <DataTable<Patient>
+                data={patients}
+                title=""
+                itemsPerPage={15}
+                searchFields={["fullName", "PatientId", "contactNumber"]}
+                onRowClick={setSelectedPatient}
+                columns={[
+                  {
+                    header: "Patient Name",
+                    accessorKey: "fullName",
+                    sortable: true,
+                  },
+                  {
+                    header: "Patient ID",
+                    accessorKey: "PatientId",
+                    sortable: true,
+                  },
+                  {
+                    header: "Contact",
+                    accessorKey: "contactNumber",
+                    render: (value: ContactValue) => {
+                      let contactValue = "N/A";
+
+                      if (typeof value === "string") {
+                        contactValue = value;
+                      } else if (Array.isArray(value)) {
+                        contactValue = value.join(", ");
+                      } else if (
+                        value &&
+                        typeof value === "object" &&
+                        "contactNumber" in value &&
+                        typeof value.contactNumber === "string"
+                      ) {
+                        contactValue = value.contactNumber;
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone size={14} className="text-gray-400" />
+                          {contactValue}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    header: "Gender",
+                    accessorKey: "gender",
+                    render: (value) => {
+                      // Handle different possible types for gender
+                      const genderValue =
+                        typeof value === "string" ? value : "N/A";
+
+                      return (
+                        <Badge variant="outline" className="capitalize">
+                          {genderValue}
+                        </Badge>
+                      );
+                    },
+                  },
+                  {
+                    header: "Date of Birth",
+                    accessorKey: "dateOfBirth",
+                    sortable: true,
+                    render: (value) => {
+                      // Handle different possible types for dateOfBirth
+                      let dateValue = "N/A";
+
+                      if (
+                        typeof value === "string" ||
+                        typeof value === "number" ||
+                        value instanceof Date
+                      ) {
+                        try {
+                          dateValue = new Date(value).toLocaleDateString();
+                        } catch {
+                          dateValue = "Invalid Date";
+                        }
+                      }
+
+                      return (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar size={14} className="text-gray-400" />
+                          {dateValue}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    header: "Actions",
+                    accessorKey: "_id",
+                    render: (_, row) => (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPatient(row);
+                        }}
+                      >
+                        View
+                      </Button>
+                    ),
+                  },
+                ]}
+              />
+            </CardContent>
+          </Card>
         )}
       </div>
     </DashboardLayout>

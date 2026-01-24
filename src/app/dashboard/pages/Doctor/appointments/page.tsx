@@ -1,16 +1,18 @@
 "use client";
 
-import React, {
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { BookPlus, CalendarDays, Edit, FileClock, Trash } from "lucide-react";
+import {
+  BookPlus,
+  Calendar,
+  CalendarDays,
+  Edit,
+  FileClock,
+  Trash,
+} from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useAppSelector, useAppDispatch } from "@/app/redux/store/hooks";
@@ -477,28 +479,27 @@ export default function DoctorAppointments() {
   return (
     <DashboardLayout>
       <div className="p-4 md:p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Appointments</h1>
-          <div>
-            <Link
-              href="/dashboard/pages/Doctor/appointments/bookAppointment"
-              className="hidden md:block"
-            >
-              <Button variant="default" className="w-full sm:w-auto">
-                <BookPlus size={16} className="mr-2" />
-                Add New
-              </Button>
-            </Link>
-            <Link
-              href="/dashboard/pages/Doctor/appointments/bookAppointment"
-              className="md:hidden"
-            >
-              <Button variant="default">
-                <BookPlus size={16} />
-              </Button>
-            </Link>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Calendar className="text-purple-600" size={24} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+              <p className="text-gray-600">
+                Manage and schedule patient appointments efficiently
+              </p>
+            </div>
           </div>
+
+          <Link href="/dashboard/pages/Doctor/appointments/bookAppointment">
+            <Button className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700">
+              <BookPlus size={18} />
+              <span className="hidden sm:inline">Add New</span>
+            </Button>
+          </Link>
         </div>
+
         <Separator />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
