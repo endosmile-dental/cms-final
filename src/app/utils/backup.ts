@@ -30,8 +30,6 @@ export async function streamBackupZip({ role }: BackupOptions) {
 
   for (const col of collections) {
     const cursor = db.collection(col.name).find();
-
-    // 🔥 Create JSON stream manually
     const jsonStream = new PassThrough();
 
     archive.append(jsonStream, { name: `${col.name}.json` });
@@ -39,11 +37,9 @@ export async function streamBackupZip({ role }: BackupOptions) {
     jsonStream.write("[\n");
 
     let first = true;
-
     for await (const doc of cursor) {
       if (!first) jsonStream.write(",\n");
       first = false;
-
       jsonStream.write(JSON.stringify(doc));
     }
 
@@ -53,5 +49,5 @@ export async function streamBackupZip({ role }: BackupOptions) {
 
   await archive.finalize();
 
-  return stream;
+  return stream; // Node stream (correct)
 }
