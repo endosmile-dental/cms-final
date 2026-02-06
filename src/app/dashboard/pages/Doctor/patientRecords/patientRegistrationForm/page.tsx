@@ -134,8 +134,8 @@ const FormStep = ({
   <div className="flex items-center space-x-3">
     <div
       className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${currentStep >= step
-          ? "bg-blue-600 border-blue-600 text-white"
-          : "border-gray-300 text-gray-500"
+        ? "bg-blue-600 border-blue-600 text-white"
+        : "border-gray-300 text-gray-500"
         }`}
     >
       {currentStep > step ? (
@@ -196,13 +196,13 @@ export default function PatientRegistrationForm() {
   const progressValue = React.useMemo(() => {
     switch (currentStep) {
       case 1:
-        return 20;
+        return 10;
       case 2:
-        return 40;
+        return 30;
       case 3:
-        return 60;
+        return 50;
       case 4:
-        return 80;
+        return 70;
       case 5:
         return 100;
       default:
@@ -356,6 +356,7 @@ export default function PatientRegistrationForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Step 1: Personal Information */}
             <Card
+              onFocusCapture={() => setCurrentStep(1)}
               className={`transition-all duration-300 ${currentStep >= 1 ? "opacity-100" : "opacity-60"
                 }`}
             >
@@ -510,6 +511,7 @@ export default function PatientRegistrationForm() {
 
             {/* Step 2: Address Information */}
             <Card
+              onFocusCapture={() => setCurrentStep(2)}
               className={`transition-all duration-300 ${currentStep >= 2 ? "opacity-100" : "opacity-60"
                 }`}
             >
@@ -582,6 +584,7 @@ export default function PatientRegistrationForm() {
 
             {/* Step 3: Medical Information */}
             <Card
+              onFocusCapture={() => setCurrentStep(3)}
               className={`transition-all duration-300 ${currentStep >= 3 ? "opacity-100" : "opacity-60"
                 }`}
             >
@@ -674,6 +677,7 @@ export default function PatientRegistrationForm() {
 
             {/* Step 4: Emergency Contact */}
             <Card
+              onFocusCapture={() => setCurrentStep(4)}
               className={`transition-all duration-300 ${currentStep >= 4 ? "opacity-100" : "opacity-60"
                 }`}
             >

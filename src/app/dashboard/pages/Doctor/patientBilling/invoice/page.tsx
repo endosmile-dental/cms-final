@@ -127,7 +127,7 @@ const Invoice = () => {
           className="bg-white text-black font-sans text-2xl w-full px-5 flex flex-col"
         >
           <div className="flex p-2 border-b border-gray-300">
-            <div className="w-1/3 flex flex-col justify-center items-start">
+            <div className="w-[38%] flex flex-col justify-center items-start">
               <ul className="flex flex-col justify-center items-start py-2 text-xl">
                 <li className="text-2xl font-bold tracking-wide">
                   Dr. Sumit Dinkar
@@ -138,18 +138,19 @@ const Invoice = () => {
                 <li>Ex- Resident (Dr. RML Hospital - New Delhi)</li>
               </ul>
             </div>
-            <div className="w-1/3 flex justify-center items-center">
-              <div className="w-full flex justify-center">
+            <div className="w-[24%] flex justify-center items-center">
+              <div className="relative w-[220px] h-[120px]">
                 <Image
                   src="/images/white_logo.jpeg"
                   alt="Logo"
-                  className="w-[240px] h-auto object-contain"
-                  width={240}
-                  height={240}
+                  fill
+                  className="object-contain"
+                  priority
                 />
               </div>
+
             </div>
-            <div className="w-1/3 hidden md:flex md:flex-col items-end text-start justify-center">
+            <div className="w-[38%] hidden md:flex md:flex-col items-end text-start justify-center">
               <ul className="text-xl">
                 <li>
                   <span className="font-bold">Phone:</span> +91-83688 47831
@@ -280,13 +281,14 @@ const Invoice = () => {
           </div>
 
           <div className="w-full flex justify-end px-24 py-20">
-            <Image
-              src="/images/sign1.png"
-              alt="Logo"
-              className="w-[250px] h-auto object-contain"
-              width={250}
-              height={250}
-            />
+            <div className="relative w-[250px] h-[200px]">
+              <Image
+                src="/images/sign1.png"
+                alt="Signature"
+                fill
+                className="object-contain"
+              />
+            </div>
           </div>
 
           <div className="w-full text-lg font-bold text-center px-10 py-2">

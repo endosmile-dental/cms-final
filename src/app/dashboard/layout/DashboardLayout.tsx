@@ -78,8 +78,8 @@ export default function DashboardLayout({
         }
       });
 
-      console.log("fetchTasks", results);
-      console.log("labworks", labWorks);
+      // console.log("fetchTasks", results);
+      // console.log("labworks", labWorks);
     };
 
     fetchUserData();

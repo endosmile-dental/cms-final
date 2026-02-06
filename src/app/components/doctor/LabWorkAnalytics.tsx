@@ -28,6 +28,21 @@ const toDate = (dateValue: unknown): Date | null => {
   return null;
 };
 
+const getStatusDate = (lab: LabWorkAnalyticsInput): Date | null => {
+  switch (lab.status) {
+    case "Pending":
+    case "Cancelled":
+      return toDate(lab.sentToLabOn);
+
+    case "Received":
+    case "Fitted":
+      return toDate(lab.receivedFromLabOn);
+
+    default:
+      return toDate(lab.sentToLabOn);
+  }
+};
+
 export const useLabWorkAnalytics = (labWorks: LabWorkAnalyticsInput[]) => {
   return useMemo(() => {
     if (!labWorks || labWorks.length === 0) {
@@ -88,6 +103,19 @@ export const useLabWorkAnalytics = (labWorks: LabWorkAnalyticsInput[]) => {
       try {
         const sentDate = toDate(lab.sentToLabOn);
         const receivedDate = toDate(lab.receivedFromLabOn);
+
+        const statusDate = getStatusDate(lab);
+
+        if (statusDate) {
+          const monthKey = format(statusDate, "yyyy-MM");
+
+          if (!statusOverTime[monthKey]) {
+            statusOverTime[monthKey] = {};
+          }
+
+          statusOverTime[monthKey][status] =
+            (statusOverTime[monthKey][status] || 0) + 1;
+        }
 
         if (sentDate && receivedDate) {
           // Weekly completion trends
@@ -233,7 +261,7 @@ export const useLabWorkAnalytics = (labWorks: LabWorkAnalyticsInput[]) => {
       processingTimes.length > 0
         ? processingTimes.length % 2 === 0
           ? (processingTimes[medianIndex - 1] + processingTimes[medianIndex]) /
-            2
+          2
           : processingTimes[medianIndex]
         : 0;
 
@@ -241,11 +269,11 @@ export const useLabWorkAnalytics = (labWorks: LabWorkAnalyticsInput[]) => {
     const onTimeRate =
       validDatesCount > 0
         ? parseFloat(
-            (
-              (processingTimes.filter((d) => d <= 7).length / validDatesCount) *
-              100
-            ).toFixed(1)
-          )
+          (
+            (processingTimes.filter((d) => d <= 7).length / validDatesCount) *
+            100
+          ).toFixed(1)
+        )
         : 0;
 
     return {

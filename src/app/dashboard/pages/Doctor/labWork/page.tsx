@@ -47,7 +47,7 @@ export interface LabWorkItem {
   patientName: string;
   orderType: string;
   labName: string;
-  status: "Pending" | "Received" | "Fitted" | "Cancelled";
+  status: "Pending" | "Received" | "Fitted" | "Rework" | "Cancelled";
   expectedDeliveryDate?: Date | string | null;
   reWorkSentDate?: Date | string | null; // Add reWorkSentDate
   othersText?: string | null; // Add null here
@@ -61,6 +61,71 @@ export interface LabWorkItem {
   remarks?: string | null;
   attachments?: Attachment[] | null;
 }
+
+type LabWorkStatus = LabWorkItem["status"];
+
+
+const STATUS_PRIORITY: Record<LabWorkStatus, number> = {
+  Pending: 1,
+  Received: 2,
+  Rework: 3,
+  Fitted: 99,
+  Cancelled: 100,
+};
+
+const isCompleted = (status: LabWorkItem["status"]) =>
+  status === "Fitted" || status === "Cancelled";
+
+const advancedSortFn = (a: LabWorkItem, b: LabWorkItem): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const getExpectedTime = (item: LabWorkItem) =>
+    item.expectedDeliveryDate
+      ? new Date(item.expectedDeliveryDate).setHours(0, 0, 0, 0)
+      : Infinity;
+
+  const aExpected = getExpectedTime(a);
+  const bExpected = getExpectedTime(b);
+
+  const aCompleted = isCompleted(a.status);
+  const bCompleted = isCompleted(b.status);
+
+  // 1️⃣ Push completed (Fitted / Cancelled) to bottom
+  if (aCompleted && !bCompleted) return 1;
+  if (!aCompleted && bCompleted) return -1;
+
+  // 2️⃣ Overdue active work (before today)
+  const aOverdue = aExpected < today.getTime();
+  const bOverdue = bExpected < today.getTime();
+
+  if (aOverdue && !bOverdue) return -1;
+  if (!aOverdue && bOverdue) return 1;
+
+  // 3️⃣ Expected today
+  const aToday = aExpected === today.getTime();
+  const bToday = bExpected === today.getTime();
+
+  if (aToday && !bToday) return -1;
+  if (!aToday && bToday) return 1;
+
+  // 4️⃣ Future expected (earlier first)
+  if (aExpected !== bExpected) {
+    return aExpected - bExpected;
+  }
+
+  // 5️⃣ Status priority
+  const statusDiff =
+    STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
+
+  if (statusDiff !== 0) return statusDiff;
+
+  // 6️⃣ Final fallback → most recent activity
+  return (
+    new Date(b.sentToLabOn ?? 0).getTime() -
+    new Date(a.sentToLabOn ?? 0).getTime()
+  );
+};
 
 const statusColor = {
   Pending: "bg-yellow-100 text-yellow-800",
@@ -99,6 +164,7 @@ const LabWork: React.FC = () => {
   // Get actual data from Redux store
   const labWorks = useAppSelector(selectAllLabWorks);
 
+
   // Update handleDelete
   const handleDelete = () => {
     setShowConfirm(true);
@@ -128,7 +194,9 @@ const LabWork: React.FC = () => {
       .filter((item) =>
         item.patientName?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .filter((item) => statusFilter === "All" || item.status === statusFilter);
+      .filter((item) => statusFilter === "All" || item.status === statusFilter)
+      .sort(advancedSortFn); // 👈 THIS is the magic
+
   }, [labWorks, searchTerm, statusFilter]);
 
   // Calculate pagination
@@ -411,8 +479,8 @@ const LabWork: React.FC = () => {
                     <span className="font-medium text-gray-700">
                       {item.expectedDeliveryDate
                         ? new Date(
-                            item.expectedDeliveryDate
-                          ).toLocaleDateString()
+                          item.expectedDeliveryDate
+                        ).toLocaleDateString()
                         : "N/A"}
                     </span>
                   </div>
@@ -561,8 +629,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.expectedDeliveryDate
                         ? new Date(
-                            selectedLabWork.expectedDeliveryDate
-                          ).toLocaleDateString()
+                          selectedLabWork.expectedDeliveryDate
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
@@ -583,7 +651,7 @@ const LabWork: React.FC = () => {
                     </h4>
                     <p>
                       {selectedLabWork.toothNumbers &&
-                      selectedLabWork.toothNumbers.length > 0
+                        selectedLabWork.toothNumbers.length > 0
                         ? selectedLabWork.toothNumbers.join(", ")
                         : "N/A"}
                     </p>
@@ -620,8 +688,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.impressionsTakenOn
                         ? new Date(
-                            selectedLabWork.impressionsTakenOn
-                          ).toLocaleDateString()
+                          selectedLabWork.impressionsTakenOn
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
@@ -632,8 +700,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.sentToLabOn
                         ? new Date(
-                            selectedLabWork.sentToLabOn
-                          ).toLocaleDateString()
+                          selectedLabWork.sentToLabOn
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
@@ -644,8 +712,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.receivedFromLabOn
                         ? new Date(
-                            selectedLabWork.receivedFromLabOn
-                          ).toLocaleDateString()
+                          selectedLabWork.receivedFromLabOn
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
@@ -656,8 +724,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.reWorkSentDate
                         ? new Date(
-                            selectedLabWork.reWorkSentDate
-                          ).toLocaleDateString()
+                          selectedLabWork.reWorkSentDate
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>
@@ -668,8 +736,8 @@ const LabWork: React.FC = () => {
                     <p>
                       {selectedLabWork.fittedOn
                         ? new Date(
-                            selectedLabWork.fittedOn
-                          ).toLocaleDateString()
+                          selectedLabWork.fittedOn
+                        ).toLocaleDateString()
                         : "N/A"}
                     </p>
                   </div>

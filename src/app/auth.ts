@@ -20,9 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           await dbConnect();
 
           // ✅ Validate credentials using Zod
-          const { email, password } = await signInSchema.parseAsync(
-            credentials
-          );
+          const { email, password } =
+            await signInSchema.parseAsync(credentials);
 
           // ✅ Fetch the user from the DB by email
           const user = await UserModel.findOne({ email });

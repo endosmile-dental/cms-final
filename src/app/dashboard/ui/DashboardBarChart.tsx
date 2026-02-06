@@ -73,15 +73,18 @@ export function DashboardBarChart({
               timeFrame === "monthly"
                 ? "month"
                 : timeFrame === "weekly"
-                ? "week"
-                : "year"
+                  ? "week"
+                  : "year"
             }
             tickLine={false}
             tickMargin={10}
             axisLine={false}
-            tickFormatter={(value) =>
-              timeFrame === "monthly" ? value.slice(0, 3) : value.slice(0, 4)
-            }
+            tickFormatter={(value) => {
+              if (timeFrame === "monthly") return value; // "Feb 2026"
+              if (timeFrame === "weekly") return value;
+              return value; // year
+            }}
+
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />

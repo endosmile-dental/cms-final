@@ -46,5 +46,4 @@ export default async function Home() {
 
   redirect(`/dashboard/pages/${session.user.role}`);
 
-  return null; // 🚀 Redirecting means no need to render anything here
 }

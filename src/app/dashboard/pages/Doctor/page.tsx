@@ -56,6 +56,24 @@ interface BillingTreatment {
   quantity?: number;
 }
 
+function getLast12Months() {
+  const months = [];
+  const now = new Date();
+
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+
+    months.push({
+      key: format(date, "yyyy-MM"),
+      label: format(date, "MMM yyyy"),
+      month: format(date, "MMM"),
+      year: format(date, "yyyy"),
+    });
+  }
+
+  return months;
+}
+
 export default function DoctorDashboard() {
   const patients = useAppSelector(selectPatients);
   const patientsLoading = useAppSelector(selectPatientLoading);
@@ -207,7 +225,7 @@ export default function DoctorDashboard() {
       }
 
       // Monthly / Weekly / Yearly Aggregation
-      const month = format(appointmentDate, "MMM");
+      const month = format(appointmentDate, "yyyy-MM");
       const week = format(appointmentDate, "wo");
       const year = format(appointmentDate, "yyyy");
 
@@ -276,37 +294,27 @@ export default function DoctorDashboard() {
     cancelled: { label: "Scheduled", color: "#60a5fa" },
   } satisfies ChartConfig;
 
+  const last12Months = getLast12Months();
+
   const appointmentStats = useMemo(
-    () => ({
-      monthly: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ].map((month) => ({
-        month,
-        completed: aggregatedAppointments.monthly[month]?.completed || 0,
-        cancelled: aggregatedAppointments.monthly[month]?.scheduled || 0,
-      })),
-      weekly: Object.keys(aggregatedAppointments.weekly).map((week) => ({
-        week,
-        completed: aggregatedAppointments.weekly[week].completed,
-        cancelled: aggregatedAppointments.weekly[week].scheduled,
-      })),
-      yearly: Object.keys(aggregatedAppointments.yearly).map((year) => ({
-        year,
-        completed: aggregatedAppointments.yearly[year].completed,
-        cancelled: aggregatedAppointments.yearly[year].scheduled,
-      })),
-    }),
+    () => (
+      {
+        monthly: last12Months.map(({ key, label }) => ({
+          month: label, // "Feb 2026"
+          completed: aggregatedAppointments.monthly[key]?.completed || 0,
+          cancelled: aggregatedAppointments.monthly[key]?.scheduled || 0,
+        })),
+        weekly: Object.keys(aggregatedAppointments.weekly).map((week) => ({
+          week,
+          completed: aggregatedAppointments.weekly[week].completed,
+          cancelled: aggregatedAppointments.weekly[week].scheduled,
+        })),
+        yearly: Object.keys(aggregatedAppointments.yearly).map((year) => ({
+          year,
+          completed: aggregatedAppointments.yearly[year].completed,
+          cancelled: aggregatedAppointments.yearly[year].scheduled,
+        })),
+      }),
     [aggregatedAppointments]
   );
 
@@ -413,26 +421,21 @@ export default function DoctorDashboard() {
 
   const registrationChartData = useMemo(() => {
     if (!patients?.length) return [];
-    const monthlyData = patients.reduce((acc, patient) => {
-      const month = format(new Date(patient.createdAt), "MMM");
-      acc[month] = (acc[month] || 0) + 1;
+
+    // Aggregate by yyyy-MM
+    const monthlyCounts = patients.reduce((acc, patient) => {
+      const key = format(new Date(patient.createdAt), "yyyy-MM");
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    return [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ].map((month) => ({ month, users: monthlyData[month] || 0 }));
+
+    // Map last 12 months
+    return getLast12Months().map(({ key, label }) => ({
+      month: label,          // "Feb 2026"
+      users: monthlyCounts[key] || 0,
+    }));
   }, [patients]);
+
 
   if (isDataLoading) {
     return (

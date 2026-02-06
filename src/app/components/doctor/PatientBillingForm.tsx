@@ -588,9 +588,9 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="Enter discount"
-                          {...field}
                           min="0"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
@@ -611,14 +611,15 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                         <Input
                           type="number"
                           placeholder="Enter amount received"
-                          {...field}
                           min="0"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
 
                 <div className="flex items-end">
                   <div className="text-center p-4 bg-blue-50 rounded-lg w-full">
