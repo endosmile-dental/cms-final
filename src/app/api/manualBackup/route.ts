@@ -6,14 +6,19 @@ import { requireAuth } from "@/app/utils/authz";
 export async function POST() {
   await dbConnect();
 
-  const authResult = await requireAuth(["Admin", "Doctor"]);
+  const authResult = await requireAuth(["Admin", "Doctor", "SuperAdmin"]);
   if ("error" in authResult) return authResult.error;
   const { role } = authResult.user;
+
+  // Check if role is allowed for backup
+  if (role === "Patient") {
+    return new Response("Unauthorized for backup", { status: 403 });
+  }
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `backup-${role}-${timestamp}.zip`;
 
-  const nodeStream = await streamBackupZip({ role });
+  const nodeStream = await streamBackupZip({ role: role as "Admin" | "Doctor" | "SuperAdmin" });
 
   // ✅ Node → Web stream (runtime correct)
   const webStream = Readable.toWeb(nodeStream);

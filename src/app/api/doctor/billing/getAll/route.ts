@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     // doctorId index + date sort for stable payload ordering.
     const billings = await BillingModel.find({ doctorId: doctorUserId })
       .sort({ date: -1 })
-      .lean();
+      .lean<{ _id: string; patientId: string; doctorId: string; clinicId: string; treatments: Array<{ name: string; quantity: number; price: number; }>; totalAmount: number; status: string; date: Date; createdAt: Date; updatedAt: Date }[]>();
 
     if (process.env.NODE_ENV !== "production") {
       console.log(

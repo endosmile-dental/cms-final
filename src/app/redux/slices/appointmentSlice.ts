@@ -100,7 +100,7 @@ export const fetchAppointments = createAsyncThunk(
         appointments: Appointment[];
       }>;
       const data = unwrapApiResponse(payload);
-      return data.appointments as Appointment[];
+      return Array.isArray(data.appointments) ? data.appointments : [];
     } catch {
       return rejectWithValue("An error occurred while fetching appointments");
     }

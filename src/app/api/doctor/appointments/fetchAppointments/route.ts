@@ -23,9 +23,9 @@ export async function GET(request: Request) {
     const { userId: doctorUserId } = userIdResult;
 
     // Indexed lookup by userId + lean payload.
-    const doctor = await DoctorModel.findOne({ userId: doctorUserId })
-      .select("_id")
-      .lean();
+const doctor = await DoctorModel.findOne({ userId: doctorUserId })
+  .select("_id")
+  .lean<{ _id: string } | null>();
 
     if (!doctor?._id) {
       return errorResponse(404, "Doctor not found");
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     // Indexed lookup by doctor (see Appointment model index), lean for smaller overhead.
     const appointments = await AppointmentModel.find({ doctor: doctor._id })
       .sort({ appointmentDate: 1, timeSlot: 1 })
-      .lean();
+      .lean<{ _id: string; patient: string; doctor: string; appointmentDate: Date; timeSlot: string; status: string; reason: string; createdAt: Date; updatedAt: Date }[]>();
 
     if (process.env.NODE_ENV !== "production") {
       console.log(

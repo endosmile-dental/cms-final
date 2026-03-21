@@ -1,26 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
 import { Treatment } from "@/app/model/Treatment.model";
 import dbConnect from "@/app/utils/dbConnect";
+import { NextRequest, NextResponse } from "next/server";
+
+export type RouteContext = {
+  params: Promise<{ id: string }>;
+};
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
-    
-    const treatment = await Treatment.findById(params.id);
-    
+
+    const { id } = await params;
+    const treatment = await Treatment.findById(id);
+
     if (!treatment) {
       return NextResponse.json(
         {
           success: false,
           message: "Treatment not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       data: treatment,
@@ -33,21 +38,22 @@ export async function GET(
         message: "Failed to fetch treatment",
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
-    
+
     const body = await request.json();
     const { name, category, description, defaultPrice, isActive } = body;
-    
+    const { id } = await params;
+
     // Validation
     if (!name || !category) {
       return NextResponse.json(
@@ -55,14 +61,14 @@ export async function PUT(
           success: false,
           message: "Name and category are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     // Check if treatment already exists with different ID
-    const existingTreatment = await Treatment.findOne({ 
+    const existingTreatment = await Treatment.findOne({
       name: name.trim(),
-      _id: { $ne: params.id }
+      _id: { $ne: id },
     });
     if (existingTreatment) {
       return NextResponse.json(
@@ -70,12 +76,12 @@ export async function PUT(
           success: false,
           message: "Treatment with this name already exists",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
-    
+
     const treatment = await Treatment.findByIdAndUpdate(
-      params.id,
+      id,
       {
         name: name.trim(),
         category,
@@ -83,19 +89,19 @@ export async function PUT(
         defaultPrice: defaultPrice || 0,
         isActive: isActive !== undefined ? isActive : true,
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
-    
+
     if (!treatment) {
       return NextResponse.json(
         {
           success: false,
           message: "Treatment not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       data: treatment,
@@ -109,34 +115,35 @@ export async function PUT(
         message: "Failed to update treatment",
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
-    
+
+    const { id } = await params;
     const treatment = await Treatment.findByIdAndUpdate(
-      params.id,
+      id,
       { isActive: false },
-      { new: true }
+      { new: true },
     );
-    
+
     if (!treatment) {
       return NextResponse.json(
         {
           success: false,
           message: "Treatment not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       message: "Treatment deactivated successfully",
@@ -149,7 +156,7 @@ export async function DELETE(
         message: "Failed to delete treatment",
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

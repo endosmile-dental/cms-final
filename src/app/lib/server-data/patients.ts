@@ -13,7 +13,7 @@ export async function getDoctorPatients(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -61,7 +61,7 @@ export async function getPatientById(patientId: string, doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -96,7 +96,7 @@ export async function searchPatients(
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -136,7 +136,7 @@ export async function getPatientStatistics(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 

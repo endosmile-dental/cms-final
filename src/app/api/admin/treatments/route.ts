@@ -8,7 +8,7 @@ export async function GET() {
     
     const treatments = await Treatment.find({ isActive: true })
       .sort({ category: 1, name: 1 })
-      .lean();
+      .lean<{ _id: string; name: string; category: string; description: string; defaultPrice: number; isActive: boolean; createdAt: Date; updatedAt: Date }[]>();
     
     return NextResponse.json({
       success: true,

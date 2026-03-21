@@ -18,11 +18,6 @@ import AppointmentBookingFromPatient from "@/app/components/AppointmentBookingFr
 import { DialogDescription } from "@radix-ui/react-dialog";
 import { format } from "date-fns";
 
-// Update DataPoint to match DashboardChart's expected type
-interface DataPoint {
-  month: string;
-  users: number;
-}
 
 export default function PatientDashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -158,7 +153,7 @@ export default function PatientDashboard() {
     return acc;
   }, {} as Record<string, number>);
 
-  const chartData: DataPoint[] = Object.entries(appointmentCountsByMonth).map(
+  const chartData = Object.entries(appointmentCountsByMonth).map(
     ([month, count]) => ({ month, users: count })
   );
 
@@ -212,7 +207,9 @@ export default function PatientDashboard() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <DashboardChart
             title="Recent Appointments"
-            data={chartData} // Pass the transformed chart data here
+            data={chartData}
+            xKey="month"
+            lines={[{ dataKey: "users", stroke: "#8884d8" }]}
           />
           <DashboardCalendar
             title="Appointment Calendar"

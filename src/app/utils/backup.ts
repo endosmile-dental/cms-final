@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { PassThrough } from "stream";
 
 interface BackupOptions {
-  role: "Admin" | "Doctor";
+  role: "Admin" | "Doctor" | "SuperAdmin";
 }
 
 export async function streamBackupZip({ role }: BackupOptions) {
@@ -19,7 +19,7 @@ export async function streamBackupZip({ role }: BackupOptions) {
   archive.pipe(stream);
 
   const collections =
-    role === "Admin"
+    role === "Admin" || role === "SuperAdmin"
       ? await db.listCollections().toArray()
       : [
           { name: "appointments" },

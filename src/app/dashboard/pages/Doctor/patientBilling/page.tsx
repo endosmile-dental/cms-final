@@ -23,7 +23,6 @@ export default async function PatientBillingPage() {
     <PatientBillingClient 
       initialPatients={patients}
       initialBillings={billings}
-      initialTreatments={treatments}
     />
   );
 }

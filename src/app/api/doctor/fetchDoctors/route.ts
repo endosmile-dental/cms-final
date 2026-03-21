@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
     if (user.role === "Doctor") {
       const doctor = await DoctorModel.findOne({ userId })
         .select("clinicId")
-        .lean();
+        .lean<{ clinicId: string } | null>();
       clinicId = doctor?.clinicId?.toString() || null;
     } else if (user.role === "Patient") {
       const patient = await PatientModel.findOne({ userId })
         .select("ClinicId")
-        .lean();
+        .lean<{ ClinicId: string } | null>();
       clinicId = patient?.ClinicId?.toString() || null;
     } else {
       return errorResponse(
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       .select(
         "_id clinicId fullName specialization specializationDetails contactNumber address qualifications experienceYears gender rating workingHours createdAt updatedAt",
       )
-      .lean();
+      .lean<{ _id: string; clinicId: string; fullName: string; specialization: string; specializationDetails: string; contactNumber: string; address: string; qualifications: string; experienceYears: number; gender: string; rating: number; workingHours: string; createdAt: Date; updatedAt: Date }[]>();
 
     const transformedDoctors = doctors.map((doctor) => ({
       ...doctor,

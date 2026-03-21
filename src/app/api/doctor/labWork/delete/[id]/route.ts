@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import LabWorkModel from "@/app/model/LabWork.model";
 import { requireAuth } from "@/app/utils/authz";
@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest) {
   const response = await deleteLabWork(id);
 
   if (!response.success) {
-    return errorResponse(response.status, response.error);
+    return errorResponse(response.status, response.error ?? "Something went wrong");
   }
 
   return successResponse({ message: response.message }, response.status);

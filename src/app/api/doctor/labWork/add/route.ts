@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
   if (!response.success) {
     return errorResponse(
       response.status || 500,
-      response.error,
+      response.error ?? "Something went wrong",
       response.details || null
     );
   }

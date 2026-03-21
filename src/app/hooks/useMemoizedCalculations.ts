@@ -100,7 +100,7 @@ export const useChartCalculations = (
           date: month,
           appointments: appointmentCounts[month] || 0,
           treatments: treatmentCounts[month] || 0,
-        }));
+        })) as Record<string, string | number>[];
       };
 
       // Appointment statistics for charts
@@ -159,22 +159,22 @@ export const useChartCalculations = (
         const statusData = Object.entries(statusCounts).map(([name, value]) => ({
           name,
           value,
-        }));
+        })) as Record<string, string | number>[];
 
         // Format time-based status data
         const statusByTime = {
           weekly: Object.entries(weeklyCounts).map(([name, value]) => ({
             name,
             value,
-          })),
+          })) as Record<string, string | number>[],
           monthly: Object.entries(monthlyCounts).map(([name, value]) => ({
             name,
             value,
-          })),
+          })) as Record<string, string | number>[],
           yearly: Object.entries(yearlyCounts).map(([name, value]) => ({
             name,
             value,
-          })),
+          })) as Record<string, string | number>[],
         };
 
         // Format data for bar chart (treatment popularity)
@@ -183,7 +183,7 @@ export const useChartCalculations = (
           .map(([name, value]) => ({
             name,
             value,
-          }));
+          })) as Record<string, string | number>[];
 
         // Format data for time slot heatmap
         const timeSlotData = Object.entries(timeSlotCounts)
@@ -214,7 +214,7 @@ export const useChartCalculations = (
               "5:30 PM - 6:00 PM",
             ];
             return timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time);
-          });
+          }) as Record<string, string | number>[];
 
         return {
           statusData,

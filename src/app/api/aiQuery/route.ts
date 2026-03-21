@@ -57,7 +57,7 @@ async function executeQuery(
           let query = LabWorkModel.find(operation.query || {});
           if (operation.sort) query = query.sort(operation.sort);
           if (operation.limit) query = query.limit(operation.limit);
-          results = await query.lean();
+          results = await query.lean<Record<string, unknown>[]>();
         }
         break;
 
@@ -68,7 +68,7 @@ async function executeQuery(
           let query = BillingModel.find(operation.query || {});
           if (operation.sort) query = query.sort(operation.sort);
           if (operation.limit) query = query.limit(operation.limit);
-          results = await query.lean();
+          results = await query.lean<Record<string, unknown>[]>();
         }
         break;
 
@@ -79,7 +79,7 @@ async function executeQuery(
           let query = AppointmentModel.find(operation.query || {});
           if (operation.sort) query = query.sort(operation.sort);
           if (operation.limit) query = query.limit(operation.limit);
-          results = await query.lean();
+          results = await query.lean<Record<string, unknown>[]>();
         }
         break;
     }

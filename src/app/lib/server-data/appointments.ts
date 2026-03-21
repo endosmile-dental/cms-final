@@ -25,8 +25,8 @@ export async function getDoctorAppointments(doctorUserId: string) {
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId })
       .select("_id")
-      .lean();
-    if (!doctor?._id) {
+      .lean<{ _id: string } | null>();
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       console.warn(`Doctor not found for userId: ${doctorUserId}`);
       return [];
     }
@@ -179,8 +179,9 @@ export async function getPatientAppointments(patientUserId: string) {
     await dbConnect();
 
     // Find the patient document using the patient.userId field
-    const patient = await PatientModel.findOne({ userId: patientUserId });
-    if (!patient) {
+    const patient = await PatientModel.findOne({ userId: patientUserId })
+      .lean<{ _id: string } | null>();
+    if (!patient || Array.isArray(patient) || !patient._id) {
       throw new Error("Patient not found");
     }
 
@@ -219,8 +220,9 @@ export async function getAppointmentAvailability(
     }
 
     // Find the doctor to ensure they exist
-    const doctor = await DoctorModel.findById(doctorId);
-    if (!doctor) {
+    const doctor = await DoctorModel.findById(doctorId)
+      .lean<{ _id: string } | null>();
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 

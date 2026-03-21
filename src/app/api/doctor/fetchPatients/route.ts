@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 
     const doctor = await DoctorModel.findOne({ userId: doctorUserId })
       .select("_id")
-      .lean();
+      .lean<{ _id: string } | null>();
 
     if (!doctor?._id) {
       return errorResponse(404, "Doctor not found");
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const patients = await PatientModel.find({ DoctorId: doctor._id })
       .select("_id userId DoctorId ClinicId PatientId fullName contactNumber gender age dateOfBirth email address medicalHistory currentMedications emergencyContact createdAt updatedAt")
       .sort({ createdAt: -1 })
-      .lean();
+      .lean<{ _id: string; userId: string; DoctorId: string; ClinicId: string; PatientId: string; fullName: string; contactNumber: string; gender: string; age: number; dateOfBirth: Date; email: string; address: string; medicalHistory: string; currentMedications: string; emergencyContact: string; createdAt: Date; updatedAt: Date }[]>();
 
     if (process.env.NODE_ENV !== "production") {
       console.log(

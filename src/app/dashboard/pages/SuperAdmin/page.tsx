@@ -78,7 +78,12 @@ export default function SuperAdminDashboard() {
 
         {/* 🔹 Charts & Calendar */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DashboardChart title="System Performance Overview" data={[]} />
+          <DashboardChart
+            title="System Performance Overview"
+            data={[]}
+            xKey="name"
+            lines={[{ dataKey: "value", stroke: "#8884d8" }]}
+          />
         </div>
 
         {/* 🔹 Recent Activities Table */}

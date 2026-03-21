@@ -15,7 +15,7 @@ export async function getDoctorBillingRecords(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -59,7 +59,7 @@ export async function getPatientBillingRecords(patientUserId: string) {
 
     // Find the patient document using the patient.userId field
     const patient = await PatientModel.findOne({ userId: patientUserId });
-    if (!patient) {
+    if (!patient || Array.isArray(patient) || !patient._id) {
       throw new Error("Patient not found");
     }
 
@@ -89,7 +89,7 @@ export async function getDoctorBillingAnalytics(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -245,7 +245,7 @@ export async function getBillingRecordsByDateRange(
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 

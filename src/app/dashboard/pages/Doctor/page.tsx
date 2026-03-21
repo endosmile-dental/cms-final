@@ -1,7 +1,7 @@
 import { auth } from "@/app/auth";
 import { redirect } from "next/navigation";
-import { getDoctorDashboardData } from "@/app/api/doctor/dashboard/route";
 import DoctorDashboardClient from "./DoctorDashboardClient";
+import { getDoctorDashboardData } from "@/app/lib/server-data/doctorDashboard";
 
 export default async function DoctorDashboard() {
   const session = await auth();

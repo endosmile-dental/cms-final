@@ -14,7 +14,7 @@ export async function getDoctorLabWorks(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -134,7 +134,7 @@ export async function getDoctorLabWorkAnalytics(doctorUserId: string) {
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 
@@ -257,7 +257,7 @@ export async function getLabWorksByDateRange(
 
     // Find the doctor document using the doctor.userId field
     const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
+    if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
 

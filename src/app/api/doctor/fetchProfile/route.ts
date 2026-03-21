@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       .select(
         "_id clinicId fullName specialization specializationDetails contactNumber address qualifications experienceYears gender rating workingHours createdAt updatedAt",
       )
-      .lean();
+      .lean<{ _id: string; clinicId: string; fullName: string; specialization: string; specializationDetails: string; contactNumber: string; address: string; qualifications: string; experienceYears: number; gender: string; rating: number; workingHours: string; createdAt: Date; updatedAt: Date } | null>();
 
     if (!doctor?._id) {
       return errorResponse(404, "Doctor not found");

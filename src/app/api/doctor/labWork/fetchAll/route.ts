@@ -14,7 +14,7 @@ async function fetchLabWorks(filter: Record<string, unknown>) {
       .populate("patientId", "fullName contactNumber")
       .populate("doctorId", "fullName specialization")
       .sort({ createdAt: -1 })
-      .lean();
+      .lean<{ _id: string; patientId: string; doctorId: string; testType: string; testDate: Date; status: string; results: string; attachments: string[]; createdAt: Date; updatedAt: Date }[]>();
 
     return {
       success: true,
@@ -45,7 +45,7 @@ export async function GET() {
   if (user.role === "Doctor") {
     const doctor = await DoctorModel.findOne({ userId: user.id })
       .select("_id")
-      .lean();
+      .lean<{ _id: string } | null>();
     if (!doctor?._id) {
       return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
     }
@@ -53,7 +53,7 @@ export async function GET() {
   } else if (user.role === "Patient") {
     const patient = await PatientModel.findOne({ userId: user.id })
       .select("_id")
-      .lean();
+      .lean<{ _id: string } | null>();
     if (!patient?._id) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
@@ -63,14 +63,14 @@ export async function GET() {
   const response = await fetchLabWorks(filter);
 
   if (!response.success) {
-    return errorResponse(500, response.error);
+    return errorResponse(500, response.error ?? "Something went wrong");
   }
 
   if (process.env.NODE_ENV !== "production") {
     console.log(
-      `[perf] GET /api/doctor/labWork/fetchAll ${Date.now() - startedAt}ms (count=${response.data.length})`,
+      `[perf] GET /api/doctor/labWork/fetchAll ${Date.now() - startedAt}ms (count=${response.data?.length || 0})`,
     );
   }
 
-  return successResponse({ labWorks: response.data }, 200);
+  return successResponse({ labWorks: response.data || [] }, 200);
 }

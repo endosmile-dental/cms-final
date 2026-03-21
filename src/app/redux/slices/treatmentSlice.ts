@@ -158,7 +158,7 @@ const treatmentSlice = createSlice({
     },
     // Add hydration action for SSR + Redux combo
     hydrateTreatments(state, action: { payload: ITreatment[] }) {
-      state.data = action.payload;
+      state.data = action.payload ?? [];
       state.loading = false;
       state.loaded = true;
       state.error = null;
@@ -174,7 +174,7 @@ const treatmentSlice = createSlice({
       })
       .addCase(fetchTreatments.fulfilled, (state, action) => {
         debugLog("DEBUG: fetchTreatments.fulfilled - Setting data:", action.payload);
-        state.data = action.payload;
+        state.data = action.payload ?? [];
         state.loading = false;
         state.loaded = true;
       })

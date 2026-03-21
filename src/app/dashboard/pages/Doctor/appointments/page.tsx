@@ -4,6 +4,7 @@ import DoctorAppointmentsClient from "./DoctorAppointmentsClient";
 import { getDoctorAppointments } from "@/app/lib/server-data/appointments";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
+import type { Appointment } from "@/app/redux/slices/appointmentSlice";
 
 export default async function DoctorAppointments() {
   const session = await auth();
@@ -21,10 +22,13 @@ export default async function DoctorAppointments() {
     ? appointmentsData.allAppointments 
     : appointmentsData;
 
+  // Type assertion to ensure proper typing for the client component
+  const typedAppointments = appointments as unknown as Appointment[];
+
   return (
     <ErrorBoundary>
       <Suspense fallback={<div>Loading appointments...</div>}>
-        <DoctorAppointmentsClient initialAppointments={appointments} />
+        <DoctorAppointmentsClient initialAppointments={typedAppointments} />
       </Suspense>
     </ErrorBoundary>
   );

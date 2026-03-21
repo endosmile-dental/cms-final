@@ -78,7 +78,12 @@ export default function ClientAdminDashboard() {
 
         {/* Charts & Calendar */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <DashboardChart title="Clinic Performance Overview" data={[]} />
+          <DashboardChart
+            title="Clinic Performance Overview"
+            data={[]}
+            xKey="name"
+            lines={[{ dataKey: "value", stroke: "#8884d8" }]}
+          />
         </div>
 
         {/* Recent Activities Table */}
