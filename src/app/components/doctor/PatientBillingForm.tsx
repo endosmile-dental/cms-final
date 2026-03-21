@@ -97,6 +97,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   ]);
   const [isTreatmentModalOpen, setIsTreatmentModalOpen] = useState(false);
   const [editingTreatment, setEditingTreatment] = useState<ITreatment | null>(null);
+  const [isInEditMode, setIsInEditMode] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(zodBillingSchema),
@@ -230,7 +231,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   const total = subtotal - discount;
 
   return (
-      <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -464,7 +465,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                  <Stethoscope className="w-5 h-5 mr-2 text-foreground" />
+                <Stethoscope className="w-5 h-5 mr-2 text-foreground" />
                 Treatments & Services
               </CardTitle>
             </CardHeader>
@@ -491,6 +492,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                               size="sm"
                               onClick={() => {
                                 setEditingTreatment(null);
+                                setIsInEditMode(false);
                                 setIsTreatmentModalOpen(true);
                               }}
                               className="text-xs"
@@ -505,6 +507,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                               onClick={() => {
                                 console.log("DEBUG: Edit treatments button clicked");
                                 setEditingTreatment(null);
+                                setIsInEditMode(true);
                                 setIsTreatmentModalOpen(true);
                               }}
                               className="text-xs"
@@ -530,8 +533,8 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                             })()}
                             {Array.isArray(activeTreatments) && activeTreatments.length > 0 ? (
                               activeTreatments.map((treatment) => (
-                                <SelectItem 
-                                  key={treatment._id} 
+                                <SelectItem
+                                  key={treatment._id}
                                   value={treatment.name}
                                 >
                                   {treatment.name}
@@ -630,7 +633,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                  <CreditCard className="w-5 h-5 mr-2 text-foreground" />
+                <CreditCard className="w-5 h-5 mr-2 text-foreground" />
                 Payment Details
               </CardTitle>
             </CardHeader>
@@ -726,7 +729,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   {editingTreatment ? "Edit Treatment" : "Manage Treatments"}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingTreatment 
+                  {editingTreatment
                     ? "Update the details of the selected treatment"
                     : "Select a treatment to edit or add a new treatment"
                   }
@@ -734,15 +737,17 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
               </DialogHeader>
               <TreatmentManagementForm
                 treatment={editingTreatment}
-                isEditing={editingTreatment === null} // Pass true when editing treatments (no specific treatment selected)
+                isEditing={isInEditMode}
                 onSuccess={() => {
                   setIsTreatmentModalOpen(false);
                   setEditingTreatment(null);
+                  setIsInEditMode(false);
                   queryClient.invalidateQueries({ queryKey: TREATMENTS_QUERY_KEY });
                 }}
                 onCancel={() => {
                   setIsTreatmentModalOpen(false);
                   setEditingTreatment(null);
+                  setIsInEditMode(false);
                 }}
               />
             </DialogContent>
