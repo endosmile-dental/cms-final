@@ -39,12 +39,12 @@ const AppointmentDetailsModal = ({
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogTrigger />
-      <DialogContent className="max-w-5xl w-full p-6 rounded-lg bg-white">
+      <DialogContent className="max-w-5xl w-full p-6 rounded-lg bg-card border-border shadow-sm">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold">
+          <DialogTitle className="text-lg font-semibold text-foreground">
             Appointments for {format(date, "PPP")}
           </DialogTitle>
-          <DialogDescription className="text-sm text-gray-500">
+          <DialogDescription className="text-sm text-muted-foreground">
             Below is a list of all patient appointments scheduled on this date.
           </DialogDescription>
         </DialogHeader>
@@ -132,7 +132,7 @@ const AppointmentDetailsModal = ({
 
         <DialogClose asChild>
           <button
-            className="bg-blue-500 text-white py-2 px-4 rounded-md mt-4"
+            className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-2 px-4 rounded-md mt-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
             onClick={onClose}
           >
             Close

@@ -47,14 +47,14 @@ export function DashboardBarChart({
   return (
     <div className={className}>
       <div className="flex justify-between items-center mb-4 bg-transparent">
-        <h2 className="text-lg font-semibold">Appointment Statistics</h2>
+        <h2 className="text-lg font-semibold text-foreground">Appointment Statistics</h2>
         <Select
           onValueChange={(value: "monthly" | "weekly" | "yearly") =>
             setTimeFrame(value)
           }
           defaultValue="monthly"
         >
-          <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-[120px] bg-card border-border hover:bg-accent hover:text-accent-foreground transition-colors">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -65,7 +65,7 @@ export function DashboardBarChart({
         </Select>
       </div>
 
-      <ChartContainer config={config}>
+          <ChartContainer config={config} className="dark:bg-card dark:border-border">
         <BarChart accessibilityLayer data={data[timeFrame]}>
           <CartesianGrid vertical={false} />
           <XAxis
@@ -84,7 +84,8 @@ export function DashboardBarChart({
               if (timeFrame === "weekly") return value;
               return value; // year
             }}
-
+            tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+            className="dark:fill-muted-foreground"
           />
           <ChartTooltip content={<ChartTooltipContent />} />
           <ChartLegend content={<ChartLegendContent />} />
@@ -95,6 +96,7 @@ export function DashboardBarChart({
               dataKey={key}
               fill={`var(--color-${key})`}
               radius={barRadius}
+              className="transition-all duration-300 hover:opacity-80"
             />
           ))}
         </BarChart>

@@ -6,6 +6,9 @@ import appointmentReducer from "../slices/appointmentSlice";
 import profileReducer from "../slices/profileSlice";
 import doctorReducer from "../slices/doctorSlice";
 import labWorkReducer from "../slices/labWorkSlice";
+import treatmentReducer from "../slices/treatmentSlice";
+import themeReducer from "../slices/themeSlice";
+import hydrationReducer from "../slices/hydrationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +18,9 @@ export const store = configureStore({
     profile: profileReducer,
     doctors: doctorReducer,
     labWork: labWorkReducer,
+    treatment: treatmentReducer,
+    theme: themeReducer,
+    hydration: hydrationReducer,
 
     // doctor: doctorReducer,
     // clinic: clinicReducer,

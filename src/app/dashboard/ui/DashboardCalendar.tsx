@@ -10,7 +10,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 
 import AppointmentDetailsModal from "@/app/components/doctor/AppointmentDetailsModal";
 
@@ -39,9 +39,14 @@ export default function DashboardCalendar({
     appointmentDetails.map((item) => [item.date, item])
   );
 
-  const selectedDates = appointmentDetails.map((item) =>
-    parse(item.date, "yyyy-MM-dd", new Date())
-  );
+  const selectedDates = appointmentDetails.map((item) => {
+    // Parse the date string as local date to avoid timezone issues
+    const [year, month, day] = item.date.split("-").map(Number);
+    // Create date at start of day in local timezone to avoid timezone issues
+    const date = new Date(year, month - 1, day);
+    date.setHours(0, 0, 0, 0); // Ensure it's at start of day
+    return date;
+  });
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAppointments, setSelectedAppointments] = useState<
@@ -98,7 +103,7 @@ export default function DashboardCalendar({
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`${baseStyle} bg-primary text-white ring-2 ring-offset-2 ring-blue-500`}
+              className={`${baseStyle} bg-primary text-primary-foreground ring-2 ring-offset-2 ring-primary`}
               onClick={() => handleDateClick(date)}
             >
               {dayNum}
@@ -120,7 +125,7 @@ export default function DashboardCalendar({
     if (!detail && isToday) {
       return (
         <div
-          className={`${baseStyle} text-gray-900 bg-white ring-2 ring-offset-2 ring-blue-500`}
+          className={`${baseStyle} text-foreground bg-background ring-2 ring-offset-2 ring-primary`}
         >
           {dayNum}
         </div>
@@ -133,7 +138,7 @@ export default function DashboardCalendar({
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`${baseStyle} bg-primary text-white`}
+              className={`${baseStyle} bg-primary text-primary-foreground`}
               onClick={() => handleDateClick(date)}
             >
               {dayNum}
@@ -153,7 +158,7 @@ export default function DashboardCalendar({
 
     // Default day (not today, no appointments)
     return (
-      <div className="w-9 h-9 flex items-center justify-center text-sm">
+      <div className="w-9 h-9 flex items-center justify-center text-sm text-foreground">
         {dayNum}
       </div>
     );
@@ -175,30 +180,30 @@ export default function DashboardCalendar({
             components={{
               Day: CustomDay,
             }}
-            className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm w-full max-w-full overflow-x-auto md:overflow-x-hidden"
+            className="border border-border rounded-xl p-4 bg-background shadow-sm w-full max-w-full overflow-x-auto md:overflow-x-hidden"
             classNames={{
               months: "flex flex-col gap-6 justify-center items-center",
               month: "space-y-4",
               caption: "flex justify-center pt-1 relative items-center",
-              caption_label: "text-gray-900 font-medium",
+              caption_label: "text-foreground font-medium",
               nav: "flex gap-1 absolute top-1 right-1",
               nav_button: "h-8 w-64 bg-transparent p-0 rounded-md",
               nav_button_next: "absolute -left-5 -top-1",
               nav_button_previous: "absolute right-1 -top-1",
               table: "w-full border-collapse space-y-1",
               head_row: "flex gap-1",
-              head_cell: "text-gray-500 font-medium text-sm w-9",
+              head_cell: "text-muted-foreground font-medium text-sm w-9",
               row: "flex w-full mt-1 gap-1",
               cell: "h-9 w-9 text-center text-sm p-0 relative",
-              day: "h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 aria-selected:opacity-100",
+              day: "h-9 w-9 p-0 font-normal rounded-md hover:bg-muted aria-selected:opacity-100",
               day_selected:
-                "bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700",
-              day_today: "bg-blue-100 text-blue-900",
-              day_outside: "text-gray-400 opacity-50",
-              day_disabled: "text-gray-400 line-through",
+                "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+              day_today: "bg-primary/10 text-primary-foreground",
+              day_outside: "text-muted-foreground opacity-50",
+              day_disabled: "text-muted-foreground line-through",
             }}
             modifiersClassNames={{
-              selected: "!bg-blue-600 !text-white",
+              selected: "!bg-primary !text-primary-foreground",
               today: "font-semibold",
             }}
           />

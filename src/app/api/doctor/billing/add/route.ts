@@ -1,9 +1,11 @@
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import Billing from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import { zodBillingSchema } from "@/schemas/zodBillingSchema";
 import { ZodError } from "zod";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { z } from "zod";
 
 /**
  * POST route handler for creating a new billing record.
@@ -20,11 +22,16 @@ import { ZodError } from "zod";
  */
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     // Establish a database connection.
     await dbConnect();
 
-    // Parse and validate the request body using the Zod schema.
-    const body = await request.json();
+    const parsedBody = await parseJson(request, z.record(z.unknown()));
+    if ("error" in parsedBody) return parsedBody.error;
+    const body = parsedBody.data as Record<string, unknown>;
 
     // Replace patientId with hiddenPatientId and remove original patientId
     if (body.hiddenPatientId) {
@@ -36,18 +43,18 @@ export async function POST(request: Request) {
     console.log("Parsed Billing Data:", data);
 
     // Retrieve doctorId from a custom header (or session).
-    const doctorId = request.headers.get("x-doctor-id");
-    if (!doctorId) {
-      return NextResponse.json(
-        { error: "Doctor ID is missing from session." },
-        { status: 401 }
-      );
-    }
+    const doctorIdResult = resolveUserIdFromHeader(
+      request,
+      user,
+      "x-doctor-id"
+    );
+    if ("error" in doctorIdResult) return doctorIdResult.error;
+    const { userId: doctorId } = doctorIdResult;
 
     // Retrieve the doctor's record to extract the associated clinicId.
     const doctor = await DoctorModel.findOne({ userId: doctorId });
     if (!doctor) {
-      return NextResponse.json({ error: "Doctor not found." }, { status: 404 });
+      return errorResponse(404, "Doctor not found.");
     }
     const clinicId = doctor.clinicId;
 
@@ -71,17 +78,14 @@ export async function POST(request: Request) {
       amountDue: 0,
     });
 
-    return NextResponse.json(
+    return successResponse(
       { message: "Billing created successfully", billing },
-      { status: 201 }
+      201
     );
   } catch (error: unknown) {
     console.error("Error creating billing:", error);
     if (error instanceof ZodError) {
-      return NextResponse.json(
-        { message: "Validation error", errors: error.issues },
-        { status: 400 }
-      );
+      return errorResponse(400, "Validation error", error.issues);
     } else if (error instanceof Error) {
       // If it was a connection‐failure after all retries, you can return 503
       if (
@@ -89,19 +93,13 @@ export async function POST(request: Request) {
         error.message.includes("connection") ||
         error.message.includes("Timeout")
       ) {
-        return NextResponse.json(
-          { message: "Database unavailable. Please try again later." },
-          { status: 503 }
+        return errorResponse(
+          503,
+          "Database unavailable. Please try again later."
         );
       }
-      return NextResponse.json(
-        { message: "Error creating billing", error: error.message },
-        { status: 500 }
-      );
+      return errorResponse(500, "Error creating billing", error.message);
     }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

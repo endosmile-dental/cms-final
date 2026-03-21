@@ -27,9 +27,9 @@ export default function TwoLineDashboardChart({
   setTimeFrame,
 }: DashboardChartProps) {
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-card border-border p-6 rounded-lg shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-semibold text-foreground">
           Appointments & Treatments
         </h3>
         <div className="flex gap-2">
@@ -37,8 +37,8 @@ export default function TwoLineDashboardChart({
             onClick={() => setTimeFrame("monthly")}
             className={`px-4 py-1 rounded text-sm ${
               timeFrame === "monthly"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted hover:bg-muted/80"
             }`}
           >
             Monthly
@@ -47,8 +47,8 @@ export default function TwoLineDashboardChart({
             onClick={() => setTimeFrame("yearly")}
             className={`px-4 py-1 rounded text-sm ${
               timeFrame === "yearly"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-200 hover:bg-gray-300"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted hover:bg-muted/80"
             }`}
           >
             Yearly
@@ -59,9 +59,10 @@ export default function TwoLineDashboardChart({
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis
               dataKey="date"
+              stroke="hsl(var(--foreground))"
             />
             <YAxis
               label={{
@@ -69,20 +70,21 @@ export default function TwoLineDashboardChart({
                 angle: -90,
                 position: "insideLeft",
               }}
+              stroke="hsl(var(--foreground))"
             />
             <Tooltip />
             <Legend />
             <Line
               type="monotone"
               dataKey="appointments"
-              stroke="#8884d8"
+              stroke="hsl(var(--primary))"
               strokeWidth={2}
               name="Appointments"
             />
             <Line
               type="monotone"
               dataKey="treatments"
-              stroke="#82ca9d"
+              stroke="hsl(var(--secondary))"
               strokeWidth={2}
               name="Treatments"
             />

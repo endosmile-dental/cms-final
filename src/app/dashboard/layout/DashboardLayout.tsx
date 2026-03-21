@@ -1,21 +1,80 @@
+"use client";
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "../ui/AppSidebar";
+import { DarkModeToggle } from "@/app/components/DarkModeToggle";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
-import { fetchPatients, selectPatients } from "@/app/redux/slices/patientSlice";
-import { fetchBillings, selectBillings } from "@/app/redux/slices/billingSlice";
+import { usePathname } from "next/navigation";
+import { useAppDispatch } from "@/app/redux/store/hooks";
+import { hydratePatients } from "@/app/redux/slices/patientSlice";
+import { hydrateBillings } from "@/app/redux/slices/billingSlice";
+import { hydrateAppointments } from "@/app/redux/slices/appointmentSlice";
+import { hydrateProfile } from "@/app/redux/slices/profileSlice";
+import { hydrateDoctors } from "@/app/redux/slices/doctorSlice";
+import { hydrateLabWorks } from "@/app/redux/slices/labWorkSlice";
+import { hydrateTreatments } from "@/app/redux/slices/treatmentSlice";
 import {
-  fetchAppointments,
-  selectAppointments,
-} from "@/app/redux/slices/appointmentSlice";
-import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
-import { fetchDoctors } from "@/app/redux/slices/doctorSlice";
-import {
-  fetchLabWorks,
-  selectAllLabWorks,
-} from "@/app/redux/slices/labWorkSlice";
+  useAppointmentsQuery,
+  useBillingsQuery,
+  useDoctorsQuery,
+  useLabWorksQuery,
+  usePatientsQuery,
+  useProfileQuery,
+} from "@/app/react-query/queries/useDashboardQueries";
+import { useTreatmentsQuery } from "@/app/react-query/queries/useTreatmentsQuery";
 import GlobalOverlay from "@/app/components/doctor/GlobalOverlay";
+
+type QueryNeeds = {
+  treatments: boolean;
+  billings: boolean;
+  appointments: boolean;
+  labworks: boolean;
+  profile: boolean;
+  doctors: boolean;
+  patients: boolean;
+};
+
+function getDoctorRouteQueryNeeds(pathname: string): QueryNeeds {
+  const base = "/dashboard/pages/Doctor";
+  const isDoctorRoute = pathname.startsWith(base);
+
+  if (!isDoctorRoute) {
+    return {
+      treatments: false,
+      billings: false,
+      appointments: false,
+      labworks: false,
+      profile: false,
+      doctors: false,
+      patients: false,
+    };
+  }
+
+  const isAppointments = pathname.includes("/appointments");
+  const isPatientRecords = pathname.includes("/patientRecords");
+  const isRevenue = pathname.includes("/revenue");
+  const isPatientBilling = pathname.includes("/patientBilling");
+  const isLabWork = pathname.includes("/labWork");
+  const isProfile = pathname.includes("/profile");
+
+  return {
+    // Doctor appointments views depend on treatment + patient data for edit/forms.
+    treatments: isAppointments,
+    // Revenue + billing pages require billings.
+    billings: isRevenue || isPatientBilling,
+    // Appointments route needs appointment list hydration.
+    appointments: isAppointments,
+    // Keep lab work query only on lab work route.
+    labworks: isLabWork,
+    // Profile route needs profile hydration.
+    profile: isProfile,
+    // Doctor pages generally do not need full doctors list from layout.
+    doctors: false,
+    // Patients are needed by records, appointments, billing, and lab work route features.
+    patients: isPatientRecords || isAppointments || isPatientBilling || isRevenue || isLabWork,
+  };
+}
 
 export default function DashboardLayout({
   children,
@@ -23,77 +82,119 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const sessionUser = session?.user;
   const dispatch = useAppDispatch();
 
-  // Select existing data from Redux
-  const patients = useAppSelector(selectPatients);
-  const billings = useAppSelector(selectBillings);
-  const appointments = useAppSelector(selectAppointments);
-  const profile = useAppSelector((state) => {
-    return state?.profile?.profile as ProfileData;
-  });
-  const labWorks = useAppSelector(selectAllLabWorks);
+  const role = sessionUser?.role;
+  const userId = sessionUser?.id;
+
+  const isDoctor = role === "Doctor";
+  const isPatient = role === "Patient";
+  const dashboardRole = isDoctor ? "Doctor" : isPatient ? "Patient" : undefined;
+  const canAccessDashboardData = Boolean(userId && dashboardRole);
+
+  const doctorNeeds = getDoctorRouteQueryNeeds(pathname || "");
+
+  // For non-doctor roles, keep previous behavior.
+  const queryNeeds: QueryNeeds = isDoctor
+    ? doctorNeeds
+    : {
+        treatments: canAccessDashboardData,
+        billings: canAccessDashboardData,
+        appointments: canAccessDashboardData,
+        labworks: canAccessDashboardData,
+        profile: canAccessDashboardData,
+        doctors: canAccessDashboardData,
+        patients: false,
+      };
+
+  const treatmentsQuery = useTreatmentsQuery(
+    canAccessDashboardData && queryNeeds.treatments,
+  );
+
+  const billingsQuery = useBillingsQuery(
+    userId,
+    dashboardRole,
+    canAccessDashboardData && queryNeeds.billings,
+  );
+
+  const appointmentsQuery = useAppointmentsQuery(
+    userId,
+    dashboardRole,
+    canAccessDashboardData && queryNeeds.appointments,
+  );
+
+  const labWorksQuery = useLabWorksQuery(
+    userId,
+    dashboardRole,
+    canAccessDashboardData && queryNeeds.labworks,
+  );
+
+  const profileQuery = useProfileQuery(
+    userId,
+    dashboardRole,
+    canAccessDashboardData && queryNeeds.profile,
+  );
+
+  const doctorsQuery = useDoctorsQuery(
+    userId,
+    canAccessDashboardData && queryNeeds.doctors,
+  );
+
+  const patientsQuery = usePatientsQuery(
+    userId,
+    Boolean(userId && isDoctor && queryNeeds.patients),
+  );
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!session?.user) return;
+    if (!queryNeeds.treatments || !treatmentsQuery.data) return;
+    dispatch(hydrateTreatments(treatmentsQuery.data));
+  }, [dispatch, queryNeeds.treatments, treatmentsQuery.data]);
 
-      const { id, role } = session.user;
+  useEffect(() => {
+    if (!queryNeeds.billings || !billingsQuery.data) return;
+    dispatch(hydrateBillings(billingsQuery.data));
+  }, [billingsQuery.data, dispatch, queryNeeds.billings]);
 
-      const fetchTasks = [];
+  useEffect(() => {
+    if (!queryNeeds.appointments || !appointmentsQuery.data) return;
+    dispatch(hydrateAppointments(appointmentsQuery.data));
+  }, [appointmentsQuery.data, dispatch, queryNeeds.appointments]);
 
-      // Shared for Doctor and Patient
-      if (role === "Doctor" || role === "Patient") {
-        if (!billings?.length) {
-          fetchTasks.push(() => dispatch(fetchBillings({ userId: id, role })));
-        }
+  useEffect(() => {
+    if (!queryNeeds.labworks || !labWorksQuery.data) return;
+    dispatch(hydrateLabWorks(labWorksQuery.data));
+  }, [dispatch, labWorksQuery.data, queryNeeds.labworks]);
 
-        if (!appointments?.length) {
-          fetchTasks.push(() =>
-            dispatch(fetchAppointments({ userId: id, role }))
-          );
-        }
+  useEffect(() => {
+    if (!queryNeeds.profile || profileQuery.data === undefined) return;
+    dispatch(hydrateProfile(profileQuery.data));
+  }, [dispatch, profileQuery.data, queryNeeds.profile]);
 
-        if (!labWorks?.length) {
-          fetchTasks.push(() => dispatch(fetchLabWorks({ userId: id, role })));
-        }
+  useEffect(() => {
+    if (!queryNeeds.doctors || !doctorsQuery.data) return;
+    dispatch(hydrateDoctors(doctorsQuery.data));
+  }, [dispatch, doctorsQuery.data, queryNeeds.doctors]);
 
-        if (!profile) {
-          fetchTasks.push(() => dispatch(fetchProfile({ userId: id, role })));
-        }
-
-        fetchTasks.push(() => dispatch(fetchDoctors({ userId: id })));
-      }
-
-      if (role === "Doctor" && !patients?.length) {
-        fetchTasks.push(() => dispatch(fetchPatients({ userId: id, role })));
-      }
-
-      // Execute all tasks and log failures
-      const results = await Promise.allSettled(fetchTasks.map((fn) => fn()));
-
-      results.forEach((result, i) => {
-        if (result.status === "rejected") {
-          console.error(`❌ Task ${i + 1} failed:`, result.reason);
-        }
-      });
-
-      // console.log("fetchTasks", results);
-      // console.log("labworks", labWorks);
-    };
-
-    fetchUserData();
-  }, [dispatch, session?.user?.id]);
+  useEffect(() => {
+    if (!queryNeeds.patients || !patientsQuery.data) return;
+    dispatch(hydratePatients(patientsQuery.data));
+  }, [dispatch, patientsQuery.data, queryNeeds.patients]);
 
   return (
     <SidebarProvider>
-      <div className="flex w-full min-h-screen bg-gray-50">
+      <div className="flex w-full min-h-screen">
         <AppSidebar />
 
-        {/* Main Content */}
-        <main className="flex-1 px-1 md:px-2 w-full overflow-auto">
-          <SidebarTrigger />
-          {children}
+        <main className="flex-1 w-full overflow-auto">
+          <div className="flex items-center justify-between p-4 border-b border-border bg-background">
+            <SidebarTrigger />
+            <DarkModeToggle />
+          </div>
+          <div className="p-4 bg-gradient-to-br from-sky-50 via-background to-violet-50 dark:from-slate-950 dark:via-background dark:to-slate-900">
+            {children}
+          </div>
           <GlobalOverlay />
         </main>
       </div>

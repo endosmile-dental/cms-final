@@ -1,17 +1,22 @@
 import AppointmentModel from "@/app/model/Appointment.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import dbConnect from "@/app/utils/dbConnect";
-import { NextResponse } from "next/server";
+import { isElevatedRole, requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { addAppointmentSchema } from "@/app/schemas/api";
 
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     await dbConnect();
 
-    const body = await request.json();
-    console.log("body", body);
-
+    const parsed = await parseJson(request, addAppointmentSchema);
+    if ("error" in parsed) return parsed.error;
     const {
-      doctor, // User ID
+      doctor,
       patient,
       appointmentDate,
       consultationType,
@@ -20,21 +25,10 @@ export async function POST(request: Request) {
       timeSlot,
       treatments,
       teeth,
-    } = body;
+    } = parsed.data;
 
-    // Validate required fields
-    if (
-      !doctor ||
-      !patient ||
-      !appointmentDate ||
-      !consultationType ||
-      !createdBy ||
-      !timeSlot
-    ) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    if (doctor !== user.id && !isElevatedRole(user.role)) {
+      return errorResponse(403, "Forbidden");
     }
 
     const appointmentDateObj = new Date(appointmentDate);
@@ -58,16 +52,13 @@ export async function POST(request: Request) {
     
 
     if (appointmentStartOfDay < nowStartOfDay) {
-      return NextResponse.json(
-        { error: "Appointment date must be today or in the future" },
-        { status: 400 }
-      );
+      return errorResponse(400, "Appointment date must be today or in the future");
     }
 
     // Fetch doctor info to extract internal ID and clinic ID
     const doctorInfo = await DoctorModel.findOne({ userId: doctor });
     if (!doctorInfo) {
-      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
+      return errorResponse(404, "Doctor not found");
     }
 
     const appointment = new AppointmentModel({
@@ -88,18 +79,12 @@ export async function POST(request: Request) {
 
     const savedAppointment = await appointment.save();
 
-    return NextResponse.json(
-      { appointment: savedAppointment },
-      { status: 201 }
-    );
+    return successResponse({ appointment: savedAppointment }, 201);
   } catch (error: unknown) {
     console.error("Error creating appointment:", error);
-
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Internal Server Error",
-      },
-      { status: 500 }
+    return errorResponse(
+      500,
+      error instanceof Error ? error.message : "Internal Server Error"
     );
   }
 }

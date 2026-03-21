@@ -57,12 +57,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
     >
       <div
         ref={modalRef}
-        className="relative bg-white p-6 rounded-2xl shadow-xl w-11/12 max-w-md animate-fade-in"
+        className="relative bg-card text-card-foreground p-6 rounded-2xl shadow-xl w-11/12 max-w-md animate-fade-in border border-border"
       >
         <button
           onClick={onClose}
           aria-label="Close modal"
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 text-2xl font-bold"
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground text-2xl font-bold transition-colors"
         >
           &times;
         </button>

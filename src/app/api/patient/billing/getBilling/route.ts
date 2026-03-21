@@ -1,47 +1,42 @@
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import BillingModel from "@/app/model/Billing.model";
 import PatientModel from "@/app/model/Patient.model";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET(request: Request) {
   try {
+    const authResult = await requireAuth(["Patient", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     await dbConnect();
 
     // Extract patientUserId from custom headers.
-    const patientUserId = request.headers.get("x-patient-user-id");
-
-    if (!patientUserId) {
-      return NextResponse.json(
-        { message: "Patient user id not provided" },
-        { status: 400 }
-      );
-    }
+    const userIdResult = resolveUserIdFromHeader(
+      request,
+      user,
+      "x-patient-user-id"
+    );
+    if ("error" in userIdResult) return userIdResult.error;
+    const { userId: patientUserId } = userIdResult;
 
     // Find the patient using userId
     const patient = await PatientModel.findOne({ userId: patientUserId });
 
     if (!patient) {
-      return NextResponse.json(
-        { message: "Patient not found" },
-        { status: 404 }
-      );
+      return errorResponse(404, "Patient not found");
     }
 
     // Fetch billing records associated with the found patient's _id.
     const billings = await BillingModel.find({ patientId: patient.PatientId });
 
-    return NextResponse.json({ billings });
+    return successResponse({ billings });
   } catch (error: unknown) {
     console.error("Error fetching patient billings:", error);
     if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error fetching patient billings", error: error.message },
-        { status: 500 }
-      );
+      return errorResponse(500, "Error fetching patient billings", error.message);
     }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

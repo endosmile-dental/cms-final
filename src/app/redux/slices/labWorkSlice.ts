@@ -1,22 +1,23 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { LabWorkInput } from "@/schemas/zobLabWorkSchema";
-import { Types } from "mongoose";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
-interface LabWorkPatient {
-  _id: Types.ObjectId | string;
+export interface LabWorkPatient {
+  _id: string;
   fullName: string;
   contactNumber: string;
 }
 
 interface LabWorkDoctor {
-  _id: Types.ObjectId | string;
+  _id: string;
   fullName: string;
   specialization: string;
 }
 
 // Type for lab work item (backend model aligned)
 export interface ILabWork extends Omit<LabWorkInput, "patientId" | "doctorId"> {
-  _id: Types.ObjectId | string;
+  _id: string;
   createdAt?: string;
   updatedAt?: string;
   patientId: LabWorkPatient; // Changed from string to Patient object
@@ -42,7 +43,7 @@ export const fetchLabWorks = createAsyncThunk(
   "labWork/fetchAll",
   async (
     { userId, role }: { userId: string; role: "Doctor" | "Patient" },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     let url = "";
     const headers: HeadersInit = {
@@ -62,19 +63,15 @@ export const fetchLabWorks = createAsyncThunk(
     try {
       const response = await fetch(url, { method: "GET", headers });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(
-          errorData.error || "Failed to fetch appointments"
-        );
-      }
-
-      const data = await response.json();
-      return data;
+      const payload = (await response.json()) as ApiResponse<{
+        labWorks: ILabWork[];
+      }>;
+      const data = unwrapApiResponse(payload);
+      return data.labWorks;
     } catch {
       return rejectWithValue("An error occurred while fetching appointments");
     }
-  }
+  },
 );
 
 // ✅ Create lab work
@@ -85,9 +82,10 @@ export const createLabWork = createAsyncThunk(
       method: "POST",
       body: formData,
     });
-    if (!res.ok) throw new Error("Failed to create lab work");
-    return (await res.json()) as ILabWork;
-  }
+    const payload = (await res.json()) as ApiResponse<ILabWork>;
+    const data = unwrapApiResponse(payload);
+    return data as ILabWork;
+  },
 );
 
 // ✅ Update lab work
@@ -98,9 +96,10 @@ export const updateLabWork = createAsyncThunk(
       method: "PUT",
       body: updates,
     });
-    if (!res.ok) throw new Error("Failed to update lab work");
-    return (await res.json()) as ILabWork;
-  }
+    const payload = (await res.json()) as ApiResponse<ILabWork>;
+    const data = unwrapApiResponse(payload);
+    return data as ILabWork;
+  },
 );
 
 // ✅ Delete lab work
@@ -112,7 +111,7 @@ export const deleteLabWork = createAsyncThunk(
     });
     if (!res.ok) throw new Error("Failed to delete lab work");
     return id;
-  }
+  },
 );
 
 // Slice with complete loading/error handling
@@ -121,6 +120,12 @@ const labWorkSlice = createSlice({
   initialState,
   reducers: {
     clearLabWorkError(state) {
+      state.error = null;
+    },
+    // Add hydration action for SSR + Redux combo
+    hydrateLabWorks(state, action: PayloadAction<ILabWork[]>) {
+      state.data = action.payload;
+      state.loading = false;
       state.error = null;
     },
   },
@@ -161,7 +166,7 @@ const labWorkSlice = createSlice({
       })
       .addCase(updateLabWork.fulfilled, (state, action) => {
         const index = state.data.findIndex(
-          (item) => item._id === action.payload._id
+          (item) => item._id === action.payload._id,
         );
         if (index !== -1) state.data[index] = action.payload;
         state.loading = false;
@@ -189,6 +194,9 @@ const labWorkSlice = createSlice({
 });
 
 export const { clearLabWorkError } = labWorkSlice.actions;
+// Export the hydrateLabWorks action
+export const hydrateLabWorks = labWorkSlice.actions.hydrateLabWorks;
+
 // Selectors (add these at the end of the file)
 export const selectAllLabWorks = (state: { labWork: LabWorkState }) =>
   state.labWork.data;

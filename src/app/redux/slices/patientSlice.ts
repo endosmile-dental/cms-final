@@ -1,6 +1,8 @@
 // src/store/slices/patientSlice.ts
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
 // Define a type for a Patient (adjust to match your model)
 export interface Patient {
@@ -69,15 +71,14 @@ export const fetchPatients = createAsyncThunk(
         headers,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.error);
-      }
-
-      const data = await response.json();
+      const payload = (await response.json()) as ApiResponse<{
+        patients?: Patient[];
+        profile?: Patient;
+      }>;
+      const data = unwrapApiResponse(payload);
       return role === "Doctor"
         ? (data.patients as Patient[])
-        : [data.profile as Patient]; // Ensure data format consistency
+        : [data.profile as Patient];
     } catch {
       return rejectWithValue("Failed to fetch patients");
     }
@@ -95,12 +96,11 @@ export const updatePatientAsync = createAsyncThunk(
         },
         body: JSON.stringify(patient),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.error);
-      }
-      const updatedPatient = await response.json();
-      return updatedPatient.patient as Patient;
+      const payload = (await response.json()) as ApiResponse<{
+        patient: Patient;
+      }>;
+      const data = unwrapApiResponse(payload);
+      return data.patient as Patient;
     } catch {
       return rejectWithValue("Failed to update patient");
     }
@@ -109,21 +109,28 @@ export const updatePatientAsync = createAsyncThunk(
 
 export const deletePatientAsync = createAsyncThunk(
   "patient/deletePatientAsync",
-  async (patientId: string, { rejectWithValue }) => {
+  async (
+    { patientId, userId }: { patientId: string; userId: string },
+    { rejectWithValue }
+  ) => {
     try {
+      if (!userId) {
+        return rejectWithValue("User not authenticated");
+      }
+
       const response = await fetch(`/api/doctor/deletePatient/${patientId}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "x-doctor-user-id": userId,
         },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.error);
-      }
-
-      return patientId; // return ID so we can remove from state
+      const payload = (await response.json()) as ApiResponse<{
+        deleted?: { patientId?: string };
+      }>;
+      const data = unwrapApiResponse(payload);
+      return data.deleted?.patientId ?? patientId;
     } catch {
       return rejectWithValue("Failed to delete patient");
     }
@@ -134,6 +141,11 @@ const patientSlice = createSlice({
   name: "patient",
   initialState,
   reducers: {
+    hydratePatients(state, action: PayloadAction<Patient[]>) {
+      state.patients = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
     addPatient(state, action: PayloadAction<Patient>) {
       state.patients.push(action.payload);
     },
@@ -208,7 +220,7 @@ const patientSlice = createSlice({
   },
 });
 
-export const { addPatient, updatePatient, deletePatient } =
+export const { addPatient, updatePatient, deletePatient, hydratePatients } =
   patientSlice.actions;
 export const selectPatients = (state: RootState) => state.patient.patients;
 export const selectPatientLoading = (state: RootState) => state.patient.loading;

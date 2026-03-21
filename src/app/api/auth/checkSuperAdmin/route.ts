@@ -1,16 +1,13 @@
 // app/api/auth/checkSuperAdmin/route.ts
 import { getSuperAdminStatus } from "@/app/utils/globalStore";
-import { NextResponse } from "next/server";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET() {
   try {
     const superAdminExists = await getSuperAdminStatus();
-    return NextResponse.json({ superAdminExists });
+    return successResponse({ superAdminExists });
   } catch (error) {
     console.error("Error checking SuperAdmin status:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Internal server error");
   }
 }

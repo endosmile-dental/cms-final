@@ -3,6 +3,10 @@
 import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface SignupForm {
   email: string;
@@ -37,11 +41,8 @@ export default function Signup() {
         if (error instanceof Error) {
           console.error("Error checking superAdmin status:", error.message);
           setError(error.message || "An unexpected error occurred");
-          // Optionally set a form error
-          // setFormError(error.message || "An unexpected error occurred");
         } else {
           console.error("An unexpected error occurred");
-          // setFormError("An unexpected error occurred");
         }
       }
     };
@@ -90,61 +91,82 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white shadow-md rounded-lg p-6 w-96">
-        <h2 className="text-2xl font-semibold text-center mb-4">Signup Page</h2>
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            {...register("email", { required: "Email is required" })}
-            className="border rounded px-3 py-2"
-          />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email.message}</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Create SuperAdmin</CardTitle>
+          <CardDescription className="text-center text-muted-foreground">
+            Set up your SuperAdmin account to get started
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
           )}
 
-          <input
-            type="password"
-            placeholder="Password"
-            {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 8,
-                message: "Password must be at least 8 characters",
-              },
-            })}
-            className="border rounded px-3 py-2"
-          />
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password.message}</p>
-          )}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                {...register("email", { required: "Email is required" })}
+                className="w-full"
+              />
+              {errors.email && (
+                <p className="text-destructive text-sm">{errors.email.message}</p>
+              )}
+            </div>
 
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            {...register("confirmPassword", {
-              required: "Confirm Password is required",
-            })}
-            className="border rounded px-3 py-2"
-          />
-          {errors.confirmPassword && (
-            <p className="text-red-500 text-sm">
-              {errors.confirmPassword.message}
-            </p>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input 
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters",
+                  },
+                })}
+                className="w-full"
+              />
+              {errors.password && (
+                <p className="text-destructive text-sm">{errors.password.message}</p>
+              )}
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-          >
-            {loading ? "Creating..." : "Create SuperAdmin"}
-          </button>
-        </form>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input 
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                {...register("confirmPassword", {
+                  required: "Confirm Password is required",
+                })}
+                className="w-full"
+              />
+              {errors.confirmPassword && (
+                <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+            >
+              {loading ? "Creating..." : "Create SuperAdmin"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

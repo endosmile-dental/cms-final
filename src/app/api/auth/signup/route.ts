@@ -1,53 +1,28 @@
-import { NextResponse } from "next/server";
 import dbConnect from "../../../utils/dbConnect";
 import { setSuperAdminStatus } from "../../../utils/globalStore";
 import UserModel from "@/app/model/User.model";
 import superAdminModel from "@/app/model/superAdmin.model";
-
-// ✅ Define the expected structure of req.json()
-interface SuperAdminRequest {
-  email: string;
-  password: string;
-  role: string;
-  fullName?: string;
-  contactNumber?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  };
-}
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { superAdminSchema } from "@/app/schemas/api";
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
-    // ✅ Explicitly type the parsed JSON
-    const {
-      email,
-      password,
-      role,
-      fullName,
-      contactNumber,
-      address,
-    }: SuperAdminRequest = await req.json();
+    const parsed = await parseJson(req, superAdminSchema);
+    if ("error" in parsed) return parsed.error;
+    const { email, password, role, fullName, contactNumber, address } =
+      parsed.data;
 
     // ✅ Only allow SuperAdmin signup first
     if (role !== "SuperAdmin") {
-      return NextResponse.json(
-        { error: "Only SuperAdmin can sign up first." },
-        { status: 403 }
-      );
+      return errorResponse(403, "Only SuperAdmin can sign up first.");
     }
 
     // ✅ Check if SuperAdmin already exists
     const existingSuperAdmin = await UserModel.findOne({ role: "SuperAdmin" });
 
     if (existingSuperAdmin) {
-      return NextResponse.json(
-        { error: "SuperAdmin already exists." },
-        { status: 400 }
-      );
+      return errorResponse(400, "SuperAdmin already exists.");
     }
 
     // ✅ Create User First
@@ -67,15 +42,12 @@ export async function POST(req: Request) {
     // ✅ Persist the status in MongoDB
     await setSuperAdminStatus(true);
 
-    return NextResponse.json(
+    return successResponse(
       { message: "SuperAdmin created successfully.", user, superAdmin },
-      { status: 201 }
+      201
     );
   } catch (error) {
     console.error("Error creating SuperAdmin:", error);
-    return NextResponse.json(
-      { error: "Internal server error." },
-      { status: 500 }
-    );
+    return errorResponse(500, "Internal server error.");
   }
 }

@@ -43,13 +43,15 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
     cancelledAt: { type: Date },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Paid", "Refunded"],
+      enum: ["Pending", "Paid", "Partial", "Refunded"],
       default: "Pending",
     },
     amount: { type: Number },
   },
   { timestamps: true }
 );
+
+AppointmentSchema.index({ doctor: 1, appointmentDate: 1, timeSlot: 1 });
 
 export default mongoose.models.Appointment ||
   model<IAppointment>("Appointment", AppointmentSchema);

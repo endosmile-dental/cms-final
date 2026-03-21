@@ -35,6 +35,7 @@ const DoctorSchema: Schema<IDoctor> = new Schema(
       type: Schema.Types.ObjectId, // Reference to the User model
       ref: "UserModel", // Model name to reference
       required: true, // Make this field mandatory
+      index: true,
     },
     clinicId: {
       type: Schema.Types.ObjectId, // Reference to the Clinic model

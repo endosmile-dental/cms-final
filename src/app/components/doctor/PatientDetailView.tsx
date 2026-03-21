@@ -5,11 +5,13 @@ import {
   Appointment,
   fetchAppointments,
   selectAppointments,
+  editAppointment,
 } from "@/app/redux/slices/appointmentSlice";
 import {
   BillingRecord,
   fetchBillings,
   selectBillings,
+  updateBillingRecord,
 } from "@/app/redux/slices/billingSlice";
 import { fetchPatients, Patient } from "@/app/redux/slices/patientSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
@@ -45,7 +47,8 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useMemoizedCalculations } from "@/app/hooks/useMemoizedCalculations";
 import TwoLineDashboardChart from "../TwoLineDashboardChart";
 
 import DataTable from "../DataTable";
@@ -65,8 +68,16 @@ import {
   fetchLabWorks,
   ILabWork,
   selectAllLabWorks,
+  updateLabWork,
 } from "@/app/redux/slices/labWorkSlice";
 import IconButtonWithTooltip from "../IconButtonWithTooltip";
+import EditBillingDialog from "./EditBillingDialog";
+import DeleteBillingModal from "./DeleteBillingModal";
+import EditAppointmentDialog from "./EditAppointmentDialog";
+import DeleteAppointmentModal from "./DeleteAppointmentModal";
+import EditLabWorkDialog from "./EditLabWorkDialog";
+import DeleteLabWorkModal from "./DeleteLabWorkModal";
+import { Trash2 } from "lucide-react";
 
 // ... existing imports ...
 interface PatientDetailViewProps {
@@ -89,6 +100,18 @@ const PatientDetailView = ({
     null
   );
   const [openSelectedBilling, setOpenSelectedBilling] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingBilling, setDeletingBilling] = useState<BillingRecord | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [deleteAppointmentDialogOpen, setDeleteAppointmentDialogOpen] = useState(false);
+  const [deletingAppointment, setDeletingAppointment] = useState<Appointment | null>(null);
+  const [isDeletingAppointment, setIsDeletingAppointment] = useState(false);
+  const [isEditingAppointment, setIsEditingAppointment] = useState(false);
+  const [deleteLabWorkDialogOpen, setDeleteLabWorkDialogOpen] = useState(false);
+  const [deletingLabWork, setDeletingLabWork] = useState<ILabWork | null>(null);
+  const [isDeletingLabWork, setIsDeletingLabWork] = useState(false);
+  const [isEditingLabWork, setIsEditingLabWork] = useState(false);
 
   const [selectedLabwork, setSelectedLabwork] = useState<ILabWork | null>(null);
   const [openSelectedLabwork, setOpenSelectedLabwork] = useState(false);
@@ -126,7 +149,9 @@ const PatientDetailView = ({
   };
 
   const { patientAppointments, patientBillings, patientLabworks, stats } =
-    useMemo(() => {
+    useMemoizedCalculations(
+      [appointments, billings, labWorks, patient],
+      () => {
       const patientAppointments = appointments.filter(
         (appointment) => appointment.patient === patient._id
       );
@@ -184,7 +209,8 @@ const PatientDetailView = ({
       ];
 
       return { patientAppointments, patientBillings, patientLabworks, stats };
-    }, [appointments, billings, labWorks, patient]);
+      }
+    );
 
   const processChartData = (
     patientAppointments: Appointment[],
@@ -235,14 +261,14 @@ const PatientDetailView = ({
     }));
   };
 
+  const chartData = useMemoizedCalculations(
+    [patientAppointments, patientBillings, timeFrame],
+    () => processChartData(patientAppointments, patientBillings, timeFrame)
+  );
+
   const handleOpenModal = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setOpenSelectedAppointment(true);
-  };
-
-  const handleOpenLabworkModal = (labwork: ILabWork) => {
-    setSelectedLabwork(labwork);
-    setOpenSelectedLabwork(true);
   };
 
   const openEditModal = () => setEditModalOpen(true);
@@ -256,16 +282,16 @@ const PatientDetailView = ({
   return (
     <>
       {/* Patient Header Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="bg-card border-border p-6 rounded-lg shadow-sm">
         <div className="flex justify-between items-start">
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-2xl font-bold text-foreground">
             {patient.fullName}
           </h1>
           <div className="flex gap-3">
             <div onClick={openEditModal}>
               <IconButtonWithTooltip
                 href="#"
-                hoverBgColor="#38bdf8"
+                hoverBgColor="bg-blue-500"
                 tooltip="Edit"
                 icon={<Edit size={16} />}
               />
@@ -274,7 +300,7 @@ const PatientDetailView = ({
             <div onClick={openDeleteModal}>
               <IconButtonWithTooltip
                 href="#"
-                hoverBgColor="#f87171"
+                hoverBgColor="bg-red-500"
                 tooltip="Delete"
                 icon={<Trash size={16} />}
               />
@@ -285,19 +311,19 @@ const PatientDetailView = ({
         {/* Patient Metadata Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4 text-sm">
           <div>
-            <span className="text-gray-500">Contact:</span>{" "}
+            <span className="text-muted-foreground">Contact:</span>{" "}
             {patient.contactNumber || "NA"}
           </div>
           <div>
-            <span className="text-gray-500">Gender:</span>{" "}
+            <span className="text-muted-foreground">Gender:</span>{" "}
             {patient.gender || "NA"}
           </div>
           <div>
-            <span className="text-gray-500">Age:</span>{" "}
+            <span className="text-muted-foreground">Age:</span>{" "}
             {patient.age || "NA"}
           </div>
           <div>
-            <span className="text-gray-500">DOB:</span>{" "}
+            <span className="text-muted-foreground">DOB:</span>{" "}
             {patient.dateOfBirth
               ? new Date(patient.dateOfBirth).toLocaleDateString("en-GB", {
                 day: "2-digit",
@@ -307,7 +333,7 @@ const PatientDetailView = ({
               : "NA"}{" "}
           </div>
           <div>
-            <span className="text-gray-500">Patient ID:</span>{" "}
+            <span className="text-muted-foreground">Patient ID:</span>{" "}
             {patient.PatientId}
           </div>
         </div>
@@ -318,15 +344,11 @@ const PatientDetailView = ({
       {/* Contact Information Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <TwoLineDashboardChart
-          data={processChartData(
-            patientAppointments,
-            patientBillings,
-            timeFrame
-          )}
+          data={chartData}
           timeFrame={timeFrame}
           setTimeFrame={setTimeFrame}
         />
-        <div className="bg-white p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
+        <div className="bg-card border-border p-6 rounded-lg shadow-sm flex flex-col gap-y-5">
           <ContactInfo
             icon={<Mail className="text-blue-500" size={20} />}
             title="Email"
@@ -346,12 +368,13 @@ const PatientDetailView = ({
       </div>
 
       {/* Appointment History Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="bg-card border-border p-6 rounded-lg shadow-sm">
         <SectionHeader
           icon={<Calendar className="text-purple-500" size={20} />}
           title="Appointments"
         />
         <DataTable<Appointment>
+          key={`appointment-table-${patientAppointments.length}-${patientAppointments[patientAppointments.length - 1]?._id || 'empty'}`}
           data={patientAppointments}
           title=""
           showSearch={false}
@@ -378,6 +401,11 @@ const PatientDetailView = ({
               render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
             },
             {
+              header: "Treatment",
+              accessorKey: "treatments",
+              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+            },
+            {
               header: "Type",
               accessorKey: "consultationType",
               render: (v) => v || "N/A",
@@ -388,23 +416,48 @@ const PatientDetailView = ({
               render: (v) => v || "N/A",
             },
             {
-              header: "Notes",
-              accessorKey: "notes",
-              render: (v) => v || "N/A",
-            },
-            {
               header: "Actions",
               accessorKey: "_id",
               render: (_, row) => (
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenModal(row);
-                  }}
-                >
-                  View
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAppointment(row);
+                      setOpenSelectedAppointment(true);
+                      setIsEditingAppointment(false);
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedAppointment(row);
+                      setOpenSelectedAppointment(true);
+                      setIsEditingAppointment(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingAppointment(row);
+                      setDeleteAppointmentDialogOpen(true);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </Button>
+                </div>
               ),
             },
           ]}
@@ -412,12 +465,13 @@ const PatientDetailView = ({
       </div>
 
       {/* Billing History Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="bg-card border-border p-6 rounded-lg shadow-sm">
         <SectionHeader
           icon={<IndianRupee className="text-green-500" size={20} />}
           title="Billings"
         />
         <DataTable<BillingRecord>
+          key={`billing-table-${patientBillings.length}-${patientBillings[patientBillings.length - 1]?._id || 'empty'}`}
           data={patientBillings}
           // ... same billing table config ...
           title=""
@@ -442,8 +496,8 @@ const PatientDetailView = ({
                 Array.isArray(v) ? v.map((t) => t.treatment).join(", ") : "N/A",
             },
             {
-              header: "Amount",
-              accessorKey: "totalAmount",
+              header: "Amount Received",
+              accessorKey: "amountReceived",
               render: (v) => (typeof v === "number" ? v.toFixed(2) : "N/A"),
             },
             {
@@ -458,78 +512,93 @@ const PatientDetailView = ({
               header: "Actions",
               accessorKey: "_id",
               render: (_, row) => (
-                <>
-                  <div
-                    className="flex space-x-2"
-                    onClick={(e) => e.stopPropagation()} // Stop row click
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedBilling(row);
+                      setOpenSelectedBilling(true);
+                      setIsEditing(true);
+                    }}
                   >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedBilling(row);
-                        setOpenSelectedBilling(true);
-                      }}
-                    >
-                      View
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const formattedRow = {
-                          ...row,
-                          date: format(new Date(row.date), "dd MMM yyyy"),
-                          patientName: patient?.fullName || "",
-                          contactNumber: patient?.contactNumber || "",
-                          gender: patient?.gender || "",
-                          email: patient?.email,
-                        };
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const formattedRow = {
+                        ...row,
+                        date: format(new Date(row.date), "dd MMM yyyy"),
+                        patientName: patient?.fullName || "",
+                        contactNumber: patient?.contactNumber || "",
+                        gender: patient?.gender || "",
+                        email: patient?.email,
+                      };
 
-                        // Arrow function to sanitize null/undefined
+                      // Arrow function to sanitize null/undefined
+                      const sanitizeFormData = <
+                        T extends Record<string, unknown>
+                      >(
+                        data: T
+                      ): Partial<T> =>
+                        Object.fromEntries(
+                          Object.entries(data).filter(
+                            ([, value]) =>
+                              value !== null && value !== undefined
+                          )
+                        ) as Partial<T>;
 
-                        const sanitizeFormData = <
-                          T extends Record<string, unknown>
-                        >(
-                          data: T
-                        ): Partial<T> =>
-                          Object.fromEntries(
-                            Object.entries(data).filter(
-                              ([, value]) =>
-                                value !== null && value !== undefined
-                            )
-                          ) as Partial<T>;
+                      const sanitizedData = sanitizeFormData(formattedRow);
 
-                        const sanitizedData = sanitizeFormData(formattedRow);
+                      sessionStorage.setItem(
+                        "formData",
+                        JSON.stringify(sanitizedData)
+                      );
 
-                        sessionStorage.setItem(
-                          "formData",
-                          JSON.stringify(sanitizedData)
-                        );
-
-                        router.push(
-                          "/dashboard/pages/Doctor/patientBilling/invoice"
-                        );
-                      }}
-                    >
-                      <Printer size={16} />
-                    </Button>
-                  </div>
-                </>
+                      router.push(
+                        "/dashboard/pages/Doctor/patientBilling/invoice"
+                      );
+                    }}
+                  >
+                    <Printer size={16} />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingBilling(row);
+                      setDeleteDialogOpen(true);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </Button>
+                </div>
               ),
             },
           ]}
+          onRowClick={(row) => {
+            setSelectedBilling(row);
+            setOpenSelectedBilling(true);
+          }}
         />
       </div>
 
       {/* Labworks Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="bg-card border-border p-6 rounded-lg shadow-sm">
         <SectionHeader
           icon={<FlaskConical className="text-orange-500" size={20} />} // or Beaker / TestTube from lucide-react
           title="Labworks"
         />
 
         <DataTable<ILabWork>
+          key={`labwork-table-${patientLabworks.length}-${patientLabworks[patientLabworks.length - 1]?._id || 'empty'}-${labWorks.length}`}
           data={patientLabworks}
           title=""
           showSearch={false}
@@ -578,18 +647,19 @@ const PatientDetailView = ({
                 const statusValue = typeof v === "string" ? v : "N/A";
                 return (
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${v === "Pending"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : v === "Received"
-                        ? "bg-blue-100 text-blue-700"
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      v === "Pending"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200"
+                        : v === "Received"
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
                         : v === "Fitted"
-                          ? "bg-green-100 text-green-700"
-                          : v === "Rework"
-                            ? "bg-orange-100 text-orange-700"
-                            : v === "Cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-gray-100 text-gray-700"
-                      }`}
+                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
+                        : v === "Rework"
+                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200"
+                        : v === "Cancelled"
+                        ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
+                        : "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                    }`}
                   >
                     {statusValue}
                   </span>
@@ -600,15 +670,45 @@ const PatientDetailView = ({
               header: "Actions",
               accessorKey: "_id",
               render: (_, row) => (
-                <Button
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenLabworkModal(row);
-                  }}
-                >
-                  View
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLabwork(row);
+                      setOpenSelectedLabwork(true);
+                      setIsEditingLabWork(false);
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLabwork(row);
+                      setOpenSelectedLabwork(true);
+                      setIsEditingLabWork(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingLabWork(row);
+                      setDeleteLabWorkDialogOpen(true);
+                    }}
+                    className="flex items-center gap-1"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </Button>
+                </div>
               ),
             },
           ]}
@@ -636,6 +736,7 @@ const PatientDetailView = ({
             );
           }
         }}
+        userId={session?.user.id || ""}
       />
 
       {/* Edit Patient Modal */}
@@ -656,7 +757,7 @@ const PatientDetailView = ({
       {/* Appointment Details Dialog  */}
 
       <Dialog
-        open={openSelectedAppointment}
+        open={openSelectedAppointment && selectedAppointment !== null && !deleteAppointmentDialogOpen && !isEditingAppointment}
         onOpenChange={setOpenSelectedAppointment}
       >
         <DialogContent
@@ -757,7 +858,7 @@ const PatientDetailView = ({
                     <p className="text-muted-foreground">Treatments</p>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {selectedAppointment ? (
-                        selectedAppointment.treatments!.map(
+                        selectedAppointment.treatments?.map(
                           (treatment: string) => (
                             <p key={treatment} className="font-bold">
                               {treatment},
@@ -817,9 +918,101 @@ const PatientDetailView = ({
         </DialogContent>
       </Dialog>
 
-      {/* Billing Details Dialog */}
+      {/* Edit Appointment Dialog */}
+      {selectedAppointment && (
+        <EditAppointmentDialog
+          open={openSelectedAppointment && selectedAppointment !== null && !deleteAppointmentDialogOpen && isEditingAppointment}
+          appointment={selectedAppointment}
+          onClose={() => { setOpenSelectedAppointment(false); setIsEditingAppointment(false); }}
+          onSave={(updatedAppointment) => {
+            if (updatedAppointment && updatedAppointment._id) {
+              // Convert Partial<Appointment> to complete Appointment for Redux
+              const completeAppointment: Appointment = {
+                ...selectedAppointment!,
+                ...updatedAppointment
+              };
+              
+              // Ensure appointmentDate is a string for API validation
+              if (typeof completeAppointment.appointmentDate === "string") {
+                // Already a string, ensure it's in the correct format
+                const date = new Date(completeAppointment.appointmentDate);
+                if (!isNaN(date.getTime())) {
+                  completeAppointment.appointmentDate = date.toISOString().split('T')[0];
+                }
+              } else if (completeAppointment.appointmentDate && typeof completeAppointment.appointmentDate === "object" && "toISOString" in completeAppointment.appointmentDate) {
+                // Handle Date object
+                completeAppointment.appointmentDate = (completeAppointment.appointmentDate as Date).toISOString().split('T')[0];
+              }
+              
+              dispatch(
+                editAppointment(completeAppointment)
+              ).then(() => {
+                // Refresh the appointment data to ensure UI updates
+                if (session?.user?.id) {
+                  dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+                }
+              });
+              setOpenSelectedAppointment(false);
+              setIsEditingAppointment(false);
+            }
+          }}
+          onDelete={(appointmentId) => {
+            if (appointmentId) {
+              setDeletingAppointment(selectedAppointment);
+              setDeleteAppointmentDialogOpen(true);
+              setOpenSelectedAppointment(false);
+              setIsEditingAppointment(false);
+            }
+          }}
+        />
+      )}
 
-      <Dialog open={openSelectedBilling} onOpenChange={setOpenSelectedBilling}>
+      {/* Delete Appointment Modal */}
+      {deletingAppointment && (
+        <DeleteAppointmentModal
+          open={deleteAppointmentDialogOpen}
+          appointment={{
+            _id: deletingAppointment._id,
+            appointmentDate: deletingAppointment.appointmentDate,
+            timeSlot: deletingAppointment.timeSlot,
+            patientName: patient.fullName,
+          }}
+          onClose={() => {
+            setDeleteAppointmentDialogOpen(false);
+            setDeletingAppointment(null);
+          }}
+          onConfirm={async (appointmentId: string) => {
+            if (!appointmentId) return;
+            
+            setIsDeletingAppointment(true);
+            try {
+              const response = await fetch(`/api/doctor/appointments/delete/${appointmentId}`, {
+                method: 'DELETE',
+              });
+
+              if (response.ok) {
+                // Refresh the appointment data
+                if (session?.user?.id) {
+                  dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+                }
+                setDeleteAppointmentDialogOpen(false);
+                setDeletingAppointment(null);
+              } else {
+                const errorData = await response.json();
+                console.error('Delete failed:', errorData);
+              }
+            } catch (error) {
+              console.error('Delete error:', error);
+            } finally {
+              setIsDeletingAppointment(false);
+            }
+          }}
+          isLoading={isDeletingAppointment}
+        />
+      )}
+
+      {/* View Billing Details Dialog */}
+      <Dialog open={openSelectedBilling && selectedBilling !== null && !deleteDialogOpen && !isEditing} onOpenChange={setOpenSelectedBilling}>
         <DialogContent
           ref={billingDialogRef}
           className="max-w-2xl animate-fade-in"
@@ -962,8 +1155,88 @@ const PatientDetailView = ({
         </DialogContent>
       </Dialog>
 
+      {/* Edit Billing Dialog */}
+      {selectedBilling && (
+        <EditBillingDialog
+          open={openSelectedBilling && selectedBilling !== null && !deleteDialogOpen && isEditing}
+          billing={selectedBilling}
+          onClose={() => { setOpenSelectedBilling(false); setIsEditing(false); }}
+          onSave={(updatedBilling) => {
+            if (updatedBilling && updatedBilling._id) {
+              dispatch(
+                updateBillingRecord({
+                  billingId: updatedBilling._id,
+                  updatedBillingData: updatedBilling,
+                })
+              );
+              // Refresh the billing data to ensure UI updates
+              if (session?.user?.id) {
+                dispatch(fetchBillings({ userId: session.user.id, role: "Doctor" }));
+              }
+              setOpenSelectedBilling(false);
+              setIsEditing(false);
+            }
+          }}
+          onDelete={(billingId) => {
+            if (billingId) {
+              setDeletingBilling(selectedBilling);
+              setDeleteDialogOpen(true);
+              setOpenSelectedBilling(false);
+              setIsEditing(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Delete Billing Modal */}
+      {deletingBilling && (
+        <DeleteBillingModal
+          open={deleteDialogOpen}
+          billing={{
+            _id: deletingBilling._id,
+            invoiceId: deletingBilling.invoiceId,
+            patientName: patient.fullName,
+            totalAmount: deletingBilling.totalAmount,
+          }}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setDeletingBilling(null);
+          }}
+          onConfirm={async (billingId: string) => {
+            if (!billingId) return;
+            
+            setIsDeleting(true);
+            try {
+              const response = await fetch(`/api/doctor/billing/delete/${billingId}`, {
+                method: 'DELETE',
+              });
+
+              if (response.ok) {
+                // Refresh the billing data
+                if (session?.user?.id) {
+                  dispatch(fetchBillings({ userId: session.user.id, role: "Doctor" }));
+                }
+                setDeleteDialogOpen(false);
+                setDeletingBilling(null);
+              } else {
+                const errorData = await response.json();
+                console.error('Delete failed:', errorData);
+              }
+            } catch (error) {
+              console.error('Delete error:', error);
+            } finally {
+              setIsDeleting(false);
+            }
+          }}
+          isLoading={isDeleting}
+        />
+      )}
+
       {/* Labwork Details Dialog */}
-      <Dialog open={openSelectedLabwork} onOpenChange={setOpenSelectedLabwork}>
+      <Dialog
+        open={openSelectedLabwork && selectedLabwork !== null && !deleteLabWorkDialogOpen && !isEditingLabWork}
+        onOpenChange={setOpenSelectedLabwork}
+      >
         <DialogContent
           ref={labworkDialogRef}
           className="max-w-2xl animate-fade-in"
@@ -1104,6 +1377,94 @@ const PatientDetailView = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lab Work Dialog */}
+      {selectedLabwork && (
+        <EditLabWorkDialog
+          open={openSelectedLabwork && selectedLabwork !== null && !deleteLabWorkDialogOpen && isEditingLabWork}
+          labWork={selectedLabwork}
+          onClose={() => { setOpenSelectedLabwork(false); setIsEditingLabWork(false); }}
+          onSave={(updatedLabWork) => {
+            if (updatedLabWork && updatedLabWork._id) {
+              // Convert Partial<ILabWork> to complete ILabWork for Redux
+              const completeLabWork: ILabWork = {
+                ...selectedLabwork!,
+                ...updatedLabWork
+              };
+              
+              // Create FormData for the API
+              const formData = new FormData();
+              formData.append("updates", JSON.stringify(completeLabWork));
+              
+              dispatch(
+                updateLabWork({
+                  id: completeLabWork._id,
+                  updates: formData
+                })
+              ).then(() => {
+                // Refresh the labwork data to ensure UI updates
+                if (session?.user?.id) {
+                  dispatch(fetchLabWorks({ userId: session.user.id, role: "Doctor" }));
+                }
+              });
+              setOpenSelectedLabwork(false);
+              setIsEditingLabWork(false);
+            }
+          }}
+          onDelete={(labWorkId) => {
+            if (labWorkId) {
+              setDeletingLabWork(selectedLabwork);
+              setDeleteLabWorkDialogOpen(true);
+              setOpenSelectedLabwork(false);
+              setIsEditingLabWork(false);
+            }
+          }}
+        />
+      )}
+
+      {/* Delete Lab Work Modal */}
+      {deletingLabWork && (
+        <DeleteLabWorkModal
+          open={deleteLabWorkDialogOpen}
+          labWork={{
+            _id: deletingLabWork._id,
+            labName: deletingLabWork.labName,
+            orderType: deletingLabWork.orderType,
+            patientName: patient.fullName,
+          }}
+          onClose={() => {
+            setDeleteLabWorkDialogOpen(false);
+            setDeletingLabWork(null);
+          }}
+          onConfirm={async (labWorkId: string) => {
+            if (!labWorkId) return;
+            
+            setIsDeletingLabWork(true);
+            try {
+              const response = await fetch(`/api/doctor/labWork/delete/${labWorkId}`, {
+                method: 'DELETE',
+              });
+
+              if (response.ok) {
+                // Refresh the labwork data
+                if (session?.user?.id) {
+                  dispatch(fetchLabWorks({ userId: session.user.id, role: "Doctor" }));
+                }
+                setDeleteLabWorkDialogOpen(false);
+                setDeletingLabWork(null);
+              } else {
+                const errorData = await response.json();
+                console.error('Delete failed:', errorData);
+              }
+            } catch (error) {
+              console.error('Delete error:', error);
+            } finally {
+              setIsDeletingLabWork(false);
+            }
+          }}
+          isLoading={isDeletingLabWork}
+        />
+      )}
       <Dialog
         open={!!openStatDialog}
         onOpenChange={() => setOpenStatDialog(null)}

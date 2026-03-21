@@ -1,73 +1,79 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
-import UserModel from "@/app/model/User.model";
 import DoctorModel from "@/app/model/Doctor.model";
-import PatientModel from "@/app/model/Patient.model"; // Correct Patient model import
+import PatientModel from "@/app/model/Patient.model";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET(request: NextRequest) {
+  const startedAt = Date.now();
+
   try {
+    const authResult = await requireAuth([
+      "Doctor",
+      "Patient",
+      "Admin",
+      "SuperAdmin",
+    ]);
+    if ("error" in authResult) return authResult.error;
+
+    const { user } = authResult;
+
     await dbConnect();
 
-    // Extract userId from headers
-    const userId = request.headers.get("x-user-id");
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: "userId is required in headers" },
-        { status: 400 }
-      );
-    }
-
-    // Find user details based on userId
-    const user = await UserModel.findById(userId);
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    const userIdResult = resolveUserIdFromHeader(request, user, "x-user-id");
+    if ("error" in userIdResult) return userIdResult.error;
+    const { userId } = userIdResult;
 
     let clinicId: string | null = null;
 
-    // Determine clinicId based on role
     if (user.role === "Doctor") {
-      const doctor = await DoctorModel.findOne({ userId });
+      const doctor = await DoctorModel.findOne({ userId })
+        .select("clinicId")
+        .lean();
       clinicId = doctor?.clinicId?.toString() || null;
     } else if (user.role === "Patient") {
-      const patient = await PatientModel.findOne({ userId });
+      const patient = await PatientModel.findOne({ userId })
+        .select("ClinicId")
+        .lean();
       clinicId = patient?.ClinicId?.toString() || null;
     } else {
-      return NextResponse.json(
-        { error: "Access denied. Only Doctors and Patients are allowed." },
-        { status: 403 }
+      return errorResponse(
+        403,
+        "Access denied. Only Doctors and Patients are allowed.",
       );
     }
 
     if (!clinicId) {
-      return NextResponse.json(
-        { error: "No clinic found for this user" },
-        { status: 404 }
+      return errorResponse(404, "No clinic found for this user");
+    }
+
+    const doctors = await DoctorModel.find({ clinicId })
+      .select(
+        "_id clinicId fullName specialization specializationDetails contactNumber address qualifications experienceYears gender rating workingHours createdAt updatedAt",
+      )
+      .lean();
+
+    const transformedDoctors = doctors.map((doctor) => ({
+      ...doctor,
+      _id: doctor._id?.toString(),
+      clinicId: doctor.clinicId?.toString(),
+      createdAt: doctor.createdAt?.toISOString(),
+      updatedAt: doctor.updatedAt?.toISOString(),
+    }));
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[perf] GET /api/doctor/fetchDoctors ${Date.now() - startedAt}ms (count=${transformedDoctors.length})`,
       );
     }
 
-    // Fetch doctors belonging to the clinic
-    const doctors = await DoctorModel.find({ clinicId }).select("-permissions");
-
-    // Transform response data
-    const transformedDoctors = doctors.map((doctor) => ({
-      ...doctor.toObject(),
-      _id: doctor._id.toString(),
-      clinicId: doctor.clinicId.toString(),
-      createdAt: doctor.createdAt.toISOString(),
-      updatedAt: doctor.updatedAt.toISOString(),
-    }));
-
-    return NextResponse.json({ doctors: transformedDoctors }, { status: 200 });
+    return successResponse({ doctors: transformedDoctors }, 200);
   } catch (error: unknown) {
     console.error("Error fetching doctors:", error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Unknown error occurred",
-      },
-      { status: 500 }
+    return errorResponse(
+      500,
+      error instanceof Error ? error.message : "Unknown error occurred",
     );
   }
 }

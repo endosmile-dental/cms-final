@@ -1,5 +1,4 @@
 // app/api/auth/doctor/addPatient/route.ts
-import { NextResponse } from "next/server";
 import { z } from "zod";
 
 // Import your models (adjust the paths as needed)
@@ -7,6 +6,8 @@ import DoctorModel from "@/app/model/Doctor.model";
 import UserModel from "@/app/model/User.model";
 import PatientModel from "@/app/model/Patient.model";
 import dbConnect from "@/app/utils/dbConnect";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
 
 // Define a Zod schema for incoming patient registration data.
 const patientRegistrationSchema = z.object({
@@ -38,24 +39,28 @@ const patientRegistrationSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     await dbConnect();
-    // Parse and validate the incoming JSON request body
-    const body = await request.json();
-    const data = patientRegistrationSchema.parse(body);
+    const parsed = await parseJson(request, patientRegistrationSchema);
+    if ("error" in parsed) return parsed.error;
+    const data = parsed.data;
 
     // Retrieve the doctor id from the custom header (provided via session)
-    const doctorId = request.headers.get("x-doctor-id");
-    if (!doctorId) {
-      return NextResponse.json(
-        { error: "Doctor ID is missing from session." },
-        { status: 401 }
-      );
-    }
+    const doctorIdResult = resolveUserIdFromHeader(
+      request,
+      user,
+      "x-doctor-id"
+    );
+    if ("error" in doctorIdResult) return doctorIdResult.error;
+    const { userId: doctorId } = doctorIdResult;
 
     // Find the doctor record (to later retrieve ClinicId)
     const doctor = await DoctorModel.findOne({ userId: doctorId });
     if (!doctor) {
-      return NextResponse.json({ error: "Doctor not found." }, { status: 404 });
+      return errorResponse(404, "Doctor not found.");
     }
 
     // Create a new user for the patient.
@@ -104,21 +109,15 @@ export async function POST(request: Request) {
       // The permissions field will be set to its default value defined in the model.
     });
 
-    return NextResponse.json(
+    return successResponse(
       { message: "Patient registered successfully", patient: newPatient },
-      { status: 201 }
+      201
     );
   } catch (error: unknown) {
     console.error("Error in addPatient route:", error);
     if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error in adding patient route:", error: error.message },
-        { status: 500 }
-      );
+      return errorResponse(500, "Error in adding patient route:", error.message);
     }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

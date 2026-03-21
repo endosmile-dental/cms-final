@@ -56,7 +56,7 @@ const ViewAttachment: React.FC<ViewAttachmentProps> = ({
           />
         ) : isPDF ? (
           <div className="w-full h-full flex flex-col items-center justify-center">
-            <p className="text-gray-500 mb-4">PDF files open in a new tab</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">PDF files open in a new tab</p>
             <Button
               onClick={() => window.open(attachment.url, "_blank")}
               variant="default"
@@ -66,8 +66,8 @@ const ViewAttachment: React.FC<ViewAttachmentProps> = ({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-8">
-            <FileText className="h-16 w-16 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-6">
+            <FileText className="h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
               This file format cannot be previewed
             </p>
             <a href={attachment.url} download={attachment.original_filename}>

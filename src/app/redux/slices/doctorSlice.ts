@@ -1,4 +1,6 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
 // Define Doctor Interface
 export interface Doctor {
@@ -62,13 +64,9 @@ export const fetchDoctors = createAsyncThunk<
       },
     });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      return rejectWithValue(errorData.error || "Failed to fetch doctors");
-    }
-
-    const data = await res.json();
-    return data.doctors; // Ensure API response contains { doctors: [...] }
+    const payload = (await res.json()) as ApiResponse<{ doctors: Doctor[] }>;
+    const data = unwrapApiResponse(payload);
+    return data.doctors;
   } catch (error: unknown) {
     if (error instanceof Error) {
       return rejectWithValue(error.message);
@@ -84,6 +82,11 @@ const doctorSlice = createSlice({
   reducers: {
     clearDoctors(state) {
       state.doctors = [];
+    },
+    hydrateDoctors(state, action: PayloadAction<Doctor[]>) {
+      state.doctors = action.payload;
+      state.loading = false;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -103,7 +106,7 @@ const doctorSlice = createSlice({
 });
 
 // Export actions & reducer
-export const { clearDoctors } = doctorSlice.actions;
+export const { clearDoctors, hydrateDoctors } = doctorSlice.actions;
 export const selectDoctors = (state: { doctors: DoctorsState }) =>
   state.doctors.doctors;
 export const selectDoctorsLoading = (state: DoctorsState) => state.loading;

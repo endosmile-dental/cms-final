@@ -5,10 +5,15 @@ import LabWorkModel from "@/app/model/LabWork.model";
 import PatientModel from "@/app/model/Patient.model";
 import UserModel from "@/app/model/User.model";
 import dbConnect from "@/app/utils/dbConnect";
-import { NextResponse, NextRequest } from "next/server";
+import { NextRequest } from "next/server";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 // DELETE /api/doctor/deletePatient/:id
 export async function DELETE(request: NextRequest) {
+  const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+  if ("error" in authResult) return authResult.error;
+
   await dbConnect();
 
   try {
@@ -19,16 +24,13 @@ export async function DELETE(request: NextRequest) {
     console.log("Extracted ID:", id);
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing patient ID" },
-        { status: 400 }
-      );
+      return errorResponse(400, "Missing patient ID");
     }
 
     // Check if patient exists
     const patient = await PatientModel.findById(id);
     if (!patient) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+      return errorResponse(404, "Patient not found");
     }
 
     console.log("Patient found:", patient);
@@ -63,7 +65,7 @@ export async function DELETE(request: NextRequest) {
     await PatientModel.findByIdAndDelete(patientId);
     console.log("Deleted Patient:", patientId);
 
-    return NextResponse.json(
+    return successResponse(
       {
         message: "Patient, linked user, and related data deleted successfully",
         deleted: {
@@ -74,13 +76,10 @@ export async function DELETE(request: NextRequest) {
           labworks: labResult.deletedCount,
         },
       },
-      { status: 200 }
+      200
     );
   } catch (error) {
     console.error("Delete patient error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete patient" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Failed to delete patient");
   }
 }

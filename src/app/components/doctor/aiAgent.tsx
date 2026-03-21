@@ -78,9 +78,9 @@ export default function AIAssistant() {
       </div>
 
       {/* Messages */}
-      <div className="space-y-4 h-80 overflow-y-auto mb-4 p-4 border rounded-lg bg-gray-50">
+      <div className="space-y-4 h-80 overflow-y-auto mb-4 p-4 border rounded-lg bg-muted dark:bg-gray-800">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-muted-foreground py-8">
             <p>How can I help you today?</p>
             <p className="text-sm mt-2">
               Try asking about recent appointments, billing status, or lab
@@ -91,18 +91,18 @@ export default function AIAssistant() {
           messages.map((msg, i) => (
             <div
               key={i}
-              className={`p-4 rounded-lg max-w-[80%] ${msg.role === "user" ? "bg-blue-100 ml-auto" : "bg-white border"
+              className={`p-4 rounded-lg max-w-[80%] ${msg.role === "user" ? "bg-primary/10 ml-auto" : "bg-card border"
                 }`}
             >
               <div className="whitespace-pre-wrap">{msg.content}</div>
               {msg.data?.collectionsUsed && (
-                <div className="mt-2 text-xs text-gray-500 flex flex-wrap gap-1">
+                <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-1">
                   <span>Sources:</span>
                   {msg.data.collectionsUsed.map(
                     (collection: string, idx: number) => (
                       <span
                         key={idx}
-                        className="px-2 py-1 bg-gray-200 rounded-full"
+                        className="px-2 py-1 bg-muted dark:bg-gray-700 rounded-full"
                       >
                         {collection}
                       </span>
@@ -115,8 +115,8 @@ export default function AIAssistant() {
         )}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white border p-4 rounded-lg max-w-[80%]">
-              <div className="flex items-center gap-2 text-gray-500">
+            <div className="bg-card border p-4 rounded-lg max-w-[80%]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Analyzing medical data...</span>
               </div>
@@ -128,7 +128,7 @@ export default function AIAssistant() {
       {/* Input */}
       <div className="flex gap-2">
         <input
-          className="flex-1 border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}

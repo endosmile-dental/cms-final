@@ -1,11 +1,20 @@
 // app/api/availability/route.ts
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 import mongoose from "mongoose";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET(request: Request) {
   try {
+    const authResult = await requireAuth([
+      "Patient",
+      "Doctor",
+      "Admin",
+      "SuperAdmin",
+    ]);
+    if ("error" in authResult) return authResult.error;
+
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
@@ -13,10 +22,7 @@ export async function GET(request: Request) {
     const date = searchParams.get("date");
 
     if (!doctorId || !date) {
-      return NextResponse.json(
-        { message: "Missing required parameters" },
-        { status: 400 }
-      );
+      return errorResponse(400, "Missing required parameters");
     }
 
     // Convert date to local time range (avoid UTC offset issues)
@@ -37,12 +43,9 @@ export async function GET(request: Request) {
 
     const bookedSlots = [...new Set(appointments.map((appt) => appt.timeSlot))];
 
-    return NextResponse.json({ bookedSlots });
+    return successResponse({ bookedSlots });
   } catch (error) {
     console.error("Availability check error:", error);
-    return NextResponse.json(
-      { message: "Error checking availability" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Error checking availability");
   }
 }

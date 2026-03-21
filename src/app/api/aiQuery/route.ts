@@ -1,10 +1,12 @@
 import LabWorkModel from "@/app/model/LabWork.model";
 import OpenAI from "openai";
 import dbConnect from "@/app/utils/dbConnect";
-import { NextResponse } from "next/server";
 import BillingModel from "@/app/model/Billing.model";
 import AppointmentModel from "@/app/model/Appointment.model";
 import { PipelineStage } from "mongoose";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { aiQuerySchema } from "@/app/schemas/api";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -91,11 +93,17 @@ async function executeQuery(
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const authResult = await requireAuth([
+      "Doctor",
+      "Admin",
+      "SuperAdmin",
+      "clientAdmin",
+    ]);
+    if ("error" in authResult) return authResult.error;
 
-    if (!message) {
-      return NextResponse.json({ error: "Missing message" }, { status: 400 });
-    }
+    const parsed = await parseJson(req, aiQuerySchema);
+    if ("error" in parsed) return parsed.error;
+    const { message } = parsed.data;
 
     await dbConnect();
 
@@ -266,21 +274,22 @@ export async function POST(req: Request) {
       responseCompletion.choices[0].message?.content ||
       "I analyzed your query but couldn't generate a specific response. Please try rephrasing your question.";
 
-    return NextResponse.json({
-      response: finalResponse,
-      analysis: analysis,
-      queryPlan: queryPlan,
-      rawResults: results,
-      collectionsUsed: analysis.neededCollections,
-    });
+    return successResponse(
+      {
+        response: finalResponse,
+        analysis: analysis,
+        queryPlan: queryPlan,
+        rawResults: results,
+        collectionsUsed: analysis.neededCollections,
+      },
+      200
+    );
   } catch (error) {
     console.error("AI Query error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to process your request",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+    return errorResponse(
+      500,
+      "Failed to process your request",
+      error instanceof Error ? error.message : "Unknown error"
     );
   }
 }

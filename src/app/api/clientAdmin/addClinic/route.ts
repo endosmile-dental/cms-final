@@ -1,14 +1,20 @@
 import clientAdminModel from "@/app/model/clientAdmin.model";
 import ClinicModel from "@/app/model/Clinic.model";
 import dbConnect from "@/app/utils/dbConnect";
-import { NextResponse } from "next/server";
+import { isElevatedRole, requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { addClinicSchema } from "@/app/schemas/api";
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(["clientAdmin", "Admin", "SuperAdmin"]);
+  if ("error" in authResult) return authResult.error;
+  const { user } = authResult;
+
   await dbConnect();
 
   try {
-    const body = await request.json();
-
+    const parsed = await parseJson(request, addClinicSchema);
+    if ("error" in parsed) return parsed.error;
     const {
       name,
       registrationNumber,
@@ -16,18 +22,19 @@ export async function POST(request: Request) {
       contactNumber,
       address,
       status,
-      userId, // The userId of the User (from the request body)
-    } = body;
+      userId,
+    } = parsed.data;
+
+    if (userId !== user.id && !isElevatedRole(user.role)) {
+      return errorResponse(403, "Forbidden");
+    }
 
     // Find the client admin document using the provided userId.
     // Adjust the lookup criteria if necessary.
     const clientAdminDoc = await clientAdminModel.findOne({ userId: userId });
 
     if (!clientAdminDoc) {
-      return NextResponse.json(
-        { message: "Client admin not found" },
-        { status: 404 }
-      );
+      return errorResponse(404, "Client admin not found");
     }
 
     // Create the new clinic, setting the clientAdmin field to the found client's _id.
@@ -42,22 +49,16 @@ export async function POST(request: Request) {
       // Other fields like services, businessHours, subscriptionPlan, etc. will use default values
     });
 
-    return NextResponse.json(
+    return successResponse(
       { message: "Clinic created successfully", clinic: newClinic },
-      { status: 201 }
+      201
     );
   } catch (error: unknown) {
     console.error("Error creating clinic:", error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error creating clinic", error: error.message },
-        { status: 500 }
-      );
-    }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
+    return errorResponse(
+      500,
+      "Error creating clinic",
+      error instanceof Error ? error.message : "Unknown error occurred"
     );
   }
 }

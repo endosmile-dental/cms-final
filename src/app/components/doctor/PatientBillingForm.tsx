@@ -41,7 +41,31 @@ import {
   MapPin,
   Mail,
   Phone,
+  Edit,
+  PlusCircle,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { TREATMENTS_QUERY_KEY, useTreatmentsQuery } from "@/app/react-query/queries/useTreatmentsQuery";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import TreatmentManagementForm from "./TreatmentManagementForm";
+
+// Define treatment interface for local use
+interface ITreatment {
+  _id: string;
+  name: string;
+  category: string;
+  description?: string;
+  defaultPrice?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type FormValues = z.infer<typeof zodBillingSchema>;
 
@@ -50,56 +74,29 @@ interface PatientBillingFormProps {
   billings: BillingRecord[];
   onSubmit: (data: FormValues) => void;
   isLoading: boolean;
+  initialTreatments?: ITreatment[];
 }
 
-const treatmentOptions = [
-  "Consultation",
-  "Follow-up",
-  "RVG/Digital X-ray",
-  "Multi-Visit Root Canal Treatment",
-  "Single-Visit Root Canal Treatment",
-  "Complex Anatomy and Calcified Canals",
-  "Re-Treatment / Re-RCT",
-  "Veneers (Porcelain/Lithium Disilicate)",
-  "Composite Restoration",
-  "Denture (Indian)",
-  "Denture (German)",
-  "Zirconia (Basic)",
-  "Zirconia (Vita)",
-  "Zirconia (3M Lava)",
-  "PFM (Normal)",
-  "PFM (Warranty)",
-  "Metal Crown (Normal)",
-  "Metal Crown (DMLS)",
-  "E-Max",
-  "Neodent (Basic)",
-  "Ostem",
-  "Strauman (Brazilian)",
-  "Novel Bio",
-  "Metal Braces",
-  "Ceramic Braces",
-  "Aligners (Toothsi)",
-  "Aligners (Invisalign)",
-  "Normal Extraction",
-  "Grossly Decayed Extraction",
-  "Impaction",
-  "GIC",
-  "Composite",
-  "Scaling with Polishing",
-  "Scaling with Chair-side Teeth Whitening",
-  "Air Prophylaxis",
-  "Professional Teeth Whitening with Kit",
-];
 
 const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   patient,
   billings,
   onSubmit,
   isLoading,
+  initialTreatments = [],
 }) => {
+  const queryClient = useQueryClient();
+  const {
+    data: treatmentsQueryData = [],
+  } = useTreatmentsQuery(true);
+  const activeTreatments = Array.isArray(treatmentsQueryData)
+    ? treatmentsQueryData.filter((treatment) => treatment.isActive)
+    : [];
   const [treatments, setTreatments] = useState([
     { treatment: "", price: 0, quantity: 1 },
   ]);
+  const [isTreatmentModalOpen, setIsTreatmentModalOpen] = useState(false);
+  const [editingTreatment, setEditingTreatment] = useState<ITreatment | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(zodBillingSchema),
@@ -127,8 +124,10 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       form.setValue("contactNumber", patient.contactNumber);
       form.setValue("patientId", patient.PatientId);
       form.setValue("hiddenPatientId", patient._id);
-      form.setValue("gender", patient.gender);
-      form.setValue("email", patient.email);
+      // Ensure gender is properly set, default to empty string if undefined
+      const genderValue = patient.gender || "";
+      form.setValue("gender", genderValue);
+      form.setValue("email", patient.email || "");
 
       if (patient.address) {
         const { street, city, state, postalCode } = patient.address;
@@ -163,6 +162,18 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       sessionStorage.setItem("lastThreeBillings", JSON.stringify(sanitized));
     }
   }, [patient, billings, form]);
+
+  useEffect(() => {
+    if (!Array.isArray(initialTreatments) || initialTreatments.length === 0) {
+      return;
+    }
+
+    const cached = queryClient.getQueryData<ITreatment[]>(TREATMENTS_QUERY_KEY);
+
+    if (!Array.isArray(cached) || cached.length === 0) {
+      queryClient.setQueryData(TREATMENTS_QUERY_KEY, initialTreatments);
+    }
+  }, [initialTreatments, queryClient]);
 
   const handleAddField = () => {
     const newTreatments = [
@@ -219,12 +230,12 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   const total = subtotal - discount;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto p-4">
+      <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Billing Form</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Billing Form</h1>
+          <p className="text-muted-foreground">
             Generate invoice and process patient billing
           </p>
         </div>
@@ -243,7 +254,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center text-lg">
-                  <User className="w-5 h-5 mr-2 text-blue-600" />
+                  <User className="w-5 h-5 mr-2 text-foreground" />
                   Patient Information
                 </CardTitle>
               </CardHeader>
@@ -254,7 +265,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <User className="w-4 h-4 mr-2" />
+                        <User className="w-4 h-4 mr-2 text-foreground" />
                         Patient Name
                       </FormLabel>
                       <FormControl>
@@ -272,7 +283,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center">
-                          <Phone className="w-4 h-4 mr-2" />
+                          <Phone className="w-4 h-4 mr-2 text-foreground" />
                           Contact
                         </FormLabel>
                         <FormControl>
@@ -294,8 +305,13 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                       <FormItem>
                         <FormLabel>Gender</FormLabel>
                         <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                          onValueChange={(value) => {
+                            // Only update if value is not empty or if it's a valid selection
+                            if (value !== "" || field.value === "") {
+                              field.onChange(value);
+                            }
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -320,7 +336,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <Mail className="w-4 h-4 mr-2" />
+                        <Mail className="w-4 h-4 mr-2 text-foreground" />
                         Email
                       </FormLabel>
                       <FormControl>
@@ -341,7 +357,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
+                        <MapPin className="w-4 h-4 mr-2 text-foreground" />
                         Address
                       </FormLabel>
                       <FormControl>
@@ -358,7 +374,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center text-lg">
-                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  <FileText className="w-5 h-5 mr-2 text-foreground" />
                   Invoice Information
                 </CardTitle>
               </CardHeader>
@@ -400,7 +416,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-2" />
+                          <Calendar className="w-4 h-4 mr-2 text-foreground" />
                           Date
                         </FormLabel>
                         <FormControl>
@@ -448,7 +464,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                <Stethoscope className="w-5 h-5 mr-2 text-blue-600" />
+                  <Stethoscope className="w-5 h-5 mr-2 text-foreground" />
                 Treatments & Services
               </CardTitle>
             </CardHeader>
@@ -463,10 +479,41 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   {treatments.map((field, index) => (
                     <div
                       key={index}
-                      className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 p-4 border border-gray-200 rounded-lg"
+                      className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 p-4 border border-border rounded-lg"
                     >
                       <div className="md:col-span-5">
-                        <FormLabel>Treatment</FormLabel>
+                        <div className="flex items-center justify-between mb-2">
+                          <FormLabel>Treatment</FormLabel>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingTreatment(null);
+                                setIsTreatmentModalOpen(true);
+                              }}
+                              className="text-xs"
+                            >
+                              <PlusCircle className="w-3 h-3 mr-1 text-foreground" />
+                              Add
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                console.log("DEBUG: Edit treatments button clicked");
+                                setEditingTreatment(null);
+                                setIsTreatmentModalOpen(true);
+                              }}
+                              className="text-xs"
+                            >
+                              <Edit className="w-3 h-3 mr-1 text-foreground" />
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
                         <Select
                           value={field.treatment}
                           onValueChange={(value) =>
@@ -477,11 +524,24 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                             <SelectValue placeholder="Select treatment" />
                           </SelectTrigger>
                           <SelectContent>
-                            {treatmentOptions.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
+                            {(() => {
+                              console.log("DEBUG: Rendering SelectContent, activeTreatments:", activeTreatments);
+                              return null;
+                            })()}
+                            {Array.isArray(activeTreatments) && activeTreatments.length > 0 ? (
+                              activeTreatments.map((treatment) => (
+                                <SelectItem 
+                                  key={treatment._id} 
+                                  value={treatment.name}
+                                >
+                                  {treatment.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <div className="p-2 text-sm text-muted-foreground">
+                                No treatments available
+                              </div>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -520,7 +580,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                             size="icon"
                             className="h-10 text-red-600 border-red-200 hover:bg-red-50"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 text-foreground" />
                           </Button>
                         )}
                         {index === treatments.length - 1 && (
@@ -531,7 +591,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                             size="icon"
                             className="h-10"
                           >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4 text-foreground" />
                           </Button>
                         )}
                       </div>
@@ -540,16 +600,16 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                 </TabsContent>
 
                 <TabsContent value="summary" className="space-y-4 pt-4">
-                  <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="text-muted-foreground">Subtotal:</span>
                       <span className="font-semibold">
                         ₹{subtotal.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600 flex items-center">
-                        <Percent className="w-4 h-4 mr-1" />
+                      <span className="text-muted-foreground flex items-center">
+                        <Percent className="w-4 h-4 mr-1 text-foreground" />
                         Discount:
                       </span>
                       <span className="font-semibold text-red-600">
@@ -570,7 +630,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
+                  <CreditCard className="w-5 h-5 mr-2 text-foreground" />
                 Payment Details
               </CardTitle>
             </CardHeader>
@@ -582,7 +642,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <Percent className="w-4 h-4 mr-2" />
+                        <Percent className="w-4 h-4 mr-2 text-foreground" />
                         Discount (₹)
                       </FormLabel>
                       <FormControl>
@@ -604,7 +664,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <DollarSign className="w-4 h-4 mr-2" />
+                        <DollarSign className="w-4 h-4 mr-2 text-foreground" />
                         Amount Received (₹)
                       </FormLabel>
                       <FormControl>
@@ -622,7 +682,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
 
 
                 <div className="flex items-end">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg w-full">
+                  <div className="text-center p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg w-full border border-border">
                     <div className="text-sm text-blue-600 font-medium">
                       Balance Due
                     </div>
@@ -651,12 +711,42 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                 </span>
               ) : (
                 <span className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
+                  <FileText className="w-4 h-4 mr-2 text-foreground" />
                   Generate Bill
                 </span>
               )}
             </Button>
           </div>
+
+          {/* Treatment Management Modal */}
+          <Dialog open={isTreatmentModalOpen} onOpenChange={setIsTreatmentModalOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingTreatment ? "Edit Treatment" : "Manage Treatments"}
+                </DialogTitle>
+                <DialogDescription>
+                  {editingTreatment 
+                    ? "Update the details of the selected treatment"
+                    : "Select a treatment to edit or add a new treatment"
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <TreatmentManagementForm
+                treatment={editingTreatment}
+                isEditing={editingTreatment === null} // Pass true when editing treatments (no specific treatment selected)
+                onSuccess={() => {
+                  setIsTreatmentModalOpen(false);
+                  setEditingTreatment(null);
+                  queryClient.invalidateQueries({ queryKey: TREATMENTS_QUERY_KEY });
+                }}
+                onCancel={() => {
+                  setIsTreatmentModalOpen(false);
+                  setEditingTreatment(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
         </form>
       </Form>
     </div>

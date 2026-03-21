@@ -1,19 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import PatientModel from "@/app/model/Patient.model";
 import dbConnect from "@/app/utils/dbConnect";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(["Patient", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     await dbConnect();
 
-    const patientUserId = req.headers.get("x-patient-user-id");
-
-    if (!patientUserId) {
-      return NextResponse.json(
-        { error: "Patient user id not provided" },
-        { status: 400 }
-      );
-    }
+    const userIdResult = resolveUserIdFromHeader(
+      req,
+      user,
+      "x-patient-user-id"
+    );
+    if ("error" in userIdResult) return userIdResult.error;
+    const { userId: patientUserId } = userIdResult;
 
     // Find the patient record using the provided userId.
     // Exclude sensitive fields (e.g., "userId" and any other fields you deem sensitive).
@@ -22,10 +27,7 @@ export async function GET(req: NextRequest) {
     }).select("-userId -password -DoctorId -createdAt -permissions -updatedAt"); // Adjust the fields to exclude as needed
 
     if (!patient) {
-      return NextResponse.json(
-        { error: "Patient profile not found" },
-        { status: 404 }
-      );
+      return errorResponse(404, "Patient profile not found");
     }
 
     // Convert ObjectId and Date fields to string format
@@ -35,15 +37,12 @@ export async function GET(req: NextRequest) {
       ClinicId: patient.ClinicId.toString(),
     };
 
-    return NextResponse.json({ patient: transformedPatient }, { status: 200 });
+    return successResponse({ patient: transformedPatient }, 200);
   } catch (error: unknown) {
     console.error("Error fetching patient details:", error);
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return errorResponse(500, error.message);
     }
-    return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

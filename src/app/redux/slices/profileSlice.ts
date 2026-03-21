@@ -1,4 +1,6 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
 export interface DoctorProfile {
   _id: string;
@@ -95,12 +97,11 @@ export const fetchProfile = createAsyncThunk<
   try {
     const res = await fetch(endpoint, { method: "GET", headers });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      return rejectWithValue(errorData.error || "Failed to fetch profile");
-    }
-
-    const data = await res.json();
+    const payload = (await res.json()) as ApiResponse<{
+      doctor?: DoctorProfile;
+      patient?: PatientProfile;
+    }>;
+    const data = unwrapApiResponse(payload);
 
     if (role === "Doctor" && data.doctor) {
       return data.doctor as ProfileData;
@@ -172,6 +173,11 @@ const profileSlice = createSlice({
     clearProfile(state) {
       state.profile = null;
     },
+    hydrateProfile(state, action: PayloadAction<ProfileData>) {
+      state.profile = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -202,7 +208,7 @@ const profileSlice = createSlice({
   },
 });
 
-export const { clearProfile } = profileSlice.actions;
+export const { clearProfile, hydrateProfile } = profileSlice.actions;
 // Selectors
 export const selectProfile = (state: { profile: ProfileState }) =>
   state.profile.profile;

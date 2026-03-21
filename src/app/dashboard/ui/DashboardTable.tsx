@@ -25,28 +25,39 @@ export default function ReusableTable<T>({
   const displayedData = data.slice(0, 5);
 
   return (
-    <Card className="p-4">
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="bg-card border-border shadow-sm">
+      <CardHeader className="border-b border-border">
+        <CardTitle className="text-lg font-semibold text-foreground">
+          {title}
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <div className="overflow-x-auto">
           {displayedData.length > 0 ? (
-            <table className="w-full text-center">
-              <thead>
+            <table className="w-full">
+              <thead className="bg-muted text-muted-foreground">
                 <tr>
                   {columns.map((col, index) => (
-                    <th key={index} className="py-2">
+                    <th 
+                      key={index} 
+                      className="px-4 py-3 text-left text-sm font-medium uppercase tracking-wider"
+                    >
                       {col.header}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {displayedData.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="border-b">
+                  <tr 
+                    key={rowIndex} 
+                    className="hover:bg-muted/50 transition-colors duration-200"
+                  >
                     {columns.map((col, colIndex) => (
-                      <td key={colIndex} className="py-2">
+                      <td 
+                        key={colIndex} 
+                        className="px-4 py-3 text-sm text-foreground"
+                      >
                         {col.accessor(row)}
                       </td>
                     ))}
@@ -55,7 +66,9 @@ export default function ReusableTable<T>({
               </tbody>
             </table>
           ) : (
-            <p>{emptyMessage}</p>
+            <div className="py-8 text-center text-muted-foreground">
+              <p className="text-sm">{emptyMessage}</p>
+            </div>
           )}
         </div>
       </CardContent>

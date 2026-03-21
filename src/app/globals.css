@@ -43,31 +43,31 @@ body {
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 220 14.3% 15.1%;
+    --foreground: 220 14.3% 96.1%;
+    --card: 220 14.3% 15.1%;
+    --card-foreground: 220 14.3% 96.1%;
+    --popover: 220 14.3% 15.1%;
+    --popover-foreground: 220 14.3% 96.1%;
+    --primary: 220 14.3% 96.1%;
+    --primary-foreground: 220 14.3% 15.1%;
+    --secondary: 220 14.3% 20.0%;
+    --secondary-foreground: 220 14.3% 96.1%;
+    --muted: 220 14.3% 20.0%;
+    --muted-foreground: 220 14.3% 70.0%;
+    --accent: 220 14.3% 20.0%;
+    --accent-foreground: 220 14.3% 96.1%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --destructive-foreground: 220 14.3% 96.1%;
+    --border: 220 14.3% 20.0%;
+    --input: 220 14.3% 20.0%;
+    --ring: 220 14.3% 80.0%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
+    --sidebar-background: 240 14.3% 15.1%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -94,6 +94,71 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Enhanced dark mode styles for better contrast and readability */
+.dark {
+  /* Better input field styling in dark mode */
+  input, textarea, select {
+    background-color: hsl(var(--input));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
+  }
+  
+  /* Better shadow visibility in dark mode */
+  .shadow-sm {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .shadow-md {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  .shadow-lg {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Enhanced table styling for dark mode */
+  table {
+    border-color: hsl(var(--border));
+  }
+  
+  th, td {
+    border-color: hsl(var(--border));
+  }
+  
+  /* Better form control styling */
+  .border-input {
+    border-color: hsl(var(--input));
+  }
+  
+  /* Enhanced focus states for dark mode */
+  .focus-visible:ring-ring {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+/* Text color utilities for dark mode */
+.dark .text-foreground {
+  color: hsl(var(--foreground));
+}
+
+.dark .text-muted-foreground {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .bg-card {
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+.dark .bg-primary {
+  background-color: hsl(var(--primary));
+}
+
+.dark .text-primary-foreground {
+  color: hsl(var(--primary-foreground));
 }
 
 @layer utilities {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, ComponentType } from "react";
+import React, { useState, useCallback, useMemo, ComponentType, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,17 @@ import {
   AlertCircle,
   Sparkles,
 } from "lucide-react";
-import { Patient, selectPatients } from "@/app/redux/slices/patientSlice";
+
+// Define Patient interface based on the model
+interface Patient {
+  _id: string;
+  fullName: string;
+  PatientId: string;
+  contactNumber?: string;
+  email?: string;
+  gender: string;
+}
+import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { useRouter } from "next/navigation";
 import {
@@ -37,10 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  createAppointment,
-  selectAppointments,
-} from "@/app/redux/slices/appointmentSlice";
+import { createAppointment } from "@/app/redux/slices/appointmentSlice";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -50,6 +57,7 @@ import type {
 } from "@/app/redux/slices/appointmentSlice";
 import { PreviewDialog } from "./PreviewDialog";
 import { selectDoctors } from "../redux/slices/doctorSlice";
+import { selectActiveTreatments } from "@/app/redux/slices/treatmentSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -200,11 +208,10 @@ const FormStep = ({
 }) => (
   <div className="flex items-center space-x-3">
     <div
-      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-        currentStep >= step
-          ? "bg-blue-600 border-blue-600 text-white"
-          : "border-gray-300 text-gray-500"
-      }`}
+      className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${currentStep >= step
+        ? "bg-blue-600 border-blue-600 text-white"
+        : "border-border text-muted-foreground"
+        }`}
     >
       {currentStep > step ? (
         <CheckCircle2 className="w-5 h-5" />
@@ -213,16 +220,15 @@ const FormStep = ({
       )}
     </div>
     <span
-      className={`font-medium ${
-        currentStep >= step ? "text-blue-600" : "text-gray-500"
-      }`}
+      className={`font-medium ${currentStep >= step ? "text-blue-600" : "text-muted-foreground"
+        }`}
     >
       {title}
     </span>
   </div>
 );
 
-export default function BookAppointmentForm({ onCancel = () => {} }) {
+export default function BookAppointmentForm({ onCancel = () => { } }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [appointmentData, setAppointmentData] = useState<AppointmentFormState>({
     patient: "",
@@ -245,12 +251,15 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
     null
   );
   const [modalError, setModalError] = useState("");
+  const [searchResults, setSearchResults] = useState<Patient[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const { data: session } = useSession();
   const doctorId = session?.user?.id;
-  const patients = useAppSelector(selectPatients);
   const appointments = useAppSelector(selectAppointments);
   const doctors = useAppSelector(selectDoctors);
+  const activeTreatments = useAppSelector(selectActiveTreatments);
 
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -282,25 +291,50 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
   }, [bookedSlots]);
 
   const treatmentOptionsForSelect = useMemo(
-    () => treatmentOptions.map((option) => ({ label: option, value: option })),
-    []
+    () => activeTreatments.map((treatment) => ({
+      label: treatment.name,
+      value: treatment.name
+    })),
+    [activeTreatments]
   );
   const teethOptionsForSelect = useMemo(
     () => teethOptions.map((option) => ({ label: option, value: option })),
     []
   );
 
-  const filteredSuggestions = useMemo(
-    () =>
-      patientQuery
-        ? patients.filter(
-            (p) =>
-              p.fullName.toLowerCase().includes(patientQuery.toLowerCase()) ||
-              p.PatientId.toLowerCase().includes(patientQuery.toLowerCase())
-          )
-        : [],
-    [patientQuery, patients]
-  );
+  // Enhanced search function with server-side filtering
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    setHasSearched(true);
+
+    try {
+      const response = await fetch(`/api/doctor/searchPatients?query=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setSearchResults(data.patients || []);
+    } catch (error) {
+      console.error('Patient search failed:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // Debounce patient query for performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Only perform search if patient is not verified
+      if (!verifiedPatient) {
+        performSearch(patientQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [patientQuery, performSearch, verifiedPatient]);
 
   const handleSelectPatient = useCallback((patient: Patient) => {
     setPatientQuery(`${patient.fullName} (${patient.PatientId})`);
@@ -311,6 +345,9 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
     }));
     setVerifiedPatient(true);
     setCurrentStep(2);
+    // Clear search results after selection to hide dropdown
+    setSearchResults([]);
+    setHasSearched(false);
   }, []);
 
   const handlePatientChange = useCallback(
@@ -422,10 +459,10 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 Book New Appointment
               </h1>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Schedule a new dental appointment for your patient
               </p>
             </div>
@@ -442,7 +479,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 title="Patient Info"
                 icon={User}
               />
-              <div className="flex-1 h-1 bg-gray-200 mx-4">
+              <div className="flex-1 h-1 bg-border mx-4">
                 <div
                   className="h-1 bg-blue-600 transition-all duration-300"
                   style={{ width: `${Math.max(0, (currentStep - 1) * 33)}%` }}
@@ -454,7 +491,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 title="Date & Time"
                 icon={CalendarIcon}
               />
-              <div className="flex-1 h-1 bg-gray-200 mx-4">
+              <div className="flex-1 h-1 bg-border mx-4">
                 <div
                   className="h-1 bg-blue-600 transition-all duration-300"
                   style={{ width: `${Math.max(0, (currentStep - 2) * 33)}%` }}
@@ -466,7 +503,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 title="Treatment"
                 icon={Stethoscope}
               />
-              <div className="flex-1 h-1 bg-gray-200 mx-4">
+              <div className="flex-1 h-1 bg-border mx-4">
                 <div
                   className="h-1 bg-blue-600 transition-all duration-300"
                   style={{ width: `${Math.max(0, (currentStep - 3) * 33)}%` }}
@@ -479,16 +516,15 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 icon={CheckCircle2}
               />
             </div>
-            <Progress value={progressValue} color="bg-green-600" className="w-full" />
+            <Progress value={progressValue} className="w-full" />
           </CardContent>
         </Card>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Step 1: Patient Information */}
           <Card
-            className={`transition-all duration-300 ${
-              currentStep >= 1 ? "opacity-100" : "opacity-60"
-            }`}
+            className={`transition-all duration-300 ${currentStep >= 1 ? "opacity-100" : "opacity-60"
+              }`}
           >
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
@@ -504,40 +540,63 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 >
                   <Search className="w-4 h-4 mr-2" />
                   Search Patient
+                  <span className="text-xs text-gray-500 ml-2">(Name, ID, or Phone)</span>
                 </Label>
                 <div className="relative">
                   <Input
                     id="patient-search"
                     value={patientQuery}
                     onChange={handlePatientChange}
-                    placeholder="Search by Patient ID or Name..."
+                    placeholder="Search by name, ID, or phone number..."
                     className="pl-10"
                   />
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+
+                  {searchLoading && (
+                    <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
+
                   {verifiedPatient && (
                     <CheckCircle2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-600 w-5 h-5" />
                   )}
                 </div>
 
-                {filteredSuggestions.length > 0 && (
-                  <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredSuggestions.map((p) => (
+                  {hasSearched && (
+                  <div className="absolute z-10 w-full mt-2 bg-card border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="px-3 py-2 border-b border-border bg-muted/50 text-sm text-muted-foreground">
+                      {searchLoading ? (
+                        'Searching...'
+                      ) : searchResults.length === 0 ? (
+                        'No patients found'
+                      ) : (
+                        `Showing ${searchResults.length} result${searchResults.length !== 1 ? 's' : ''}`
+                      )}
+                    </div>
+
+                    {searchResults.map((p) => (
                       <div
                         key={p._id}
-                        className="p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="p-3 cursor-pointer hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0 transition-colors"
                         onClick={() => handleSelectPatient(p)}
                       >
-                        <div className="font-medium text-gray-900">
-                          {p.fullName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          ID: {p.PatientId}
-                        </div>
-                        {p.contactNumber && (
-                          <div className="text-sm text-gray-500">
-                            📞 {p.contactNumber}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-foreground">{p.fullName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              ID: {p.PatientId} • {p.gender}
+                            </div>
                           </div>
-                        )}
+                          <div className="text-right">
+                            {p.contactNumber && (
+                              <div className="text-sm text-muted-foreground">📞 {p.contactNumber}</div>
+                            )}
+                            {p.email && (
+                              <div className="text-xs text-muted-foreground truncate">{p.email}</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -545,18 +604,24 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
               </div>
 
               {!verifiedPatient &&
-                filteredSuggestions.length === 0 &&
-                patientQuery && (
-                  <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center">
-                    <User className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-gray-600 mb-2">Patient not found</p>
-                    <Button
-                      type="button"
-                      onClick={() => setShowRegisterPatient(true)}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Register New Patient
-                    </Button>
+                hasSearched &&
+                searchResults.length === 0 &&
+                !searchLoading &&
+                patientQuery.trim() !== "" && (
+                  <div className="mt-4 p-4 border border-dashed border-border rounded-lg text-center bg-card">
+                    <User className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground mb-2">Patient not found</p>
+                    <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
+                      <Button
+                        type="button"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                        onClick={() => {
+                          console.log("clicked")
+                        }}
+                      >
+                        Register New Patient
+                      </Button>
+                    </Link>
                   </div>
                 )}
 
@@ -576,9 +641,8 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
 
           {/* Step 2: Date & Time */}
           <Card
-            className={`transition-all duration-300 ${
-              currentStep >= 2 ? "opacity-100" : "opacity-60"
-            }`}
+            className={`transition-all duration-300 ${currentStep >= 2 ? "opacity-100" : "opacity-60"
+              }`}
           >
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
@@ -637,17 +701,15 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                               }));
                               setCurrentStep(3);
                             }}
-                            className={`h-12 relative ${
-                              appointmentData.timeSlot === time
-                                ? "bg-blue-600 text-white"
-                                : booked
-                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            className={`h-12 relative ${appointmentData.timeSlot === time
+                              ? "bg-blue-600 text-white"
+                              : booked
+                                ? "bg-muted text-muted-foreground cursor-not-allowed"
                                 : "hover:border-blue-600"
-                            } ${
-                              popular && !booked
+                              } ${popular && !booked
                                 ? "border-2 border-orange-200"
                                 : ""
-                            }`}
+                              }`}
                           >
                             {time}
                             {popular && !booked && (
@@ -665,8 +727,8 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                           {booked
                             ? "This slot is already booked"
                             : popular
-                            ? "Popular time slot"
-                            : "Available"}
+                              ? "Popular time slot"
+                              : "Available"}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -678,9 +740,8 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
 
           {/* Step 3: Treatment Details */}
           <Card
-            className={`transition-all duration-300 ${
-              currentStep >= 3 ? "opacity-100" : "opacity-60"
-            }`}
+            className={`transition-all duration-300 ${currentStep >= 3 ? "opacity-100" : "opacity-60"
+              }`}
           >
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
@@ -910,7 +971,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 <User className="w-5 h-5 mr-2 text-blue-600" />
                 Patient Information
               </h3>
-              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
                 <div>
                   <dt className="text-sm text-muted-foreground">Patient</dt>
                   <dd className="font-medium">{patientQuery}</dd>
@@ -928,7 +989,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                 <CalendarIcon className="w-5 h-5 mr-2 text-blue-600" />
                 Appointment Details
               </h3>
-              <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
                 <div>
                   <dt className="text-sm text-muted-foreground">Date</dt>
                   <dd className="font-medium">
@@ -1008,7 +1069,7 @@ export default function BookAppointmentForm({ onCancel = () => {} }) {
                   <MessageCircle className="w-5 h-5 mr-2 text-blue-600" />
                   Additional Notes
                 </h3>
-                <p className="text-muted-foreground p-3 bg-gray-50 rounded-lg">
+                <p className="text-muted-foreground p-3 bg-muted/50 rounded-lg">
                   {previewData.notes}
                 </p>
               </div>

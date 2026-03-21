@@ -1,22 +1,25 @@
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import UserModel from "@/app/model/User.model";
 import clientAdminModel from "@/app/model/clientAdmin.model";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { clientAdminSignupSchema } from "@/app/schemas/api";
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(["SuperAdmin", "Admin"]);
+  if ("error" in authResult) return authResult.error;
+
   await dbConnect(); // Ensure the DB connection is established
 
   try {
-    const body = await request.json();
-    const { fullName, email, password, contactNumber, address } = body;
+    const parsed = await parseJson(request, clientAdminSignupSchema);
+    if ("error" in parsed) return parsed.error;
+    const { fullName, email, password, contactNumber, address } = parsed.data;
 
     // 1. Check if a user with the given email already exists.
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
-      return NextResponse.json(
-        { message: "User with this email already exists." },
-        { status: 400 }
-      );
+      return errorResponse(400, "User with this email already exists.");
     }
 
     // 2. Create the user in the User model with role "clientAdmin"
@@ -37,25 +40,20 @@ export async function POST(request: Request) {
     });
 
     // 4. Return a success response
-    return NextResponse.json(
+    return successResponse(
       {
         message: "Client Admin created successfully",
         user: newUser,
         clientAdmin: newClientAdmin,
       },
-      { status: 201 }
+      201
     );
   } catch (error: unknown) {
     console.error("Error during client admin signup:", error);
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error during client admin signup:", error: error.message },
-        { status: 500 }
-      );
-    }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
+    return errorResponse(
+      500,
+      "Error during client admin signup",
+      error instanceof Error ? error.message : "Unknown error occurred"
     );
   }
 }

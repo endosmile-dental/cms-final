@@ -1,17 +1,21 @@
-import { NextResponse } from "next/server";
 import twilio from "twilio";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { sendSmsSchema } from "@/app/schemas/api";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { phoneNumber, message } = body;
+    const authResult = await requireAuth([
+      "Doctor",
+      "Admin",
+      "SuperAdmin",
+      "clientAdmin",
+    ]);
+    if ("error" in authResult) return authResult.error;
 
-    if (!phoneNumber || !message) {
-      return NextResponse.json(
-        { error: "Missing phoneNumber or message" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJson(request, sendSmsSchema);
+    if ("error" in parsed) return parsed.error;
+    const { phoneNumber, message } = parsed.data;
 
     const client = twilio(
       process.env.TWILIO_ACCOUNT_SID!,
@@ -26,21 +30,14 @@ export async function POST(request: Request) {
 
     console.log(`SMS sent to ${phoneNumber}: ${response.sid}`);
 
-    return NextResponse.json(
-      { success: true, sid: response.sid },
-      { status: 200 }
-    );
+    return successResponse({ sid: response.sid }, 200);
   } catch (error: unknown) {
     console.error("Twilio SMS Error:", error);
-
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to send SMS. Please try again later.",
-      },
-      { status: 500 }
+    return errorResponse(
+      500,
+      error instanceof Error
+        ? error.message
+        : "Failed to send SMS. Please try again later."
     );
   }
 }

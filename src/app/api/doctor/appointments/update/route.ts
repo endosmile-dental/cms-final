@@ -1,50 +1,41 @@
 // app/api/doctor/appointments/update/route.ts
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
+import { requireAuth } from "@/app/utils/authz";
+import DoctorModel from "@/app/model/Doctor.model";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { updateAppointmentSchema } from "@/app/schemas/api";
 
 export async function PUT(request: Request) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     // Establish database connection
     await dbConnect();
 
-    // Parse request body
-    const body = await request.json();
-
-    // Ensure the appointment _id is provided in the request body.
-    if (!body._id) {
-      return NextResponse.json(
-        { error: "Missing appointment _id in request body" },
-        { status: 400 }
-      );
-    }
-
-    // Optional: Validate required fields (e.g., appointmentDate, status, consultationType)
-    if (!body.appointmentDate || !body.status || !body.consultationType) {
-      return NextResponse.json(
-        {
-          error:
-            "Missing required fields: appointmentDate, status, or consultationType",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Ensure treatments and teeth are arrays
-    if (body.treatments && !Array.isArray(body.treatments)) {
-      return NextResponse.json(
-        { error: "Treatments should be an array" },
-        { status: 400 }
-      );
-    }
-    if (body.teeth && !Array.isArray(body.teeth)) {
-      return NextResponse.json(
-        { error: "Teeth should be an array" },
-        { status: 400 }
-      );
-    }
+    const parsed = await parseJson(request, updateAppointmentSchema);
+    if ("error" in parsed) return parsed.error;
+    const body = parsed.data;
 
     const appointmentId = body._id;
+
+    if (user.role === "Doctor") {
+      const doctor = await DoctorModel.findOne({ userId: user.id }).select("_id");
+      if (!doctor) {
+        return errorResponse(404, "Doctor not found");
+      }
+
+      const existingAppointment = await AppointmentModel.findById(appointmentId).select("doctor");
+      if (!existingAppointment) {
+        return errorResponse(404, "Appointment not found");
+      }
+
+      if (existingAppointment.doctor.toString() !== doctor._id.toString()) {
+        return errorResponse(403, "Forbidden");
+      }
+    }
 
     // Update the appointment document with the provided body fields; { new: true } returns the updated document.
     const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
@@ -66,24 +57,15 @@ export async function PUT(request: Request) {
     );
 
     if (!updatedAppointment) {
-      return NextResponse.json(
-        { error: "Appointment not found" },
-        { status: 404 }
-      );
+      return errorResponse(404, "Appointment not found");
     }
 
-    return NextResponse.json(
-      { appointment: updatedAppointment },
-      { status: 200 }
-    );
+    return successResponse({ appointment: updatedAppointment }, 200);
   } catch (error: unknown) {
     console.error("Error updating appointment:", error);
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return errorResponse(500, error.message);
     }
-    return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

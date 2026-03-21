@@ -19,6 +19,7 @@ import { Patient, selectPatients } from "@/app/redux/slices/patientSlice";
 import { ProfileData } from "@/app/redux/slices/profileSlice";
 import { FilePlus2, Loader2, X } from "lucide-react";
 import { createLabWork } from "@/app/redux/slices/labWorkSlice";
+import Link from "next/link";
 
 interface AddLabWorkFormProps {
   onClose: () => void;
@@ -264,17 +265,40 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
           placeholder="Search by Patient ID or Name"
         />
         {filteredSuggestions.length > 0 && (
-          <ul className="absolute bg-white z-10 w-full border rounded mt-2 max-h-40 overflow-y-auto">
+          <ul className="absolute bg-card text-card-foreground z-10 w-full border border-border rounded mt-2 max-h-40 overflow-y-auto">
             {filteredSuggestions.map((p) => (
               <li
                 key={p._id}
-                className="p-2 cursor-pointer hover:bg-gray-200"
+                className="p-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
                 onClick={() => handleSelectPatient(p)}
               >
                 {p.fullName} ({p.PatientId})
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Fallback UI for no search results */}
+        {patientQuery.trim() !== "" && filteredSuggestions.length === 0 && (
+          <div className="absolute z-10 w-full mt-2 bg-card border border-dashed border-border rounded-lg shadow-lg p-4 text-center">
+            <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 bg-muted/50 rounded-full">
+              <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">Patient not found</p>
+            <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
+              <Button
+                type="button"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                onClick={() => {
+                  console.log("clicked")
+                }}
+              >
+                Register New Patient
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
@@ -429,7 +453,7 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
         <div className="flex items-center gap-2">
           <Label
             htmlFor="attachments"
-            className="flex items-center gap-1 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100"
+            className="flex items-center gap-1 px-4 py-2 border border-border rounded-md cursor-pointer bg-accent hover:bg-accent/80 transition-colors"
           >
             <FilePlus2 size={16} /> Add Files
           </Label>
@@ -459,7 +483,7 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
             {formData.attachments.map((file, index) => (
               <li
                 key={index}
-                className="flex items-center justify-between text-sm text-gray-600"
+                className="flex items-center justify-between text-sm text-muted-foreground"
               >
                 <span>
                   {file.name} ({(file.size / 1024).toFixed(2)} KB)

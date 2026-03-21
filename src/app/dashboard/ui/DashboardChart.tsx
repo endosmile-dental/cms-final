@@ -9,25 +9,21 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface DataPoint {
-  month: string;
-  users: number;
-}
-
 interface DashboardChartProps {
   title?: string;
-  data?: DataPoint[];
+  data: Array<Record<string, number | string>>;
+  xKey: string; // dynamic x axis key
+  lines: {
+    dataKey: string;
+    stroke?: string;
+  }[];
 }
 
 export default function DashboardChart({
-  title = "User Growth",
-  data = [
-    { month: "Jan", users: 100 },
-    { month: "Feb", users: 200 },
-    { month: "Mar", users: 300 },
-    { month: "Apr", users: 500 },
-    { month: "May", users: 700 },
-  ],
+  title = "Chart",
+  data,
+  xKey,
+  lines,
 }: DashboardChartProps) {
   return (
     <Card className="p-2 flex flex-col justify-center items-start">
@@ -38,11 +34,18 @@ export default function DashboardChart({
         <ResponsiveContainer width="100%" height={300} className="-ml-8 mt-4">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickFormatter={(value) => value.split(" ")[0]} // Feb
-            />
+            <XAxis dataKey={xKey} />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="users" stroke="#8884d8" />
+
+            {lines.map((line, index) => (
+              <Line
+                key={index}
+                type="monotone"
+                dataKey={line.dataKey}
+                stroke={line.stroke || "#8884d8"}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

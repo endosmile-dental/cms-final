@@ -3,15 +3,22 @@ import ClinicModel from "@/app/model/Clinic.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import UserModel from "@/app/model/User.model";
 import dbConnect from "@/app/utils/dbConnect";
-import { NextResponse } from "next/server";
+import { isElevatedRole, requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
+import { addDoctorSchema } from "@/app/schemas/api";
 
 export async function POST(request: Request) {
+  const authResult = await requireAuth(["clientAdmin", "Admin", "SuperAdmin"]);
+  if ("error" in authResult) return authResult.error;
+  const { user } = authResult;
+
   await dbConnect();
 
   try {
-    const body = await request.json();
+    const parsed = await parseJson(request, addDoctorSchema);
+    if ("error" in parsed) return parsed.error;
     const {
-      userId, // the client admin's userId extracted from the payload
+      userId,
       fullName,
       email,
       password,
@@ -22,17 +29,18 @@ export async function POST(request: Request) {
       gender,
       address,
       qualifications,
-    } = body;
+    } = parsed.data;
 
     console.log(userId);
+
+    if (userId !== user.id && !isElevatedRole(user.role)) {
+      return errorResponse(403, "Forbidden");
+    }
 
     // 1. Check if a Client Admin exists using userId.
     const clientAdmin = await clientAdminModel.findOne({ userId: userId });
     if (!clientAdmin) {
-      return NextResponse.json(
-        { message: "Client Admin not found." },
-        { status: 404 }
-      );
+      return errorResponse(404, "Client Admin not found.");
     }
 
     // 2. Check if any Clinic exists that is associated with this Client Admin.
@@ -41,10 +49,7 @@ export async function POST(request: Request) {
       clientAdminId: clientAdmin._id,
     });
     if (!clinic) {
-      return NextResponse.json(
-        { message: "No clinic found for this Client Admin." },
-        { status: 404 }
-      );
+      return errorResponse(404, "No clinic found for this Client Admin.");
     }
 
     // 3. Create a new User document for the doctor.
@@ -76,25 +81,20 @@ export async function POST(request: Request) {
         : [],
     });
 
-    return NextResponse.json(
+    return successResponse(
       {
         message: "Doctor created successfully.",
         user: newUser,
         doctor: newDoctor,
       },
-      { status: 201 }
+      201
     );
   } catch (error: unknown) {
     console.error("Error creating doctor:", error);
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error creating doctor", error: error.message },
-        { status: 500 }
-      );
-    }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
+    return errorResponse(
+      500,
+      "Error creating doctor",
+      error instanceof Error ? error.message : "Unknown error occurred"
     );
   }
 }

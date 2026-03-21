@@ -5,7 +5,7 @@ export interface Stat {
   title: string;
   value: string;
   icon: React.ReactNode;
-  color: string;
+  color?: string;
   LinkURL?: string;
   onClickFunction?: () => void;
 }
@@ -26,7 +26,8 @@ export default function DashboardCards({ stats }: DashboardCardsProps) {
         const mobileTitle = words.length > 1 ? words[1] : stat.title;
 
         const isClickable = Boolean(stat.LinkURL || stat.onClickFunction);
-        const cardClasses = `relative transition-all duration-200 ease-in-out border border-gray-100 rounded-xl overflow-hidden ${
+        const accentColor = stat.color || "bg-primary";
+        const cardClasses = `relative transition-all duration-200 ease-in-out border border-border rounded-xl overflow-hidden ${
           isClickable
             ? "hover:-translate-y-1 hover:shadow-lg cursor-pointer"
             : "cursor-default opacity-90"
@@ -37,7 +38,7 @@ export default function DashboardCards({ stats }: DashboardCardsProps) {
             <CardHeader className="pb-2">
               <CardTitle>
                 <div
-                  className={`flex items-center gap-1 ${stat.color} rounded-lg`}
+                  className={`flex items-center gap-1 ${accentColor} rounded-lg`}
                 >
                   <span className="p-3 rounded-lg backdrop-blur-sm hidden md:block">
                     {stat.icon}
@@ -52,14 +53,11 @@ export default function DashboardCards({ stats }: DashboardCardsProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className={`font-bold text-gray-900 ${textSize}`}>
+              <p className={`font-bold text-foreground ${textSize}`}>
                 {stat.value}
               </p>
               <div
-                className={`h-1.5 w-8 mt-4 rounded-full ${stat.color.replace(
-                  "text",
-                  "bg"
-                )}`}
+                className={`h-1.5 w-8 mt-4 rounded-full ${accentColor}`}
               />
             </CardContent>
           </Card>

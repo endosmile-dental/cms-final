@@ -1,9 +1,11 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
 export type ConsultationType = "New" | "Follow-up";
 export type AppointmentStatus = "Scheduled" | "Completed" | "Cancelled";
-export type PaymentStatus = "Pending" | "Paid" | "Refunded";
+export type PaymentStatus = "Pending" | "Paid" | "Partial" | "Refunded";
 
 export interface Appointment {
   _id: string;
@@ -32,6 +34,35 @@ interface AppointmentState {
   loading: boolean;
   error: string | null;
 }
+
+const normalizeDate = (value: unknown): string | undefined => {
+  if (!value) return undefined;
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object" && "toISOString" in value) {
+    try {
+      return (value as Date).toISOString();
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+};
+
+const normalizeAppointment = (appointment: Appointment): Appointment => ({
+  ...appointment,
+  appointmentDate:
+    normalizeDate(appointment.appointmentDate) ?? "",
+  createdAt: normalizeDate(appointment.createdAt) ?? "",
+  updatedAt: normalizeDate(appointment.updatedAt) ?? "",
+  rescheduledAt:
+    normalizeDate(appointment.rescheduledAt) ?? undefined,
+  cancelledAt:
+    normalizeDate(appointment.cancelledAt) ?? undefined,
+});
+
+const normalizeAppointments = (appointments: Appointment[]) =>
+  appointments.map(normalizeAppointment);
 
 const initialState: AppointmentState = {
   appointments: [],
@@ -65,14 +96,10 @@ export const fetchAppointments = createAsyncThunk(
     try {
       const response = await fetch(url, { method: "GET", headers });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(
-          errorData.error || "Failed to fetch appointments"
-        );
-      }
-
-      const data = await response.json();
+      const payload = (await response.json()) as ApiResponse<{
+        appointments: Appointment[];
+      }>;
+      const data = unwrapApiResponse(payload);
       return data.appointments as Appointment[];
     } catch {
       return rejectWithValue("An error occurred while fetching appointments");
@@ -84,8 +111,7 @@ export const fetchAppointments = createAsyncThunk(
 export const createAppointment = createAsyncThunk(
   "appointment/createAppointment",
   async (
-    appointmentData: Omit<Appointment, "_id" | "createdAt" | "updatedAt">,
-    thunkAPI
+    appointmentData: Omit<Appointment, "_id" | "createdAt" | "updatedAt">
   ) => {
     const response = await fetch("/api/doctor/appointments/add", {
       method: "POST",
@@ -94,10 +120,10 @@ export const createAppointment = createAsyncThunk(
       },
       body: JSON.stringify(appointmentData),
     });
-    if (!response.ok) {
-      return thunkAPI.rejectWithValue("Failed to create appointment");
-    }
-    const data = await response.json();
+    const payload = (await response.json()) as ApiResponse<{
+      appointment: Appointment;
+    }>;
+    const data = unwrapApiResponse(payload);
     return data.appointment as Appointment;
   }
 );
@@ -105,7 +131,7 @@ export const createAppointment = createAsyncThunk(
 // Async thunk to update (edit) an appointment on the server
 export const editAppointment = createAsyncThunk(
   "appointment/editAppointment",
-  async (appointment: Appointment, thunkAPI) => {
+  async (appointment: Appointment) => {
     const response = await fetch(`/api/doctor/appointments/update`, {
       method: "PUT",
       headers: {
@@ -113,13 +139,10 @@ export const editAppointment = createAsyncThunk(
       },
       body: JSON.stringify(appointment),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      return thunkAPI.rejectWithValue(
-        errorData.error || "Failed to update appointment"
-      );
-    }
-    const data = await response.json();
+    const payload = (await response.json()) as ApiResponse<{
+      appointment: Appointment;
+    }>;
+    const data = unwrapApiResponse(payload);
     return data.appointment as Appointment;
   }
 );
@@ -127,7 +150,7 @@ export const editAppointment = createAsyncThunk(
 // Async thunk to delete an appointment on the server
 export const removeAppointment = createAsyncThunk(
   "appointment/removeAppointment",
-  async (appointmentId: string, thunkAPI) => {
+  async (appointmentId: string) => {
     const response = await fetch(
       `/api/doctor/appointments/delete/${appointmentId}`,
       {
@@ -137,13 +160,11 @@ export const removeAppointment = createAsyncThunk(
         },
       }
     );
-    if (!response.ok) {
-      const errorData = await response.json();
-      return thunkAPI.rejectWithValue(
-        errorData.error || "Failed to delete appointment"
-      );
-    }
-    return appointmentId;
+    const payload = (await response.json()) as ApiResponse<{
+      id: string;
+    }>;
+    const data = unwrapApiResponse(payload);
+    return data.id ?? appointmentId;
   }
 );
 
@@ -160,15 +181,11 @@ export const fetchAvailability = createAsyncThunk<
         `/api/patient/appointments/availability?doctorId=${doctorId}&date=${date}`
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(
-          errorData.message || "Availability check failed"
-        );
-      }
-
-      const data = await response.json();
-      return data.bookedSlots; // Directly access bookedSlots from response
+      const payload = (await response.json()) as ApiResponse<{
+        bookedSlots: string[];
+      }>;
+      const data = unwrapApiResponse(payload);
+      return data.bookedSlots;
     } catch (error) {
       console.error("Error checking availability:", error);
       return rejectWithValue("Error checking availability");
@@ -180,9 +197,15 @@ const appointmentSlice = createSlice({
   name: "appointment",
   initialState,
   reducers: {
+    // Hydration action for SSR data
+    hydrateAppointments(state, action: PayloadAction<Appointment[]>) {
+      state.appointments = normalizeAppointments(action.payload);
+      state.loading = false;
+      state.error = null;
+    },
     // Synchronous action for adding an appointment.
     addAppointment(state, action: PayloadAction<Appointment>) {
-      state.appointments.push(action.payload);
+      state.appointments.push(normalizeAppointment(action.payload));
     },
     // Synchronous update action now accepts an Appointment directly.
     updateAppointment(state, action: PayloadAction<Appointment>) {
@@ -190,7 +213,7 @@ const appointmentSlice = createSlice({
         (appt) => appt._id === action.payload._id
       );
       if (index !== -1) {
-        state.appointments[index] = action.payload;
+        state.appointments[index] = normalizeAppointment(action.payload);
       }
     },
     // Synchronous delete action.
@@ -211,7 +234,7 @@ const appointmentSlice = createSlice({
         fetchAppointments.fulfilled,
         (state, action: PayloadAction<Appointment[]>) => {
           state.loading = false;
-          state.appointments = action.payload;
+          state.appointments = normalizeAppointments(action.payload);
         }
       )
       .addCase(fetchAppointments.rejected, (state, action) => {
@@ -222,7 +245,7 @@ const appointmentSlice = createSlice({
       .addCase(
         createAppointment.fulfilled,
         (state, action: PayloadAction<Appointment>) => {
-          state.appointments.push(action.payload);
+          state.appointments.push(normalizeAppointment(action.payload));
         }
       )
       .addCase(createAppointment.rejected, (state, action) => {
@@ -237,7 +260,7 @@ const appointmentSlice = createSlice({
             (appointment) => appointment._id === action.payload._id
           );
           if (index !== -1) {
-            state.appointments[index] = action.payload;
+            state.appointments[index] = normalizeAppointment(action.payload);
           }
         }
       )
@@ -267,7 +290,7 @@ const appointmentSlice = createSlice({
   },
 });
 
-export const { addAppointment, updateAppointment, deleteAppointment } =
+export const { addAppointment, updateAppointment, deleteAppointment, hydrateAppointments } =
   appointmentSlice.actions;
 export const selectAppointments = (state: RootState) =>
   state.appointment.appointments;

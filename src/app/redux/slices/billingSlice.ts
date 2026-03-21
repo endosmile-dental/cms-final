@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
+import type { ApiResponse } from "@/app/types/api";
+import { unwrapApiResponse } from "@/app/utils/apiClient";
 
 /**
  * Interface for an individual treatment item.
@@ -51,7 +53,7 @@ const initialState: BillingState = {
 };
 
 interface CreateBillingArgs {
-  billingData: unknown;
+  billingData: Partial<BillingRecord>;
   doctorId: string;
 }
 
@@ -82,12 +84,10 @@ export const updateBillingRecord = createAsyncThunk<
         body: JSON.stringify(updatedBillingData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.error);
-      }
-
-      const data = await response.json();
+      const payload = (await response.json()) as ApiResponse<{
+        billing: BillingRecord;
+      }>;
+      const data = unwrapApiResponse(payload);
       return data.billing as BillingRecord;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -96,7 +96,7 @@ export const updateBillingRecord = createAsyncThunk<
         return rejectWithValue("An unexpected error occurred");
       }
     }
-  }
+  },
 );
 
 /**
@@ -119,12 +119,10 @@ export const createBilling = createAsyncThunk<
         body: JSON.stringify(billingData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue(errorData.error);
-      }
-
-      const data = await response.json();
+      const payload = (await response.json()) as ApiResponse<{
+        billing: BillingRecord;
+      }>;
+      const data = unwrapApiResponse(payload);
       return data.billing as BillingRecord;
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -133,7 +131,7 @@ export const createBilling = createAsyncThunk<
         console.error("An unexpected error occurred");
       }
     }
-  }
+  },
 );
 
 /**
@@ -165,16 +163,11 @@ export const fetchBillings = createAsyncThunk<
       headers,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      return rejectWithValue(errorData.error);
-    }
-
-    const data = await response.json();
-
-    return role === "Doctor"
-      ? (data.billings as BillingRecord[])
-      : (data.billings as BillingRecord[]);
+    const payload = (await response.json()) as ApiResponse<{
+      billings: BillingRecord[];
+    }>;
+    const data = unwrapApiResponse(payload);
+    return data.billings as BillingRecord[];
   } catch {
     return rejectWithValue("Failed to fetch billings");
   }
@@ -187,12 +180,17 @@ const billingSlice = createSlice({
   name: "billing",
   initialState,
   reducers: {
+    hydrateBillings(state, action: PayloadAction<BillingRecord[]>) {
+      state.billingRecords = action.payload;
+      state.loading = false;
+      state.error = null;
+    },
     addBilling(state, action: PayloadAction<BillingRecord>) {
       state.billingRecords.push(action.payload);
     },
     updateBilling(state, action: PayloadAction<BillingRecord>) {
       const index = state.billingRecords.findIndex(
-        (billing) => billing._id === action.payload._id
+        (billing) => billing._id === action.payload._id,
       );
       if (index !== -1) {
         state.billingRecords[index] = action.payload;
@@ -200,7 +198,7 @@ const billingSlice = createSlice({
     },
     deleteBilling(state, action: PayloadAction<string>) {
       state.billingRecords = state.billingRecords.filter(
-        (billing) => billing._id !== action.payload
+        (billing) => billing._id !== action.payload,
       );
     },
   },
@@ -214,7 +212,7 @@ const billingSlice = createSlice({
       (state, action: PayloadAction<BillingRecord[]>) => {
         state.loading = false;
         state.billingRecords = action.payload;
-      }
+      },
     );
     builder.addCase(fetchBillings.rejected, (state, action) => {
       state.loading = false;
@@ -244,12 +242,12 @@ const billingSlice = createSlice({
       (state, action: PayloadAction<BillingRecord>) => {
         state.loading = false;
         const index = state.billingRecords.findIndex(
-          (billing) => billing._id === action.payload._id
+          (billing) => billing._id === action.payload._id,
         );
         if (index !== -1) {
           state.billingRecords[index] = action.payload;
         }
-      }
+      },
     );
     builder.addCase(updateBillingRecord.rejected, (state, action) => {
       state.loading = false;
@@ -258,13 +256,12 @@ const billingSlice = createSlice({
   },
 });
 
-export const { addBilling, updateBilling, deleteBilling } =
+export const { addBilling, updateBilling, deleteBilling, hydrateBillings } =
   billingSlice.actions;
 export const selectBillings = (state: RootState) =>
   state.billing.billingRecords;
 export const selectBillingsLoading = (state: RootState) =>
   state.billing.loading;
-export const selectBillingsError = (state: RootState) =>
-  state.billing.error;
+export const selectBillingsError = (state: RootState) => state.billing.error;
 
 export default billingSlice.reducer;

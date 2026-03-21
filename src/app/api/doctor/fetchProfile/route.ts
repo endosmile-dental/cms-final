@@ -1,60 +1,56 @@
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import DoctorModel from "@/app/model/Doctor.model";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
-/**
- * GET route handler for fetching complete doctor details,
- * excluding sensitive data using .select().
- *
- * This function:
- * - Establishes a database connection.
- * - Extracts the doctor's user ID from a custom header ("x-doctor-user-id").
- * - Finds the doctor record in the DoctorModel using the provided user ID,
- *   while excluding sensitive fields.
- * - Returns the safe doctor details as JSON.
- *
- * @param request Request object.
- * @returns A NextResponse containing the doctor details or an error message.
- */
 export async function GET(request: Request) {
-  try {
-    await dbConnect();
-    const doctorUserId = request.headers.get("x-doctor-user-id");
+  const startedAt = Date.now();
 
-    if (!doctorUserId) {
-      return NextResponse.json(
-        { error: "Doctor user id not provided" },
-        { status: 400 }
+  try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
+    await dbConnect();
+
+    const userIdResult = resolveUserIdFromHeader(
+      request,
+      user,
+      "x-doctor-user-id",
+    );
+    if ("error" in userIdResult) return userIdResult.error;
+    const { userId: doctorUserId } = userIdResult;
+
+    const doctor = await DoctorModel.findOne({ userId: doctorUserId })
+      .select(
+        "_id clinicId fullName specialization specializationDetails contactNumber address qualifications experienceYears gender rating workingHours createdAt updatedAt",
+      )
+      .lean();
+
+    if (!doctor?._id) {
+      return errorResponse(404, "Doctor not found");
+    }
+
+    const transformedDoctor = {
+      ...doctor,
+      _id: doctor._id?.toString(),
+      clinicId: doctor.clinicId?.toString(),
+      createdAt: doctor.createdAt?.toISOString(),
+      updatedAt: doctor.updatedAt?.toISOString(),
+    };
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[perf] GET /api/doctor/fetchProfile ${Date.now() - startedAt}ms`,
       );
     }
 
-    // Find doctor and exclude sensitive fields
-    const doctor = await DoctorModel.findOne({ userId: doctorUserId }).select(
-      "-permissions -userId"
-    );
-
-    if (!doctor) {
-      return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
-    }
-
-    // Convert ObjectId to String before sending response
-    const transformedDoctor = {
-      ...doctor.toObject(),
-      _id: doctor._id.toString(),
-      clinicId: doctor.clinicId.toString(),
-      createdAt: doctor.createdAt.toISOString(),
-      updatedAt: doctor.updatedAt.toISOString(),
-    };
-
-    return NextResponse.json({ doctor: transformedDoctor }, { status: 200 });
+    return successResponse({ doctor: transformedDoctor }, 200);
   } catch (error: unknown) {
     console.error("Error fetching doctor details:", error);
     if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return errorResponse(500, error.message);
     }
-    return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

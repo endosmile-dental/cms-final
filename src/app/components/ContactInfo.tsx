@@ -11,7 +11,7 @@ const ContactInfo: React.FC<ContactInfoProps> = ({ icon, title, content }) => (
   <div>
     <SectionHeader icon={icon} title={title} />
     <ul className="space-y-3">
-      <li className="p-2 bg-blue-50 rounded">{content}</li>
+      <li className="p-2 bg-muted rounded">{content}</li>
     </ul>
   </div>
 );

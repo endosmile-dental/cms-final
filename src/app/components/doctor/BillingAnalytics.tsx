@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/app/redux/store/hooks";
-import { selectBillings } from "@/app/redux/slices/billingSlice";
+import { BillingRecord, selectBillings } from "@/app/redux/slices/billingSlice";
 import { selectPatients } from "@/app/redux/slices/patientSlice";
+import { Patient } from "@/app/redux/slices/patientSlice";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 // Helper functions for date calculations
 const getStartOfPeriod = (date: Date, period: string) => {
@@ -41,9 +43,30 @@ const getStartOfPeriod = (date: Date, period: string) => {
   return d;
 };
 
-export default function BillingAnalytics() {
+const normalizeId = (id: unknown): string | null => {
+  if (id === null || id === undefined) return null;
+  if (typeof id === "string") return id;
+  if (typeof id === "number") return String(id);
+  if (typeof id === "object" && "toString" in id) {
+    const value = id.toString();
+    return value && value !== "[object Object]" ? value : null;
+  }
+  return null;
+};
+
+export default function BillingAnalytics({ 
+  initialPatients, 
+  initialBillings 
+}: { 
+  initialPatients?: Patient[]; 
+  initialBillings?: BillingRecord[]; 
+} = {}) {
   const billings = useAppSelector(selectBillings);
   const patients = useAppSelector(selectPatients);
+  
+  // Use initial props if provided and not empty, otherwise fall back to Redux store
+  const effectivePatients = (initialPatients && initialPatients.length > 0) ? initialPatients : patients;
+  const effectiveBillings = (initialBillings && initialBillings.length > 0) ? initialBillings : billings;
   const [timePeriod, setTimePeriod] = useState<"day" | "week" | "month">(
     "week"
   );
@@ -107,7 +130,7 @@ export default function BillingAnalytics() {
     }
 
     // Aggregate billing counts
-    billings.forEach((billing) => {
+    billings.forEach((billing: BillingRecord) => {
       const billingDate = new Date(billing.date);
       const periodStart = getStartOfPeriod(billingDate, timePeriod);
       const periodKey = periodStart.toISOString();
@@ -148,26 +171,35 @@ export default function BillingAnalytics() {
     const patientCounts: Record<string, number> = {};
     const patientData = [];
 
-    // Safely calculate patient counts
-    billings.forEach((billing) => {
-      patientCounts[billing.patientId] =
-        (patientCounts[billing.patientId] || 0) + 1;
+    // Safely calculate patient counts using effective billings
+    effectiveBillings.forEach((billing: BillingRecord) => {
+      const normalizedPatientId = normalizeId(billing?.patientId);
+      if (!normalizedPatientId) return;
+
+      patientCounts[normalizedPatientId] =
+        (patientCounts[normalizedPatientId] || 0) + 1;
     });
 
     // Create patient data with safe values
     for (const [patientId, count] of Object.entries(patientCounts)) {
-      const patient = patients.find((p) => p._id === patientId);
-      console.log("Processing patientId:", patientId, "Patient data:", patient);
-      const patientBillings = billings.filter((b) => b.patientId === patientId);
-
-      // Sort billings safely
+      // Convert patientId to string for comparison (handle ObjectId vs string)
+      const patientIdStr = patientId.toString();
+      
+      const patient = effectivePatients.find(
+        (p) => normalizeId(p?._id) === patientIdStr
+      );
+      
+      // Get patient billings and sort safely
+      const patientBillings = effectiveBillings.filter(
+        (b: BillingRecord) => normalizeId(b?.patientId) === patientIdStr
+      );
       patientBillings.sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
       patientData.push({
-        patientId: patient?.PatientId || patientId,
-        name: patient ? patient.fullName : "N/A",
+        patientId: patient?.PatientId || patientIdStr,
+        name: patient?.fullName || "Unknown Patient",
         count,
         lastBillingDate: patientBillings[0]?.date || null,
       });
@@ -211,7 +243,7 @@ export default function BillingAnalytics() {
         lowFrequencyPatients,
       },
     };
-  }, [billings, patients]);
+  }, [effectiveBillings, effectivePatients]);
 
   // Filtered patient data based on search
   const filteredPatients = useMemo(() => {
@@ -343,31 +375,31 @@ export default function BillingAnalytics() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <Card className="bg-blue-50">
+            <Card className="bg-blue-50/50 dark:bg-blue-900/20 border-border">
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">{currentTotal}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Total Billings (Current)
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-green-50">
+            <Card className="bg-green-50/50 dark:bg-green-900/20 border-border">
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">{previousTotal}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Total Billings (Comparison)
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-purple-50">
+            <Card className="bg-purple-50/50 dark:bg-purple-900/20 border-border">
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">{peakBillings}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   Peak Billings (Current)
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-orange-50">
+            <Card className="bg-orange-50/50 dark:bg-orange-900/20 border-border">
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">
                   {growthRate.toLocaleString(undefined, {
@@ -375,7 +407,7 @@ export default function BillingAnalytics() {
                     minimumFractionDigits: 1,
                   })}
                 </div>
-                <div className="text-sm text-gray-600">Growth Rate</div>
+                <div className="text-sm text-muted-foreground">Growth Rate</div>
               </CardContent>
             </Card>
           </div>
@@ -433,36 +465,36 @@ export default function BillingAnalytics() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4 pl-5">
-                    <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="bg-green-50/50 dark:bg-green-900/20 border-border p-3 rounded-lg">
                       <div className="text-xl font-bold">
                         {patientBillingAnalysis.stats.avgFrequency}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Avg Bills per Patient
                       </div>
                     </div>
-                    <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="bg-blue-50/50 dark:bg-blue-900/20 border-border p-3 rounded-lg">
                       <div className="text-xl font-bold">
                         {patientBillingAnalysis.stats.highFrequencyPatients}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         High Frequency Patients
                       </div>
                     </div>
 
-                    <div className="bg-blue-50 p-3 rounded-lg">
+                    <div className="bg-blue-50/50 dark:bg-blue-900/20 border-border p-3 rounded-lg">
                       <div className="text-xl font-bold">
                         {patientBillingAnalysis.stats.mediumFrequencyPatients}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Medium Frequency Patients
                       </div>
                     </div>
-                    <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="bg-green-50/50 dark:bg-green-900/20 border-border p-3 rounded-lg">
                       <div className="text-xl font-bold">
                         {patientBillingAnalysis.stats.lowFrequencyPatients}
                       </div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-muted-foreground">
                         Low Frequency Patients
                       </div>
                     </div>
@@ -480,13 +512,13 @@ export default function BillingAnalytics() {
                 <CardContent>
                   <div className="h-[480px] overflow-auto">
                     <table className="w-full">
-                      <thead className="sticky top-0 bg-white">
-                        <tr className="border-b">
-                          <th className="text-left p-3">Patient</th>
-                          <th className="text-left p-3">ID</th>
-                          <th className="text-right p-3">Bill Count</th>
-                          <th className="text-right p-3">Last Billing</th>
-                          <th className="text-right p-3">Frequency Tier</th>
+                      <thead className="sticky top-0 bg-background">
+                        <tr className="border-b border-border">
+                          <th className="text-left p-3 text-muted-foreground">Patient</th>
+                          <th className="text-left p-3 text-muted-foreground">ID</th>
+                          <th className="text-right p-3 text-muted-foreground">Bill Count</th>
+                          <th className="text-right p-3 text-muted-foreground">Last Billing</th>
+                          <th className="text-right p-3 text-muted-foreground">Frequency Tier</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -502,17 +534,17 @@ export default function BillingAnalytics() {
 
                           const tierColor =
                             tier === "VIP"
-                              ? "bg-purple-100 text-purple-800"
+                              ? "bg-purple-100/50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300"
                               : tier === "Frequent"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-blue-100/50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                               : tier === "Regular"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800";
+                              ? "bg-green-100/50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                              : "bg-gray-100/50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300";
 
                           return (
                             <tr
                               key={index}
-                              className="border-b hover:bg-gray-50"
+                              className="border-b border-border hover:bg-accent"
                             >
                               <td className="p-3">{patient.name}</td>
                               <td className="p-3">{patient.patientId}</td>
@@ -529,11 +561,9 @@ export default function BillingAnalytics() {
                                   : "N/A"}
                               </td>
                               <td className="p-3 text-right">
-                                <span
-                                  className={`text-xs px-2 py-1 rounded-full ${tierColor}`}
-                                >
+                                <Badge variant="secondary" className={tierColor}>
                                   {tier}
-                                </span>
+                                </Badge>
                               </td>
                             </tr>
                           );
@@ -542,7 +572,7 @@ export default function BillingAnalytics() {
                     </table>
                   </div>
 
-                  <div className="mt-4 text-sm text-gray-600">
+                  <div className="mt-4 text-sm text-muted-foreground">
                     Showing {filteredPatients.length} of{" "}
                     {patientBillingAnalysis.patientData.length} patients
                   </div>

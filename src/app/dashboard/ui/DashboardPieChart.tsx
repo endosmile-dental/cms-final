@@ -19,12 +19,12 @@ interface PieChartData {
 interface DashboardPieChartProps {
   title?: string;
   data:
-    | PieChartData[]
-    | {
-        weekly: PieChartData[];
-        monthly: PieChartData[];
-        yearly: PieChartData[];
-      };
+  | PieChartData[]
+  | {
+    weekly: PieChartData[];
+    monthly: PieChartData[];
+    yearly: PieChartData[];
+  };
   enableTimeFrameSort?: boolean;
   innerRadius?: number;
   showPercentage?: boolean;
@@ -32,23 +32,23 @@ interface DashboardPieChartProps {
 }
 
 const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82ca9d",
-  "#FF6B6B",
-  "#4ECDC4",
-  "#FF9F1C",
-  "#6A0572",
+  "#3b82f6", // Blue
+  "#10b981", // Emerald
+  "#f59e0b", // Amber
+  "#ef4444", // Red
+  "#8b5cf6", // Violet
+  "#06b6d4", // Cyan
+  "#22c55e", // Green
+  "#f97316", // Orange
+  "#a855f7", // Purple
+  "#e11d48", // Pink
 ];
 
 export default function DashboardPieChart({
   title = "Appointment Distribution",
   data,
   enableTimeFrameSort = false,
-  innerRadius = 60,
+  innerRadius = 1,
   showPercentage = true,
   showLegend = true,
 }: DashboardPieChartProps) {
@@ -65,13 +65,15 @@ export default function DashboardPieChart({
 
   const chartData = isTimeFrameData
     ? (
-        data as {
-          weekly: PieChartData[];
-          monthly: PieChartData[];
-          yearly: PieChartData[];
-        }
-      )[timeFrame]
+      data as {
+        weekly: PieChartData[];
+        monthly: PieChartData[];
+        yearly: PieChartData[];
+      }
+    )[timeFrame]
     : (data as PieChartData[]);
+
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <Card className="p-2 h-full">
@@ -114,9 +116,10 @@ export default function DashboardPieChart({
                   label={
                     showPercentage
                       ? ({ name, percent }) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        `${name}: ${(percent * 100).toFixed(0)}%`
                       : ({ name }) => name
                   }
+                  labelLine={false}
                 >
                   {chartData.map((entry, index) => (
                     <Cell
@@ -125,6 +128,24 @@ export default function DashboardPieChart({
                     />
                   ))}
                 </Pie>
+                {/* Center Background Circle */}
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="15"
+                  className="fill-background stroke-border"
+                />
+
+                {/* Center Total Label */}
+                <text
+                  x="50%"
+                  y="50%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="text-md font-semibold fill-foreground"
+                >
+                  {total}
+                </text>
                 <Tooltip
                   formatter={(value) => [`${value}`, "Count"]}
                   labelFormatter={(name) => name}
@@ -135,12 +156,11 @@ export default function DashboardPieChart({
             {showLegend && (
               <div className="flex flex-wrap justify-center mt-4 gap-3">
                 {chartData.map((entry, index) => (
-                  <div key={index} className="flex items-center text-sm">
+                  <div key={entry.name} className="flex items-center text-sm">
                     <div
                       className="w-3 h-3 rounded-full mr-2"
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    {entry.name}: {entry.value}
                   </div>
                 ))}
               </div>

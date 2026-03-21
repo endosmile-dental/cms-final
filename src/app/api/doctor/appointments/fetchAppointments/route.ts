@@ -1,46 +1,53 @@
-import { NextResponse } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 import DoctorModel from "@/app/model/Doctor.model";
+import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function GET(request: Request) {
+  const startedAt = Date.now();
+
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     await dbConnect();
 
-    // Retrieve the doctorUserId from the custom header.
-    const doctorUserId = request.headers.get("x-doctor-user-id");
+    const userIdResult = resolveUserIdFromHeader(
+      request,
+      user,
+      "x-doctor-user-id",
+    );
+    if ("error" in userIdResult) return userIdResult.error;
+    const { userId: doctorUserId } = userIdResult;
 
-    if (!doctorUserId) {
-      return NextResponse.json(
-        { message: "Doctor user id not provided" },
-        { status: 400 }
+    // Indexed lookup by userId + lean payload.
+    const doctor = await DoctorModel.findOne({ userId: doctorUserId })
+      .select("_id")
+      .lean();
+
+    if (!doctor?._id) {
+      return errorResponse(404, "Doctor not found");
+    }
+
+    // Indexed lookup by doctor (see Appointment model index), lean for smaller overhead.
+    const appointments = await AppointmentModel.find({ doctor: doctor._id })
+      .sort({ appointmentDate: 1, timeSlot: 1 })
+      .lean();
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[perf] GET /api/doctor/appointments/fetchAppointments ${Date.now() - startedAt}ms (count=${appointments.length})`,
       );
     }
 
-    // Find the doctor document using the doctor.userId field.
-    const doctor = await DoctorModel.findOne({ userId: doctorUserId });
-    if (!doctor) {
-      return NextResponse.json(
-        { message: "Doctor not found" },
-        { status: 404 }
-      );
-    }
-
-    // Fetch appointments associated with the doctor's _id.
-    const appointments = await AppointmentModel.find({ doctor: doctor._id });
-
-    return NextResponse.json({ appointments });
+    return successResponse({ appointments });
   } catch (error: unknown) {
     console.error("Error fetching appointments:", error);
     if (error instanceof Error) {
-      return NextResponse.json(
-        { message: "Error fetching appointments", error: error.message },
-        { status: 500 }
-      );
+      return errorResponse(500, "Error fetching appointments", error.message);
     }
-    return NextResponse.json(
-      { message: "Unknown error occurred" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Unknown error occurred");
   }
 }

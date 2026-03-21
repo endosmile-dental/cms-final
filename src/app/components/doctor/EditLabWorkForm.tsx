@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useAppDispatch } from "@/app/redux/store/hooks";
 import { updateLabWork } from "@/app/redux/slices/labWorkSlice";
-import { LabWorkItem } from "@/app/dashboard/pages/Doctor/labWork/page";
+import { LabWorkItem } from "@/app/dashboard/pages/Doctor/labWork/LabWorkClient";
 import { Attachment } from "@/app/model/LabWork.model";
 import { FilePlus2, Loader2, Trash2, X } from "lucide-react";
 
@@ -396,7 +396,7 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
                 {existingAttachments.map((attachment) => (
                   <li
                     key={attachment.public_id}
-                    className="flex items-center justify-between border p-2 rounded"
+                    className="flex items-center justify-between border p-2 rounded bg-white dark:bg-gray-800"
                   >
                     <div className="flex items-center">
                       <a
@@ -407,7 +407,7 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
                       >
                         {attachment.original_filename}
                       </a>
-                      <span className="text-xs text-gray-500 ml-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                         ({Math.round(attachment.bytes / 1024)} KB)
                       </span>
                     </div>
@@ -428,7 +428,7 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
 
           {/* Deleted Attachments */}
           {deletedAttachments.length > 0 && (
-            <div className="mb-4 bg-yellow-50 p-3 rounded">
+            <div className="mb-4 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded">
               <h3 className="text-sm font-medium mb-2">Removed Attachments</h3>
               <ul className="space-y-2">
                 {labWork.attachments
@@ -436,11 +436,11 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
                   .map((attachment) => (
                     <li
                       key={attachment.public_id}
-                      className="flex items-center justify-between border p-2 rounded"
+                      className="flex items-center justify-between border p-2 rounded bg-white dark:bg-gray-800"
                     >
                       <div>
                         {attachment.original_filename}
-                        <span className="text-xs text-gray-500 ml-2">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                           ({Math.round(attachment.bytes / 1024)} KB)
                         </span>
                       </div>
@@ -463,7 +463,7 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
             <div className="flex items-center gap-2 mb-2">
               <Label
                 htmlFor="new-attachments"
-                className="flex items-center gap-1 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100"
+                className="flex items-center gap-1 px-4 py-2 border rounded-md cursor-pointer bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
               >
                 <FilePlus2 size={16} /> Add Files
               </Label>
@@ -482,11 +482,11 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
                 {newAttachments.map((file, index) => (
                   <li
                     key={index}
-                    className="flex items-center justify-between border p-2 rounded"
+                    className="flex items-center justify-between border p-2 rounded bg-white dark:bg-gray-800"
                   >
                     <div>
                       {file.name}
-                      <span className="text-xs text-gray-500 ml-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                         ({(file.size / 1024).toFixed(2)} KB)
                       </span>
                     </div>

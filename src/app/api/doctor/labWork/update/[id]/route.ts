@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import LabWorkModel from "@/app/model/LabWork.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { labWorkSchema } from "@/schemas/zobLabWorkSchema";
@@ -7,6 +7,9 @@ import {
   deleteFromCloudinary,
   uploadToCloudinary,
 } from "@/app/utils/cloudinaryUpload";
+import { requireAuth } from "@/app/utils/authz";
+import DoctorModel from "@/app/model/Doctor.model";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 // File validation constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -24,19 +27,36 @@ const ALLOWED_FILE_TYPES = [
 
 export async function PUT(request: NextRequest) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+    const { user } = authResult;
+
     // Extract ID from URL path
     const pathSegments = request.nextUrl.pathname.split("/");
     const id = pathSegments[pathSegments.length - 1];
 
     // Validate ID
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing lab work ID" },
-        { status: 400 }
-      );
+      return errorResponse(400, "Missing lab work ID");
     }
 
     await dbConnect();
+
+    if (user.role === "Doctor") {
+      const doctor = await DoctorModel.findOne({ userId: user.id }).select("_id");
+      if (!doctor) {
+        return errorResponse(404, "Doctor not found");
+      }
+
+      const existingLabWork = await LabWorkModel.findById(id).select("doctorId");
+      if (!existingLabWork) {
+        return errorResponse(404, "Lab work not found");
+      }
+
+      if (existingLabWork.doctorId.toString() !== doctor._id.toString()) {
+        return errorResponse(403, "Forbidden");
+      }
+    }
 
     // Parse FormData instead of JSON
     const formData = await request.formData();
@@ -79,10 +99,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (fileErrors.length > 0) {
-      return NextResponse.json(
-        { error: "File validation failed", details: fileErrors },
-        { status: 400 }
-      );
+      return errorResponse(400, "File validation failed", fileErrors);
     }
 
     // Delete attachments marked for deletion
@@ -146,26 +163,17 @@ export async function PUT(request: NextRequest) {
     );
 
     if (!updatedLabWork) {
-      return NextResponse.json(
-        { error: "Lab work not found" },
-        { status: 404 }
-      );
+      return errorResponse(404, "Lab work not found");
     }
 
-    return NextResponse.json(updatedLabWork, { status: 200 });
+    return successResponse(updatedLabWork, 200);
   } catch (error) {
     console.error("[LABWORK_UPDATE_ERROR]", error);
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: "Validation failed", details: error.errors },
-        { status: 400 }
-      );
+      return errorResponse(400, "Validation failed", error.errors);
     }
 
-    return NextResponse.json(
-      { error: "Failed to update lab work entry" },
-      { status: 500 }
-    );
+    return errorResponse(500, "Failed to update lab work entry");
   }
 }

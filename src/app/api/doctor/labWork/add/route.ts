@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import LabWorkModel from "@/app/model/LabWork.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { labWorkSchema } from "@/schemas/zobLabWorkSchema";
 import { z } from "zod";
 import { uploadToCloudinary } from "@/app/utils/cloudinaryUpload";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, successResponse } from "@/app/utils/api";
 
 // File validation constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -107,17 +109,18 @@ async function createLabWork(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+  if ("error" in authResult) return authResult.error;
+
   const response = await createLabWork(req);
 
   if (!response.success) {
-    return NextResponse.json(
-      {
-        error: response.error,
-        details: response.details || null,
-      },
-      { status: response.status || 500 }
+    return errorResponse(
+      response.status || 500,
+      response.error,
+      response.details || null
     );
   }
 
-  return NextResponse.json(response.data, { status: 201 });
+  return successResponse(response.data, 201);
 }

@@ -8,10 +8,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useDebounce } from "@/app/hooks/useOptimizedRender";
+import { useMemoizedCalculations } from "@/app/hooks/useMemoizedCalculations";
 import {
   Select,
   SelectContent,
@@ -37,7 +39,7 @@ type DataTableProps<T> = {
   enableDateFilter?: boolean;
   dateField?: keyof T;
   filterMode?: "this month" | "this year" | "past year" | "all";
-  onRowClick?: (row: T) => void;
+  onRowClick?: (row: T, event?: React.MouseEvent) => void;
 };
 
 const DataTable = <T extends object>({
@@ -55,9 +57,14 @@ const DataTable = <T extends object>({
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [filterMode, setFilterMode] = useState<
     "this month" | "this year" | "past year" | "all"
   >("all");
+
+  const debouncedSetSearch = useDebounce((value: string) => {
+    setSearch(value);
+  }, 250);
 
   // Helper function to parse dd/mm/yyyy format
   const parseDate = (val: unknown): Date | null => {
@@ -83,7 +90,19 @@ const DataTable = <T extends object>({
     return null;
   };
 
-  const filteredData = useMemo(() => {
+  const filteredData = useMemoizedCalculations(
+    [
+      data,
+      search,
+      sortKey,
+      sortOrder,
+      searchFields,
+      columns,
+      enableDateFilter,
+      dateField,
+      filterMode,
+    ],
+    () => {
     let result = [...data];
 
     // Search implementation
@@ -150,23 +169,17 @@ const DataTable = <T extends object>({
     }
 
     return result;
-  }, [
-    data,
-    search,
-    sortKey,
-    sortOrder,
-    searchFields,
-    columns,
-    enableDateFilter,
-    dateField,
-    filterMode,
-  ]);
+    }
+  );
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(start, start + itemsPerPage);
-  }, [filteredData, currentPage, itemsPerPage]);
+  const paginatedData = useMemoizedCalculations(
+    [filteredData, currentPage, itemsPerPage],
+    () => {
+      const start = (currentPage - 1) * itemsPerPage;
+      return filteredData.slice(start, start + itemsPerPage);
+    }
+  );
 
   const handleSort = (key: keyof T) => {
     if (sortKey === key) {
@@ -182,15 +195,19 @@ const DataTable = <T extends object>({
   }, [search, filterMode]);
 
   return (
-    <div className="space-y-4 bg-white p-4 rounded-lg shadow-lg">
-      <div className="flex justify-between items-center gap-x-2">
+    <div className="space-y-4 bg-card border-border shadow-sm rounded-lg">
+      <div className="flex justify-between items-center gap-x-2 p-4 border-b border-border">
         {/* Conditionally render search bar */}
         <div className="flex gap-x-1">
           {showSearch && (
             <Input
               placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchInput(value);
+                debouncedSetSearch(value);
+              }}
               className="w-full max-w-sm"
             />
           )}
@@ -215,11 +232,13 @@ const DataTable = <T extends object>({
         </div>
 
         {title && (
-          <h2 className="text-base md:text-xl font-semibold">{title}</h2>
+          <h2 className="text-base md:text-xl font-semibold text-foreground">
+            {title}
+          </h2>
         )}
       </div>
 
-      <div className="w-full overflow-x-auto rounded-lg border">
+      <div className="w-full overflow-x-auto rounded-lg border border-border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -247,13 +266,13 @@ const DataTable = <T extends object>({
             {paginatedData.map((row, index) => (
               <TableRow
                 key={index}
-                className={onRowClick ? "hover:bg-muted cursor-pointer" : ""}
-                onClick={() => onRowClick?.(row)}
+                className={onRowClick ? "hover:bg-muted/50 cursor-pointer" : ""}
+                onClick={(event) => onRowClick?.(row, event)}
               >
                 {columns.map((column) => (
                   <TableCell
                     key={String(column.accessorKey)}
-                    className="min-w-[120px]"
+                    className="min-w-[120px] text-foreground"
                   >
                     {column.render
                       ? column.render(row[column.accessorKey], row)
@@ -267,7 +286,7 @@ const DataTable = <T extends object>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center text-gray-500 py-4"
+                  className="text-center text-muted-foreground py-4"
                 >
                   No records found
                 </TableCell>
@@ -277,8 +296,8 @@ const DataTable = <T extends object>({
         </Table>
       </div>
 
-      <div className="flex justify-between items-center mt-2">
-        <span className="text-sm text-gray-600">
+      <div className="flex justify-between items-center mt-2 p-4 border-t border-border">
+        <span className="text-sm text-muted-foreground">
           Page {currentPage} of {totalPages}
         </span>
         <div className="flex gap-2">

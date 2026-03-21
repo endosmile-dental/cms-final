@@ -74,6 +74,9 @@ const LabWorkSchema = new Schema<ILabWork>({
   attachments: [AttachmentSchema],
 });
 
+LabWorkSchema.index({ doctorId: 1, createdAt: -1 });
+LabWorkSchema.index({ patientId: 1, createdAt: -1 });
+
 const LabWorkModel =
   mongoose.models.LabWork || model<ILabWork>("LabWork", LabWorkSchema);
 

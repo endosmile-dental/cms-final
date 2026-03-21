@@ -79,7 +79,7 @@ const BillingSchema: Schema<IBilling> = new Schema(
     address: { type: String },
     status: {
       type: String,
-      enum: ["Pending", "Paid", "Partial", "Cancelled"],
+      enum: ["Pending", "Paid", "Partial", "Refunded"],
       default: "Pending",
     },
   },
@@ -125,6 +125,8 @@ BillingSchema.pre<IBilling>("save", function (next) {
 
   next();
 });
+
+BillingSchema.index({ doctorId: 1, date: -1 });
 
 export default mongoose.models.Billing ||
   model<IBilling>("Billing", BillingSchema);

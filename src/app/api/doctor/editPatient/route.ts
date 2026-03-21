@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import PatientModel from "@/app/model/Patient.model";
 import dbConnect from "@/app/utils/dbConnect";
+import { requireAuth } from "@/app/utils/authz";
+import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
 
 // Define validation schema using Zod
 const editPatientSchema = z.object({
@@ -31,12 +32,15 @@ const editPatientSchema = z.object({
 
 export async function PUT(request: Request) {
   try {
+    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    if ("error" in authResult) return authResult.error;
+
     // Connect to the database
     await dbConnect();
 
-    // Parse and validate request body
-    const body = await request.json();
-    const data = editPatientSchema.parse(body);
+    const parsed = await parseJson(request, editPatientSchema);
+    if ("error" in parsed) return parsed.error;
+    const data = parsed.data;
 
     // Find and update the patient in the database
     const updatedPatient = await PatientModel.findByIdAndUpdate(
@@ -46,21 +50,19 @@ export async function PUT(request: Request) {
     );
 
     if (!updatedPatient) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
+      return errorResponse(404, "Patient not found");
     }
 
-    return NextResponse.json(
+    return successResponse(
       { message: "Patient updated successfully", patient: updatedPatient },
-      { status: 200 }
+      200
     );
   } catch (error) {
     console.error("Error in editPatient route:", error);
-    return NextResponse.json(
-      {
-        message: "Error updating patient",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+    return errorResponse(
+      500,
+      "Error updating patient",
+      error instanceof Error ? error.message : "Unknown error"
     );
   }
 }

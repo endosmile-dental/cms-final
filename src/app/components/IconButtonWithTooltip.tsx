@@ -13,7 +13,7 @@ export default function IconButtonWithTooltip({
   href,
   tooltip,
   icon,
-  hoverBgColor = "#14b8a6", // default teal color
+  hoverBgColor = "bg-teal-500", // default teal color using Tailwind class
   onClick,
 }: IconButtonWithTooltipProps) {
   return (
@@ -21,42 +21,22 @@ export default function IconButtonWithTooltip({
       {href ? (
         <Link href={href}>
           <div
-            style={{
-              transition: "background-color 0.2s ease",
-            }}
-            className="p-1 rounded-full cursor-pointer group-hover:opacity-90"
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor =
-                hoverBgColor;
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.backgroundColor = "";
-            }}
+            className={`p-1 rounded-full cursor-pointer transition-colors duration-200 ${hoverBgColor} hover:opacity-90`}
           >
             {icon}
           </div>
         </Link>
       ) : (
         <div
-          style={{
-            transition: "background-color 0.2s ease",
-          }}
-          className="p-1 rounded-full cursor-pointer group-hover:opacity-90"
+          className={`p-1 rounded-full cursor-pointer transition-colors duration-200 ${hoverBgColor} hover:opacity-90`}
           onClick={onClick}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLDivElement).style.backgroundColor =
-              hoverBgColor;
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLDivElement).style.backgroundColor = "";
-          }}
         >
           {icon}
         </div>
       )}
 
       {/* Tooltip */}
-      <div className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-md whitespace-nowrap z-10">
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform bg-popover text-popover-foreground text-xs px-2 py-1 rounded shadow-md whitespace-nowrap z-10">
         {tooltip}
       </div>
     </div>

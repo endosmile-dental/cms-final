@@ -90,8 +90,8 @@ interface AnalyticsData {
 const KeyMetrics = ({ data }: { data: KeyMetricProps }) => (
   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
     {Object.entries(data).map(([key, value]) => (
-      <div key={key} className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-sm font-semibold text-gray-500 capitalize">
+      <div key={key} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 capitalize">
           {key.replace(/([A-Z])/g, " $1").trim()}
         </h3>
         <p className="text-2xl font-bold mt-1">
@@ -104,7 +104,7 @@ const KeyMetrics = ({ data }: { data: KeyMetricProps }) => (
 );
 
 const DeliveryTrendsChart = ({ data }: { data: DeliveryTrendItem[] }) => (
-  <div className="bg-white p-4 rounded-lg shadow mb-6">
+  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
     <h2 className="text-lg font-bold mb-4">Delivery Trends Forecast</h2>
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={data}>
@@ -142,7 +142,7 @@ const DeliveryTrendsChart = ({ data }: { data: DeliveryTrendItem[] }) => (
 
 const LabPerformanceCharts = ({ data }: { data: LabDistributionItem[] }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
       <h2 className="text-lg font-bold mb-4">Lab Market Share</h2>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
@@ -172,7 +172,7 @@ const LabPerformanceCharts = ({ data }: { data: LabDistributionItem[] }) => (
       </ResponsiveContainer>
     </div>
 
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
       <h2 className="text-lg font-bold mb-4">Lab Performance Metrics</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
@@ -196,7 +196,7 @@ const LabPerformanceCharts = ({ data }: { data: LabDistributionItem[] }) => (
 
 const OrderTypeAnalysis = ({ data }: { data: OrderTypeDataItem[] }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
       <h2 className="text-lg font-bold mb-4">Order Volume & Profitability</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
@@ -215,7 +215,7 @@ const OrderTypeAnalysis = ({ data }: { data: OrderTypeDataItem[] }) => (
       </ResponsiveContainer>
     </div>
 
-    <div className="bg-white p-4 rounded-lg shadow">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
       <h2 className="text-lg font-bold mb-4">Order Type Comparison</h2>
       <ResponsiveContainer width="100%" height={300}>
         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
@@ -245,7 +245,7 @@ const OrderTypeAnalysis = ({ data }: { data: OrderTypeDataItem[] }) => (
 );
 
 const ProcessingTimeChart = ({ data }: { data: ProcessingTimeItem[] }) => (
-  <div className="bg-white p-4 rounded-lg shadow mb-6">
+  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
     <h2 className="text-lg font-bold mb-4">Processing Time Distribution</h2>
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data}>
@@ -273,7 +273,7 @@ const StatusDistributionChart = ({ data }: { data: StatusDataItem[] }) => {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow mb-6">
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-6">
       <h2 className="text-lg font-bold mb-4">Order Status Distribution</h2>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
@@ -306,7 +306,7 @@ const StatusDistributionChart = ({ data }: { data: StatusDataItem[] }) => {
 };
 
 const StatusOverTimeChart = ({ data }: { data: StatusOverTimeItem[] }) => (
-  <div className="bg-white p-4 rounded-lg shadow">
+  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
     <h2 className="text-lg font-bold mb-4">Status Trends Over Time</h2>
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data}>

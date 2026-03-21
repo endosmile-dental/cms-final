@@ -19,12 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
 
 interface EditBillingDialogProps {
   open: boolean;
   onClose: () => void;
   billing: BillingRecord | null;
   onSave: (updated: Partial<BillingRecord>) => void;
+  onDelete?: (billingId: string) => void;
 }
 
 const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
@@ -32,6 +34,7 @@ const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
   onClose,
   billing,
   onSave,
+  onDelete,
 }) => {
   const [form, setForm] = useState<BillingRecord | null>(null);
   const [initialForm, setInitialForm] = useState<BillingRecord | null>(null);
@@ -94,10 +97,12 @@ const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Bill - {form.invoiceId}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Edit Bill - {form.invoiceId}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
           <div className="space-y-1">
             <Label>Mode of Payment</Label>
             <Select
@@ -168,10 +173,30 @@ const EditBillingDialog: React.FC<EditBillingDialogProps> = ({
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSubmit}>Save</Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+          <div className="flex justify-between w-full">
+            <div className="flex gap-2">
+              <Button onClick={handleSubmit}>Save</Button>
+              <Button variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (form?._id) {
+                  // Trigger delete functionality
+                  if (onDelete) {
+                    onDelete(form._id);
+                  }
+                  onClose();
+                }
+              }}
+              className="flex items-center gap-2"
+            >
+              <Trash2 size={16} />
+              Delete
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

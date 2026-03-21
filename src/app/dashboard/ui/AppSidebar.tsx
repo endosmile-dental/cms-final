@@ -116,12 +116,12 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar className="min-h-screen bg-white border-r border-gray-200">
+      <Sidebar className="min-h-screen border-r border-border bg-background" style={{ backgroundColor: 'hsl(var(--sidebar-background))' }}>
         <SidebarHeader className="p-4">
-          <h2 className="text-sm font-semibold capitalize text-gray-700">
+          <h2 className="text-sm font-semibold capitalize text-foreground">
             {userRole}
           </h2>
-          <h3 className="text-xl font-semibold text-gray-900">
+          <h3 className="text-xl font-semibold text-foreground">
             {session?.user?.name || "Guest"}
           </h3>
         </SidebarHeader>
@@ -136,7 +136,7 @@ export function AppSidebar() {
               <SidebarGroup key={index} className="mb-1">
                 <Link
                   href={path}
-                  className="flex items-center gap-3 p-2 text-gray-800 hover:bg-gray-200 rounded"
+                  className="flex items-center gap-3 p-2 text-foreground hover:bg-muted rounded"
                 >
                   {item.icon}
                   {item.name}
