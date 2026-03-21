@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import PatientBillingClient from "./PatientBillingClient";
 import { getDoctorPatients } from "@/app/lib/server-data/patients";
 import { getDoctorBillingRecords } from "@/app/lib/server-data/billing";
-import { getTreatments } from "@/app/lib/server-data/treatments";
 
 export default async function PatientBillingPage() {
   const session = await auth();
@@ -13,14 +12,13 @@ export default async function PatientBillingPage() {
   }
 
   // Pre-fetch data on server side for better performance
-  const [patients, billings, treatments] = await Promise.all([
+  const [patients, billings] = await Promise.all([
     getDoctorPatients(session.user.id),
-    getDoctorBillingRecords(session.user.id),
-    getTreatments()
+    getDoctorBillingRecords(session.user.id)
   ]);
 
   return (
-    <PatientBillingClient 
+    <PatientBillingClient
       initialPatients={patients}
       initialBillings={billings}
     />
