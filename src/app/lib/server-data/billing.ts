@@ -155,7 +155,7 @@ export async function getDoctorBillingAnalytics(doctorUserId: string) {
       revenueByPaymentMode[mode] =
         (revenueByPaymentMode[mode] || 0) + billing.totalAmount;
 
-      // Aggregate monthly revenue
+      // Aggregate monthly revenue using consistent date formatting
       const month = format(billingDate, "yyyy-MM");
       monthlyRevenue[month] =
         (monthlyRevenue[month] || 0) + billing.totalAmount;

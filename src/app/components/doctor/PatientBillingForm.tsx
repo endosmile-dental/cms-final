@@ -54,6 +54,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import TreatmentManagementForm from "./TreatmentManagementForm";
+import { formatDateForServer, getLocalDate } from "@/app/utils/dateUtils";
 
 // Define treatment interface for local use
 interface ITreatment {
@@ -88,7 +89,10 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   const queryClient = useQueryClient();
   const {
     data: treatmentsQueryData = [],
+    isLoading: treatmentsLoading,
+    isError: treatmentsError,
   } = useTreatmentsQuery(true);
+  
   const activeTreatments = Array.isArray(treatmentsQueryData)
     ? treatmentsQueryData.filter((treatment) => treatment.isActive)
     : [];
@@ -98,6 +102,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   const [isTreatmentModalOpen, setIsTreatmentModalOpen] = useState(false);
   const [editingTreatment, setEditingTreatment] = useState<ITreatment | null>(null);
   const [isInEditMode, setIsInEditMode] = useState(false);
+  const [treatmentEditMode, setTreatmentEditMode] = useState<Record<number, boolean>>({});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(zodBillingSchema),
@@ -107,7 +112,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
       patientId: "",
       hiddenPatientId: "",
       invoiceId: "",
-      date: new Date().toISOString().split("T")[0],
+      date: formatDateForServer(getLocalDate()),
       gender: "",
       email: "",
       treatments: treatments,
@@ -193,13 +198,6 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
     }
   };
 
-  const handleTreatmentChange = (index: number, value: string) => {
-    const newTreatments = [...treatments];
-    newTreatments[index].treatment = value;
-    setTreatments(newTreatments);
-    form.setValue(`treatments.${index}.treatment`, value);
-  };
-
   const handlePriceChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement>
@@ -231,7 +229,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
   const total = subtotal - discount;
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -465,7 +463,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                <Stethoscope className="w-5 h-5 mr-2 text-foreground" />
+                  <Stethoscope className="w-5 h-5 mr-2 text-foreground" />
                 Treatments & Services
               </CardTitle>
             </CardHeader>
@@ -517,36 +515,109 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                             </Button>
                           </div>
                         </div>
-                        <Select
-                          value={field.treatment}
-                          onValueChange={(value) =>
-                            handleTreatmentChange(index, value)
+                        {(() => {
+                          const isEditMode = treatmentEditMode[index];
+                          const hasTreatment = field.treatment && field.treatment.trim() !== "";
+                          
+                          if (isEditMode || hasTreatment) {
+                            // Show input field
+                            return (
+                              <Input
+                                placeholder="Enter treatment name"
+                                value={field.treatment}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  const newTreatments = [...treatments];
+                                  const currentTreatment = field.treatment;
+                                  
+                                  // Only update price if we're switching to a different treatment
+                                  if (value.trim() !== currentTreatment.trim()) {
+                                    const selectedTreatment = activeTreatments.find(t => t.name === value);
+                                    if (selectedTreatment && selectedTreatment.defaultPrice !== undefined) {
+                                      newTreatments[index].price = selectedTreatment.defaultPrice;
+                                    } else {
+                                      // Keep current price if editing existing treatment name
+                                      newTreatments[index].price = field.price;
+                                    }
+                                  } else {
+                                    // Keep current price when just editing the same treatment
+                                    newTreatments[index].price = field.price;
+                                  }
+                                  
+                                  newTreatments[index].treatment = value;
+                                  
+                                  // If switching back to dropdown mode (empty input), find default price
+                                  if (!value.trim()) {
+                                    setTreatmentEditMode(prev => ({ ...prev, [index]: false }));
+                                  }
+                                  
+                                  setTreatments(newTreatments);
+                                  form.setValue(`treatments.${index}.treatment`, value);
+                                  form.setValue(`treatments.${index}.price`, newTreatments[index].price);
+                                }}
+                                onFocus={() => setTreatmentEditMode(prev => ({ ...prev, [index]: true }))}
+                              />
+                            );
+                          } else {
+                            // Show dropdown
+                            return (
+                              <Select
+                                value={field.treatment}
+                                onValueChange={(value) => {
+                                  const newTreatments = [...treatments];
+                                  newTreatments[index].treatment = value;
+                                  
+                                  // Find the selected treatment and set its default price
+                                  const selectedTreatment = activeTreatments.find(t => t.name === value);
+                                  if (selectedTreatment && selectedTreatment.defaultPrice !== undefined) {
+                                    newTreatments[index].price = selectedTreatment.defaultPrice;
+                                  } else {
+                                    newTreatments[index].price = 0; // Default to 0 if no price found
+                                  }
+                                  
+                                  setTreatments(newTreatments);
+                                  form.setValue(`treatments.${index}.treatment`, value);
+                                  form.setValue(`treatments.${index}.price`, newTreatments[index].price);
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder={treatmentsLoading ? "Loading treatments..." : "Select treatment"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {(() => {
+                                    console.log("DEBUG: Rendering SelectContent, activeTreatments:", activeTreatments);
+                                    console.log("DEBUG: treatmentsLoading:", treatmentsLoading);
+                                    console.log("DEBUG: treatmentsError:", treatmentsError);
+                                    return null;
+                                  })()}
+                                  {treatmentsLoading ? (
+                                    <div className="p-2 text-sm text-muted-foreground flex items-center">
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                      Loading treatments...
+                                    </div>
+                                  ) : treatmentsError ? (
+                                    <div className="p-2 text-sm text-red-600">
+                                      Failed to load treatments. Please try again.
+                                    </div>
+                                  ) : Array.isArray(activeTreatments) && activeTreatments.length > 0 ? (
+                                    activeTreatments.map((treatment) => (
+                                      <SelectItem 
+                                        key={treatment._id} 
+                                        value={treatment.name}
+                                      >
+                                        {treatment.name}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <div className="p-2 text-sm text-muted-foreground">
+                                      No treatments available
+                                    </div>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            );
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select treatment" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              console.log("DEBUG: Rendering SelectContent, activeTreatments:", activeTreatments);
-                              return null;
-                            })()}
-                            {Array.isArray(activeTreatments) && activeTreatments.length > 0 ? (
-                              activeTreatments.map((treatment) => (
-                                <SelectItem
-                                  key={treatment._id}
-                                  value={treatment.name}
-                                >
-                                  {treatment.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-muted-foreground">
-                                No treatments available
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
+                        })()}
                       </div>
 
                       <div className="md:col-span-2">
@@ -633,7 +704,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center text-lg">
-                <CreditCard className="w-5 h-5 mr-2 text-foreground" />
+                  <CreditCard className="w-5 h-5 mr-2 text-foreground" />
                 Payment Details
               </CardTitle>
             </CardHeader>
@@ -729,7 +800,7 @@ const PatientBillingForm: React.FC<PatientBillingFormProps> = ({
                   {editingTreatment ? "Edit Treatment" : "Manage Treatments"}
                 </DialogTitle>
                 <DialogDescription>
-                  {editingTreatment
+                  {editingTreatment 
                     ? "Update the details of the selected treatment"
                     : "Select a treatment to edit or add a new treatment"
                   }

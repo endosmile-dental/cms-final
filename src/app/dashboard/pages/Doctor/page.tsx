@@ -15,6 +15,8 @@ export default async function DoctorDashboard() {
   }
 
   const data = await getDoctorDashboardData(session.user.id);
+  console.log("Data", data);
+
 
   return <DoctorDashboardClient data={data} />;
 }

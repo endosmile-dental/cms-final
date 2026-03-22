@@ -347,11 +347,20 @@ export default function DoctorAppointmentsClient({
         }
       }
 
+      // Parse the appointment date as UTC to ensure consistent date display
+      const appointmentDate = new Date(appointment.appointmentDate);
+      const utcDate = new Date(Date.UTC(
+        appointmentDate.getFullYear(),
+        appointmentDate.getMonth(),
+        appointmentDate.getDate()
+      ));
+      const dateStr = utcDate.toLocaleDateString("en-GB");
+
       return {
         _id: appointment._id,
         patientId: patientInfo?.PatientId ?? "NA",
         patientName: patientInfo?.fullName ?? "NA",
-        date: new Date(appointment.appointmentDate).toLocaleDateString("en-GB"),
+        date: dateStr,
         timeSlot: appointment.timeSlot ?? "NA",
         contactNumber: patientInfo?.contactNumber ?? "NA",
         consultationType: appointment.consultationType,

@@ -567,7 +567,7 @@ export default function RevenueDashboard({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `revenue-report-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `revenue-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };

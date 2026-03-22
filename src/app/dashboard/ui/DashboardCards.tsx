@@ -46,7 +46,7 @@ export default function DashboardCards({ stats }: DashboardCardsProps) {
                   <span className="text-sm text-white font-semibold hidden md:block">
                     {stat.title}
                   </span>
-                  <span className="p-1 pl-2 text-sm text-white font-semibold block md:hidden relative max-w-[100px] overflow-hidden whitespace-nowrap text-ellipsis group-hover:overflow-visible group-hover:whitespace-normal group-hover:bg-black group-hover:px-2 group-hover:rounded">
+                  <span className="p-1 pl-2 text-sm text-white font-semibold block md:hidden relative max-w-[100px] overflow-hidden whitespace-nowrap text-ellipsis">
                     {mobileTitle}
                   </span>
                 </div>

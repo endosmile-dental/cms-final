@@ -10,7 +10,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { format } from "date-fns";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 
 import AppointmentDetailsModal from "@/app/components/doctor/AppointmentDetailsModal";
 
@@ -40,11 +40,10 @@ export default function DashboardCalendar({
   );
 
   const selectedDates = appointmentDetails.map((item) => {
-    // Parse the date string as local date to avoid timezone issues
+    // Parse the date string - use local date to avoid timezone issues
     const [year, month, day] = item.date.split("-").map(Number);
-    // Create date at start of day in local timezone to avoid timezone issues
+    // Create date at start of day in local timezone
     const date = new Date(year, month - 1, day);
-    date.setHours(0, 0, 0, 0); // Ensure it's at start of day
     return date;
   });
 
@@ -55,7 +54,8 @@ export default function DashboardCalendar({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleDateClick = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    // Use local date to match server-side date formatting
+    const dateStr = formatDateForServer(date);
     const detail = dateToDetailsMap.get(dateStr);
 
     // helper: returns minutes since midnight or Infinity if unparsable
@@ -88,10 +88,16 @@ export default function DashboardCalendar({
   };
 
   const CustomDay = ({ date }: { date: Date }) => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    // Use local date to match server-side date formatting
+    const dateStr = formatDateForServer(date);
     const detail = dateToDetailsMap.get(dateStr);
-    const isToday =
-      format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+    
+    // Check if today using local date comparison
+    const isToday = (() => {
+      const today = new Date();
+      return date.toDateString() === today.toDateString();
+    })();
+    
     const dayNum = date.getDate();
 
     const baseStyle =

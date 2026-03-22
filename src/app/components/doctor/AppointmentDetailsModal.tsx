@@ -1,7 +1,6 @@
 import {
   DialogClose,
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -38,7 +37,6 @@ const AppointmentDetailsModal = ({
 }: AppointmentDetailsModalProps) => {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogTrigger />
       <DialogContent className="max-w-5xl w-full p-6 rounded-lg bg-card border-border shadow-sm">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-foreground">

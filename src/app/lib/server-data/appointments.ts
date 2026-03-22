@@ -2,6 +2,7 @@ import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import PatientModel from "@/app/model/Patient.model";
+import { formatDateForServer, getLocalDate } from "@/app/utils/dateUtils";
 
 /**
  * Server-side function to fetch appointments for a doctor
@@ -94,7 +95,7 @@ export async function getDoctorAppointments(doctorUserId: string) {
     });
 
     // Server-side sorting optimization: Pre-sort appointments by date and time
-    const today = new Date();
+    const today = getLocalDate();
     today.setHours(0, 0, 0, 0);
 
     const timeCache = new Map<string, number>();
@@ -229,7 +230,7 @@ export async function getAppointmentAvailability(
     // Find all appointments for the given date
     const appointments = await AppointmentModel.find({
       doctor: doctorId,
-      appointmentDate: appointmentDate.toISOString().split("T")[0],
+      appointmentDate: formatDateForServer(appointmentDate),
     });
 
     // Extract booked time slots

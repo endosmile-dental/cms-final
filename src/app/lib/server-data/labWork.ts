@@ -2,6 +2,7 @@ import dbConnect from "@/app/utils/dbConnect";
 import LabWorkModel from "@/app/model/LabWork.model";
 import DoctorModel from "@/app/model/Doctor.model";
 import PatientModel from "@/app/model/Patient.model";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 
 /**
  * Server-side function to fetch lab work records for a doctor
@@ -43,22 +44,22 @@ export async function getDoctorLabWorks(doctorUserId: string) {
       }
       // Convert Date objects to strings for Redux compatibility
       if (plainObj.impressionsTakenOn && plainObj.impressionsTakenOn instanceof Date) {
-        plainObj.impressionsTakenOn = plainObj.impressionsTakenOn.toISOString();
+        plainObj.impressionsTakenOn = formatDateForServer(plainObj.impressionsTakenOn);
       }
       if (plainObj.sentToLabOn && plainObj.sentToLabOn instanceof Date) {
-        plainObj.sentToLabOn = plainObj.sentToLabOn.toISOString();
+        plainObj.sentToLabOn = formatDateForServer(plainObj.sentToLabOn);
       }
       if (plainObj.receivedFromLabOn && plainObj.receivedFromLabOn instanceof Date) {
-        plainObj.receivedFromLabOn = plainObj.receivedFromLabOn.toISOString();
+        plainObj.receivedFromLabOn = formatDateForServer(plainObj.receivedFromLabOn);
       }
       if (plainObj.fittedOn && plainObj.fittedOn instanceof Date) {
-        plainObj.fittedOn = plainObj.fittedOn.toISOString();
+        plainObj.fittedOn = formatDateForServer(plainObj.fittedOn);
       }
       if (plainObj.expectedDeliveryDate && plainObj.expectedDeliveryDate instanceof Date) {
-        plainObj.expectedDeliveryDate = plainObj.expectedDeliveryDate.toISOString();
+        plainObj.expectedDeliveryDate = formatDateForServer(plainObj.expectedDeliveryDate);
       }
       if (plainObj.reWorkSentDate && plainObj.reWorkSentDate instanceof Date) {
-        plainObj.reWorkSentDate = plainObj.reWorkSentDate.toISOString();
+        plainObj.reWorkSentDate = formatDateForServer(plainObj.reWorkSentDate);
       }
       return plainObj;
     });
@@ -95,22 +96,22 @@ export async function getPatientLabWorks(patientUserId: string) {
     // Convert Date objects to strings for Redux compatibility
     return labWorks.map(labWork => {
       if (labWork.impressionsTakenOn && labWork.impressionsTakenOn instanceof Date) {
-        labWork.impressionsTakenOn = labWork.impressionsTakenOn.toISOString();
+        labWork.impressionsTakenOn = formatDateForServer(labWork.impressionsTakenOn);
       }
       if (labWork.sentToLabOn && labWork.sentToLabOn instanceof Date) {
-        labWork.sentToLabOn = labWork.sentToLabOn.toISOString();
+        labWork.sentToLabOn = formatDateForServer(labWork.sentToLabOn);
       }
       if (labWork.receivedFromLabOn && labWork.receivedFromLabOn instanceof Date) {
-        labWork.receivedFromLabOn = labWork.receivedFromLabOn.toISOString();
+        labWork.receivedFromLabOn = formatDateForServer(labWork.receivedFromLabOn);
       }
       if (labWork.fittedOn && labWork.fittedOn instanceof Date) {
-        labWork.fittedOn = labWork.fittedOn.toISOString();
+        labWork.fittedOn = formatDateForServer(labWork.fittedOn);
       }
       if (labWork.expectedDeliveryDate && labWork.expectedDeliveryDate instanceof Date) {
-        labWork.expectedDeliveryDate = labWork.expectedDeliveryDate.toISOString();
+        labWork.expectedDeliveryDate = formatDateForServer(labWork.expectedDeliveryDate);
       }
       if (labWork.reWorkSentDate && labWork.reWorkSentDate instanceof Date) {
-        labWork.reWorkSentDate = labWork.reWorkSentDate.toISOString();
+        labWork.reWorkSentDate = formatDateForServer(labWork.reWorkSentDate);
       }
       return labWork;
     });
@@ -276,22 +277,22 @@ export async function getLabWorksByDateRange(
     // Convert Date objects to strings for Redux compatibility
     return labWorks.map(labWork => {
       if (labWork.impressionsTakenOn && labWork.impressionsTakenOn instanceof Date) {
-        labWork.impressionsTakenOn = labWork.impressionsTakenOn.toISOString();
+        labWork.impressionsTakenOn = formatDateForServer(labWork.impressionsTakenOn);
       }
       if (labWork.sentToLabOn && labWork.sentToLabOn instanceof Date) {
-        labWork.sentToLabOn = labWork.sentToLabOn.toISOString();
+        labWork.sentToLabOn = formatDateForServer(labWork.sentToLabOn);
       }
       if (labWork.receivedFromLabOn && labWork.receivedFromLabOn instanceof Date) {
-        labWork.receivedFromLabOn = labWork.receivedFromLabOn.toISOString();
+        labWork.receivedFromLabOn = formatDateForServer(labWork.receivedFromLabOn);
       }
       if (labWork.fittedOn && labWork.fittedOn instanceof Date) {
-        labWork.fittedOn = labWork.fittedOn.toISOString();
+        labWork.fittedOn = formatDateForServer(labWork.fittedOn);
       }
       if (labWork.expectedDeliveryDate && labWork.expectedDeliveryDate instanceof Date) {
-        labWork.expectedDeliveryDate = labWork.expectedDeliveryDate.toISOString();
+        labWork.expectedDeliveryDate = formatDateForServer(labWork.expectedDeliveryDate);
       }
       if (labWork.reWorkSentDate && labWork.reWorkSentDate instanceof Date) {
-        labWork.reWorkSentDate = labWork.reWorkSentDate.toISOString();
+        labWork.reWorkSentDate = formatDateForServer(labWork.reWorkSentDate);
       }
       return labWork;
     });

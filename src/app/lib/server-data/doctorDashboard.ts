@@ -7,6 +7,7 @@ import BillingModel from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 
 import { format } from "date-fns";
+import { formatDateForServer, getLocalDate } from "@/app/utils/dateUtils";
 import { DoctorDashboardDTO } from "@/app/types/dashboard/doctor/doctorDashboard";
 import { requireAuth } from "@/app/utils/authz";
 import { successResponse } from "@/app/utils/api";
@@ -16,9 +17,21 @@ type AppointmentAggregateRow = {
   count: number;
 };
 
-type AppointmentMonthlyPoint = { month: string; completed: number; scheduled: number };
-type AppointmentWeeklyPoint = { week: string; completed: number; scheduled: number };
-type AppointmentYearlyPoint = { year: string; completed: number; scheduled: number };
+type AppointmentMonthlyPoint = {
+  month: string;
+  completed: number;
+  scheduled: number;
+};
+type AppointmentWeeklyPoint = {
+  week: string;
+  completed: number;
+  scheduled: number;
+};
+type AppointmentYearlyPoint = {
+  year: string;
+  completed: number;
+  scheduled: number;
+};
 
 type TreatmentItem = { treatment: string; quantity?: number };
 type BillingLite = { date: Date; treatments?: TreatmentItem[] };
@@ -46,7 +59,7 @@ export async function getDoctorDashboardData(
 
   /* ===================== STATS ===================== */
 
-  const todayStart = new Date();
+  const todayStart = getLocalDate();
   todayStart.setHours(0, 0, 0, 0);
 
   const todayEnd = new Date();
@@ -100,28 +113,33 @@ export async function getDoctorDashboardData(
 
   /* ===================== APPOINTMENTS (Monthly / Weekly / Yearly) ===================== */
 
-  const appointmentsRaw = await AppointmentModel.aggregate<AppointmentAggregateRow>([
-    { $match: { doctor: doctorObjectId } },
-    {
-      $group: {
-        _id: {
-          year: { $year: "$appointmentDate" },
-          month: { $month: "$appointmentDate" },
-          week: { $week: "$appointmentDate" },
-          status: "$status",
+  const appointmentsRaw =
+    await AppointmentModel.aggregate<AppointmentAggregateRow>([
+      { $match: { doctor: doctorObjectId } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$appointmentDate" },
+            month: { $month: "$appointmentDate" },
+            week: { $week: "$appointmentDate" },
+            status: "$status",
+          },
+          count: { $sum: 1 },
         },
-        count: { $sum: 1 },
       },
-    },
-  ]);
+    ]);
 
   // Generate past 12 months labels
   const currentDate = new Date();
   const monthlyMap: Record<string, AppointmentMonthlyPoint> = {};
-  
+
   // Initialize past 12 months with zero data
   for (let i = 11; i >= 0; i--) {
-    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - i,
+      1,
+    );
     const monthLabel = format(date, "MMM yyyy");
     monthlyMap[monthLabel] = {
       month: monthLabel,
@@ -222,7 +240,8 @@ export async function getDoctorDashboardData(
 
   const treatmentsTaken = {
     weekly: treatmentCounter(
-      (b) => new Date(b.date) >= sevenDaysAgo && new Date(b.date) <= billingDate,
+      (b) =>
+        new Date(b.date) >= sevenDaysAgo && new Date(b.date) <= billingDate,
     ),
     monthly: treatmentCounter(
       (b) =>
@@ -245,26 +264,32 @@ export async function getDoctorDashboardData(
     .sort({ appointmentDate: 1, timeSlot: 1 });
 
   // Group appointments by date
-  const calendarMap = new Map<string, {
-    date: string;
-    count: number;
-    appointments: {
-      patientName: string;
-      contactNumber?: string;
-      timeSlot: string;
-      treatments: string[];
-      teeth: string[];
-    }[];
-  }>();
+  const calendarMap = new Map<
+    string,
+    {
+      date: string;
+      count: number;
+      appointments: {
+        patientName: string;
+        contactNumber?: string;
+        timeSlot: string;
+        treatments: string[];
+        teeth: string[];
+      }[];
+    }
+  >();
 
   appointmentsForCalendar.forEach((appointment) => {
-    const dateStr = format(new Date(appointment.appointmentDate), "yyyy-MM-dd");
-    
+    // Parse the appointment date - ensure consistent date handling across environments
+    const appointmentDate = new Date(appointment.appointmentDate);
+    // Use the local date components to avoid timezone conversion issues
+    const dateStr = formatDateForServer(appointmentDate);
+
     if (!calendarMap.has(dateStr)) {
       calendarMap.set(dateStr, {
         date: dateStr,
         count: 0,
-        appointments: []
+        appointments: [],
       });
     }
 
@@ -275,11 +300,13 @@ export async function getDoctorDashboardData(
       contactNumber: appointment.patient?.contactNumber,
       timeSlot: appointment.timeSlot || "N/A",
       treatments: appointment.treatments || [],
-      teeth: appointment.teeth || []
+      teeth: appointment.teeth || [],
     });
   });
 
   const calendar = Array.from(calendarMap.values());
+
+  console.log("Calendar Data:", calendar);
 
   /* ===================== RECENT PATIENTS ===================== */
 

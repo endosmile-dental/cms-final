@@ -10,8 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppSelector } from "@/app/redux/store/hooks";
-import { selectActiveTreatments } from "@/app/redux/slices/treatmentSlice";
+import { useTreatmentsQuery } from "@/app/react-query/queries/useTreatmentsQuery";
 
 // Define treatment interface locally
 interface ITreatment {
@@ -47,7 +46,15 @@ const TreatmentManagementForm: React.FC<TreatmentManagementFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTreatmentId, setSelectedTreatmentId] = useState<string>("");
   const [isFormEnabled, setIsFormEnabled] = useState(!isEditing);
-  const activeTreatments = useAppSelector(selectActiveTreatments);
+  const {
+    data: treatmentsQueryData = [],
+    isLoading: treatmentsLoading,
+    isError: treatmentsError,
+  } = useTreatmentsQuery(true);
+  
+  const activeTreatments = Array.isArray(treatmentsQueryData)
+    ? treatmentsQueryData.filter((treatment) => treatment.isActive)
+    : [];
 
   // Initialize form data when treatment prop changes
   useEffect(() => {
@@ -90,13 +97,18 @@ const TreatmentManagementForm: React.FC<TreatmentManagementFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling to parent form
     setIsLoading(true);
 
     try {
-      const url = treatment
-        ? `/api/admin/treatments/${treatment._id}`
+      // Determine if we're editing or creating
+      const isEditingMode = isEditing && selectedTreatmentId;
+      const treatmentId = isEditingMode ? selectedTreatmentId : (treatment?._id);
+      
+      const url = treatmentId
+        ? `/api/admin/treatments/${treatmentId}`
         : "/api/admin/treatments";
-      const method = treatment ? "PUT" : "POST";
+      const method = treatmentId ? "PUT" : "POST";
 
       const response = await fetch(url, {
         method,
@@ -157,14 +169,29 @@ const TreatmentManagementForm: React.FC<TreatmentManagementFormProps> = ({
             onValueChange={handleTreatmentSelect}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select a treatment to edit" />
+              <SelectValue placeholder={treatmentsLoading ? "Loading treatments..." : "Select a treatment to edit"} />
             </SelectTrigger>
             <SelectContent>
-              {activeTreatments.map((treatment) => (
-                <SelectItem key={treatment._id} value={treatment._id}>
-                  {treatment.name} - {treatment.category}
-                </SelectItem>
-              ))}
+              {treatmentsLoading ? (
+                <div className="p-2 text-sm text-muted-foreground flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                  Loading treatments...
+                </div>
+              ) : treatmentsError ? (
+                <div className="p-2 text-sm text-red-600">
+                  Failed to load treatments. Please try again.
+                </div>
+              ) : Array.isArray(activeTreatments) && activeTreatments.length > 0 ? (
+                activeTreatments.map((treatment) => (
+                  <SelectItem key={treatment._id} value={treatment._id}>
+                    {treatment.name} - {treatment.category}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-muted-foreground">
+                  No treatments available
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>

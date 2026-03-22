@@ -15,6 +15,7 @@ import { updateLabWork } from "@/app/redux/slices/labWorkSlice";
 import { LabWorkItem } from "@/app/dashboard/pages/Doctor/labWork/LabWorkClient";
 import { Attachment } from "@/app/model/LabWork.model";
 import { FilePlus2, Loader2, Trash2, X } from "lucide-react";
+import { format } from "date-fns";
 
 // Define a type for the editable fields in your form
 type EditableLabWorkFields = {
@@ -126,7 +127,7 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
         orderType: labWork.orderType || "",
         status: labWork.status || "Pending",
         expectedDeliveryDate: labWork.expectedDeliveryDate
-          ? new Date(labWork.expectedDeliveryDate).toISOString().split("T")[0]
+          ? format(new Date(labWork.expectedDeliveryDate), "yyyy-MM-dd")
           : "",
         toothNumbers: labWork.toothNumbers || [],
         shade: labWork.shade || "",

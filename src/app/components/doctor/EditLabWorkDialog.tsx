@@ -21,6 +21,7 @@ import {
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Trash2 } from "lucide-react";
 import { ILabWork } from "@/app/redux/slices/labWorkSlice";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 
 interface EditLabWorkDialogProps {
   open: boolean;
@@ -219,8 +220,8 @@ const EditLabWorkDialog: React.FC<EditLabWorkDialogProps> = ({
               type="date"
               value={form.impressionsTakenOn ? 
                 (form.impressionsTakenOn instanceof Date ? 
-                  form.impressionsTakenOn.toISOString().split('T')[0] : 
-                  new Date(form.impressionsTakenOn).toISOString().split('T')[0]) 
+                  formatDateForServer(form.impressionsTakenOn) : 
+                  formatDateForServer(new Date(form.impressionsTakenOn))) 
                 : ""}
               onChange={(e) => handleChange("impressionsTakenOn", new Date(e.target.value))}
             />
@@ -232,8 +233,8 @@ const EditLabWorkDialog: React.FC<EditLabWorkDialogProps> = ({
               type="date"
               value={form.expectedDeliveryDate ? 
                 (form.expectedDeliveryDate instanceof Date ? 
-                  form.expectedDeliveryDate.toISOString().split('T')[0] : 
-                  new Date(form.expectedDeliveryDate).toISOString().split('T')[0]) 
+                  formatDateForServer(form.expectedDeliveryDate) : 
+                  formatDateForServer(new Date(form.expectedDeliveryDate))) 
                 : ""}
               onChange={(e) => handleChange("expectedDeliveryDate", new Date(e.target.value))}
             />

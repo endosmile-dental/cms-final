@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
@@ -28,6 +29,13 @@ export default function DoctorDashboardClient({
   data: DoctorDashboardDTO | null;
 }) {
   const router = useRouter();
+  const [timeOfDay, setTimeOfDay] = useState<string>("morning");
+  console.log("data?.calendar", data?.calendar);
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setTimeOfDay(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
+  }, []);
 
 
   if (!data) {
@@ -86,15 +94,7 @@ export default function DoctorDashboardClient({
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-foreground">
-                {(() => {
-                  const hour = new Date().getHours();
-                  return `Good ${hour < 12
-                    ? "morning"
-                    : hour < 18
-                      ? "afternoon"
-                      : "evening"
-                    }, ${data.profile.fullName.split(" ")[0]}`;
-                })()}
+                {`Good ${timeOfDay}, ${data.profile.fullName.split(" ")[0]}`}
               </h1>
               <p className="text-muted-foreground text-sm w-72 md:w-full">
                 Manage appointments, lab work, and patient records from one
@@ -201,23 +201,23 @@ export default function DoctorDashboardClient({
         </div>
 
         {/* Recent Patients */}
-          <DataTable
-            title="Recent Patient Registrations"
-            data={data.recentPatients}
-            itemsPerPage={10}
-            showSearch
-            onRowClick={(row) =>
-              router.push(
-                `/dashboard/pages/Doctor/patientRecords?patientId=${row._id}`
-              )
-            }
-            columns={[
-              { header: "Full Name", accessorKey: "fullName" },
-              { header: "Contact", accessorKey: "contactNumber" },
-              { header: "Age", accessorKey: "age" },
-              { header: "Registered At", accessorKey: "registeredAt" },
-            ]}
-          />
+        <DataTable
+          title="Recent Patient Registrations"
+          data={data.recentPatients}
+          itemsPerPage={10}
+          showSearch
+          onRowClick={(row) =>
+            router.push(
+              `/dashboard/pages/Doctor/patientRecords?patientId=${row._id}`
+            )
+          }
+          columns={[
+            { header: "Full Name", accessorKey: "fullName" },
+            { header: "Contact", accessorKey: "contactNumber" },
+            { header: "Age", accessorKey: "age" },
+            { header: "Registered At", accessorKey: "registeredAt" },
+          ]}
+        />
       </div>
     </DashboardLayout>
   );

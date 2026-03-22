@@ -53,6 +53,7 @@ import TwoLineDashboardChart from "../TwoLineDashboardChart";
 
 import DataTable from "../DataTable";
 import { format } from "date-fns";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 import EditPatientModal from "../EditPatientModal";
 import {
   Dialog,
@@ -937,11 +938,11 @@ const PatientDetailView = ({
                 // Already a string, ensure it's in the correct format
                 const date = new Date(completeAppointment.appointmentDate);
                 if (!isNaN(date.getTime())) {
-                  completeAppointment.appointmentDate = date.toISOString().split('T')[0];
+                  completeAppointment.appointmentDate = formatDateForServer(date);
                 }
               } else if (completeAppointment.appointmentDate && typeof completeAppointment.appointmentDate === "object" && "toISOString" in completeAppointment.appointmentDate) {
                 // Handle Date object
-                completeAppointment.appointmentDate = (completeAppointment.appointmentDate as Date).toISOString().split('T')[0];
+                completeAppointment.appointmentDate = formatDateForServer(completeAppointment.appointmentDate as Date);
               }
               
               dispatch(
