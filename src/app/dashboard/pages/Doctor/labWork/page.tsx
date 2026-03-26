@@ -5,6 +5,7 @@ import { getDoctorLabWorks, getDoctorLabWorkAnalytics } from "@/app/lib/server-d
 import { getDoctorPatients } from "@/app/lib/server-data/patients";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
+import { ILabWork, LabWorkPatient } from "@/app/redux/slices/labWorkSlice";
 
 export default async function LabWorkPage() {
   const session = await auth();
@@ -14,9 +15,9 @@ export default async function LabWorkPage() {
   }
 
   // Fetch lab work records, analytics, and patients on the server side
-  let labWorks: unknown[] = [];
+  let labWorks: ILabWork[] = [];
   let analytics: LabAnalytics | undefined = undefined;
-  let patients: unknown[] = [];
+  let patients: LabWorkPatient[] = [];
 
   try {
     const results = await Promise.all([
@@ -24,9 +25,9 @@ export default async function LabWorkPage() {
       getDoctorLabWorkAnalytics(session.user.id),
       getDoctorPatients(session.user.id),
     ]);
-    labWorks = results[0];
+    labWorks = results[0] as unknown as ILabWork[];
     analytics = results[1] as LabAnalytics;
-    patients = results[2];
+    patients = results[2] as unknown as LabWorkPatient[];
 
     console.log("Server-side lab works fetched:", labWorks?.length || 0, "items");
     console.log("Server-side analytics:", analytics);
@@ -39,9 +40,9 @@ export default async function LabWorkPage() {
     <ErrorBoundary>
       <Suspense fallback={<div>Loading lab work dashboard...</div>}>
         <LabWorkClient
-          initialLabWorks={labWorks as any}
+          initialLabWorks={labWorks}
           initialAnalytics={analytics}
-          initialPatients={patients as any}
+          initialPatients={patients}
         />
       </Suspense>
     </ErrorBoundary>

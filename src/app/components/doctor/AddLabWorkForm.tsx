@@ -14,8 +14,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { teethOptions } from "../BookAppointmentForm";
-import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
-import { ProfileData } from "@/app/redux/slices/profileSlice";
+import { useAppDispatch } from "@/app/redux/store/hooks";
 import { FilePlus2, Loader2, Search, X } from "lucide-react";
 import { createLabWork } from "@/app/redux/slices/labWorkSlice";
 import Link from "next/link";
@@ -109,10 +108,6 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
     impressionsTakenOn: new Date().toLocaleDateString("en-CA"),
     attachments: [] as File[],
   });
-
-  const profile = useAppSelector(
-    (state) => state?.profile?.profile as ProfileData
-  );
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [patientQuery, setPatientQuery] = useState("");
