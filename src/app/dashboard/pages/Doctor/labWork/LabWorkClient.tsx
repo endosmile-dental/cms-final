@@ -184,11 +184,27 @@ const LabWork: React.FC<{
   // Get actual data from Redux store
   const labWorks = useAppSelector(selectAllLabWorks);
 
-  // Hydrate Redux store with initial data if provided
+  // Debug: Log all data states
+  console.log("=== LABWORK DEBUG ===");
+  console.log("1. initialLabWorks prop:", initialLabWorks);
+  console.log("2. initialLabWorks length:", initialLabWorks?.length);
+  console.log("3. Redux labWorks:", labWorks);
+  console.log("4. Redux labWorks length:", labWorks?.length);
+  console.log("5. Session:", session);
+
+  // Hydrate Redux store with initial data if provided (SSR + Redux pattern)
+  // Always hydrate with SSR data when available - SSR data is fresh from server
   React.useEffect(() => {
-    if (initialLabWorks && initialLabWorks.length > 0) {
-      // Hydrate Redux store with initial SSR data to prevent double fetching
+    console.log("=== HYDRATION EFFECT ===");
+    console.log("SSR Data received:", initialLabWorks?.length, "items");
+    console.log("SSR Data content:", JSON.stringify(initialLabWorks, null, 2));
+    console.log("Redux labWorks before hydration:", labWorks.length, "items");
+    // Always hydrate Redux store, even with empty array to ensure state is synchronized
+    if (initialLabWorks !== undefined && initialLabWorks !== null) {
+      console.log("Hydrating Redux with SSR data:", initialLabWorks);
       dispatch(hydrateLabWorks(initialLabWorks));
+    } else {
+      console.log("NOT hydrating - initialLabWorks is undefined or null");
     }
   }, [initialLabWorks, dispatch]);
 
@@ -200,10 +216,26 @@ const LabWork: React.FC<{
 
   // Transform and filter data
   const filteredData = useMemo(() => {
-    return labWorks
-      .map((work) => ({
+    console.log("=== FILTERED DATA TRANSFORMATION ===");
+    console.log("6. labWorks from Redux:", labWorks);
+    console.log("7. labWorks length:", labWorks?.length);
+    console.log("8. searchTerm:", searchTerm);
+    console.log("9. statusFilter:", statusFilter);
+
+    if (!labWorks || labWorks.length === 0) {
+      console.log("10. NO LABWORKS - returning empty array");
+      return [];
+    }
+
+    const mapped = labWorks.map((work, index) => {
+      console.log(`11. Mapping work ${index}:`, work);
+      console.log(`12. work._id:`, work._id);
+      console.log(`13. work.patientId:`, work.patientId);
+      console.log(`14. work.patientId.fullName:`, work.patientId?.fullName);
+
+      return {
         id: work._id.toString(), // Convert ObjectId to string
-        patientName: work.patientId.fullName,
+        patientName: work.patientId?.fullName || "Unknown",
         orderType: work.orderType,
         labName: work.labName,
         status: work.status as LabWorkItem["status"],
@@ -218,13 +250,23 @@ const LabWork: React.FC<{
         fittedOn: work?.fittedOn,
         remarks: work?.remarks,
         attachments: work?.attachments,
-      }))
-      .filter((item) =>
-        item.patientName?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter((item) => statusFilter === "All" || item.status === statusFilter)
-      .sort(advancedSortFn); // 👈 THIS is the magic
+      };
+    });
 
+    console.log("15. Mapped data:", mapped);
+
+    const filteredBySearch = mapped.filter((item) =>
+      item.patientName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    console.log("16. After search filter:", filteredBySearch);
+
+    const filteredByStatus = filteredBySearch.filter((item) => statusFilter === "All" || item.status === statusFilter);
+    console.log("17. After status filter:", filteredByStatus);
+
+    const sorted = filteredByStatus.sort(advancedSortFn);
+    console.log("18. Final filteredData:", sorted);
+
+    return sorted;
   }, [labWorks, searchTerm, statusFilter]);
 
   // Calculate pagination
@@ -239,11 +281,20 @@ const LabWork: React.FC<{
   // Get current items
   const currentItems = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredData.slice(startIndex, startIndex + itemsPerPage);
+    const items = filteredData.slice(startIndex, startIndex + itemsPerPage);
+    console.log("=== CURRENT ITEMS (Pagination) ===");
+    console.log("19. currentPage:", currentPage);
+    console.log("20. itemsPerPage:", itemsPerPage);
+    console.log("21. startIndex:", startIndex);
+    console.log("22. filteredData.length:", filteredData.length);
+    console.log("23. currentItems:", items);
+    console.log("24. currentItems.length:", items.length);
+    return items;
   }, [currentPage, filteredData, itemsPerPage]);
 
+  // Only fetch from API if we don't have SSR data
   useEffect(() => {
-    if (session) {
+    if (session && (!initialLabWorks || initialLabWorks.length === 0)) {
       const { id, role } = session.user;
       if (role === "Doctor" || role === "Patient") {
         dispatch(fetchLabWorks({ userId: id, role }));
@@ -251,7 +302,7 @@ const LabWork: React.FC<{
         console.warn("Unsupported role:", role);
       }
     }
-  }, [session, dispatch]);
+  }, [session, dispatch, initialLabWorks]);
 
   // Fetch data on component mount
   // useEffect(() => {
@@ -443,6 +494,7 @@ const LabWork: React.FC<{
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Received">Received</SelectItem>
                   <SelectItem value="Fitted">Fitted</SelectItem>
+                  <SelectItem value="Rework">Rework</SelectItem>
                   <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>

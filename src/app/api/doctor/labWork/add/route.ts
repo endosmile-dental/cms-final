@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
+import { Types } from "mongoose";
 import LabWorkModel from "@/app/model/LabWork.model";
+import DoctorModel from "@/app/model/Doctor.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { labWorkSchema } from "@/schemas/zobLabWorkSchema";
 import { z } from "zod";
@@ -22,10 +24,23 @@ const ALLOWED_FILE_TYPES = [
   "application/pdf",
 ];
 
-async function createLabWork(req: NextRequest) {
+async function createLabWork(req: NextRequest, userId: string) {
   await dbConnect();
 
   try {
+    // Find the Doctor document using the userId to get the correct doctorId
+    const doctor = await DoctorModel.findOne({ userId })
+      .select("_id")
+      .lean<{ _id: Types.ObjectId } | null>();
+    
+    if (!doctor?._id) {
+      return {
+        success: false,
+        error: "Doctor profile not found",
+        status: 404,
+      };
+    }
+
     const formData = await req.formData();
     const fileEntries = formData.getAll("attachments");
     const files = fileEntries.filter(
@@ -68,9 +83,10 @@ async function createLabWork(req: NextRequest) {
     // Extract other form data
     const formObject = Object.fromEntries(formData.entries());
 
-    // Prepare lab work data
+    // Prepare lab work data - use Doctor model's _id for doctorId
     const labWorkData = {
       ...formObject,
+      doctorId: doctor._id, // Use Doctor model's _id, not User model's _id
       toothNumbers: JSON.parse(formObject.toothNumbers as string),
       attachments,
       sentToLabOn: formatDateForServer(new Date()),
@@ -82,9 +98,29 @@ async function createLabWork(req: NextRequest) {
     // Save to database
     const newLabWork = await LabWorkModel.create(parsed);
 
+    // Populate the newly created lab work to match the fetchAll response format
+    const populatedLabWork = await LabWorkModel.findById(newLabWork._id)
+      .populate("patientId", "fullName contactNumber")
+      .populate("doctorId", "fullName specialization")
+      .lean() as { _id: Types.ObjectId; [key: string]: unknown } | null;
+
+    if (!populatedLabWork) {
+      return {
+        success: false,
+        error: "Failed to retrieve created lab work",
+        status: 500,
+      };
+    }
+
+    // Convert to plain object and serialize _id to string
+    const serializedLabWork: Record<string, unknown> = {
+      ...populatedLabWork,
+      _id: populatedLabWork._id.toString(),
+    };
+
     return {
       success: true,
-      data: newLabWork,
+      data: serializedLabWork,
     };
   } catch (error) {
     console.error("[LABWORK_CREATE_ERROR]", error);
@@ -113,9 +149,9 @@ export async function POST(req: NextRequest) {
   const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
   if ("error" in authResult) return authResult.error;
 
-  const response = await createLabWork(req);
+  const response = await createLabWork(req, authResult.user.id);
 
-  if (!response.success) {
+  if (!response.success || !response.data) {
     return errorResponse(
       response.status || 500,
       response.error ?? "Something went wrong",

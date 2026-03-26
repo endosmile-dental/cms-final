@@ -96,7 +96,6 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
   const dispatch = useAppDispatch();
 
   const [formData, setFormData] = useState({
-    doctorId: "",
     patientId: "",
     labName: "",
     orderType: "",
@@ -141,14 +140,6 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  useEffect(() => {
-    if (profile?._id) {
-      setFormData((prev) => ({
-        ...prev,
-        doctorId: profile._id,
-      }));
-    }
-  }, [profile]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -257,7 +248,6 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
 
       // Append all form fields
       formDataToSend.append("patientId", formData.patientId);
-      formDataToSend.append("doctorId", formData.doctorId);
       formDataToSend.append("labName", formData.labName);
       formDataToSend.append("orderType", formData.orderType);
       formDataToSend.append("othersText", formData.othersText);

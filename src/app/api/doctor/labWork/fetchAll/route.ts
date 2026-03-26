@@ -14,11 +14,59 @@ async function fetchLabWorks(filter: Record<string, unknown>) {
       .populate("patientId", "fullName contactNumber")
       .populate("doctorId", "fullName specialization")
       .sort({ createdAt: -1 })
-      .lean<{ _id: string; patientId: string; doctorId: string; testType: string; testDate: Date; status: string; results: string; attachments: string[]; createdAt: Date; updatedAt: Date }[]>();
+      .lean();
+
+    // Serialize the data to ensure proper string conversion for frontend
+    const serializedLabWorks = labWorks.map((labWork) => {
+      const plainObj = { ...labWork };
+
+      // Convert _id to string
+      if (plainObj._id && plainObj._id.toString) {
+        plainObj._id = plainObj._id.toString();
+      }
+
+      // Convert patientId to proper object format
+      if (
+        plainObj.patientId &&
+        typeof plainObj.patientId === "object" &&
+        "_id" in plainObj.patientId
+      ) {
+        const patient = plainObj.patientId as {
+          _id: unknown;
+          fullName?: string;
+          contactNumber?: string;
+        };
+        plainObj.patientId = {
+          _id: patient._id?.toString() || "",
+          fullName: patient.fullName || "",
+          contactNumber: patient.contactNumber || "",
+        };
+      }
+
+      // Convert doctorId to proper object format
+      if (
+        plainObj.doctorId &&
+        typeof plainObj.doctorId === "object" &&
+        "_id" in plainObj.doctorId
+      ) {
+        const doctor = plainObj.doctorId as {
+          _id: unknown;
+          fullName?: string;
+          specialization?: string;
+        };
+        plainObj.doctorId = {
+          _id: doctor._id?.toString() || "",
+          fullName: doctor.fullName || "",
+          specialization: doctor.specialization || "",
+        };
+      }
+
+      return plainObj;
+    });
 
     return {
       success: true,
-      data: labWorks,
+      data: serializedLabWorks,
     };
   } catch (error) {
     console.error("[LABWORK_FETCH_ERROR]", error);
