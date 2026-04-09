@@ -3,7 +3,11 @@ import DataTable from "@/app/components/DataTable";
 import PatientDetailView from "@/app/components/doctor/PatientDetailView";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import { Patient, selectPatients } from "@/app/redux/slices/patientSlice";
-import { useAppSelector } from "@/app/redux/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
+import { fetchAppointments } from "@/app/redux/slices/appointmentSlice";
+import { fetchBillings } from "@/app/redux/slices/billingSlice";
+import { fetchLabWorks } from "@/app/redux/slices/labWorkSlice";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,11 +50,24 @@ export default function PatientRecords({
   const [suggestions, setSuggestions] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const suggestionBoxRef = useRef<HTMLUListElement | null>(null);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const patients = useAppSelector(selectPatients);
+  const dispatch = useAppDispatch();
+  const { data: session } = useSession();
   
   // Use initialPatients if provided, otherwise fall back to Redux store
   const displayPatients = initialPatients && initialPatients.length > 0 ? initialPatients : patients;
+
+  // Preload all appointments, billings and labworks when page mounts
+  useEffect(() => {
+    if (session?.user.id) {
+      dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+      dispatch(fetchBillings({ userId: session.user.id, role: "Doctor" }));
+      dispatch(fetchLabWorks({ userId: session.user.id, role: "Doctor" }));
+    }
+  }, [session?.user.id, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -227,6 +244,12 @@ export default function PatientRecords({
                 itemsPerPage={15}
                 searchFields={["fullName", "PatientId", "contactNumber"]}
                 onRowClick={setSelectedPatient}
+                enableDateFilter={true}
+                dateField="createdAt"
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
                 columns={[
                   {
                     header: "Patient Name",

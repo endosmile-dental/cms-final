@@ -275,6 +275,7 @@ export async function getDoctorDashboardData(
         timeSlot: string;
         treatments: string[];
         teeth: string[];
+        consultationType: string;
       }[];
     }
   >();
@@ -301,6 +302,7 @@ export async function getDoctorDashboardData(
       timeSlot: appointment.timeSlot || "N/A",
       treatments: appointment.treatments || [],
       teeth: appointment.teeth || [],
+      consultationType: appointment.consultationType || "New",
     });
   });
 

@@ -31,10 +31,20 @@ export async function POST(request: Request) {
       return errorResponse(403, "Forbidden");
     }
 
+    // Parse the date and normalize to local midnight for consistent querying
     const appointmentDateObj = new Date(appointmentDate);
-    console.log("appointmentDate", appointmentDate);
-    console.log("appointmentDateObj", appointmentDateObj);
+    // Extract year, month, day in local timezone
+    const localYear = appointmentDateObj.getFullYear();
+    const localMonth = appointmentDateObj.getMonth();
+    const localDay = appointmentDateObj.getDate();
+    
+    // Create a date at local midnight (00:00:00)
+    const normalizedAppointmentDate = new Date(localYear, localMonth, localDay, 0, 0, 0, 0);
+    
+    console.log("appointmentDate (from client)", appointmentDate);
+    console.log("normalizedAppointmentDate (local midnight)", normalizedAppointmentDate);
     console.log("Current date", new Date());
+    
     const now = new Date();
     const nowStartOfDay = new Date(
       now.getFullYear(),
@@ -42,9 +52,9 @@ export async function POST(request: Request) {
       now.getDate()
     );
     const appointmentStartOfDay = new Date(
-      appointmentDateObj.getFullYear(),
-      appointmentDateObj.getMonth(),
-      appointmentDateObj.getDate()
+      normalizedAppointmentDate.getFullYear(),
+      normalizedAppointmentDate.getMonth(),
+      normalizedAppointmentDate.getDate()
     );
 
     console.log("nowStartOfDay", nowStartOfDay);
@@ -61,11 +71,34 @@ export async function POST(request: Request) {
       return errorResponse(404, "Doctor not found");
     }
 
+    // Check for duplicate appointment (same doctor, date, and timeSlot)
+    const existingAppointment = await AppointmentModel.findOne({
+      doctor: doctorInfo._id,
+      appointmentDate: {
+        $gte: appointmentStartOfDay,
+        $lte: new Date(
+          normalizedAppointmentDate.getFullYear(),
+          normalizedAppointmentDate.getMonth(),
+          normalizedAppointmentDate.getDate(),
+          23,
+          59,
+          59,
+          999
+        ),
+      },
+      timeSlot: timeSlot,
+      status: { $ne: "Cancelled" },
+    });
+
+    if (existingAppointment) {
+      return errorResponse(409, "This time slot is already booked for the selected date");
+    }
+
     const appointment = new AppointmentModel({
       doctor: doctorInfo._id,
       clinic: doctorInfo.clinicId,
       patient,
-      appointmentDate,
+      appointmentDate: normalizedAppointmentDate,
       consultationType,
       createdBy,
       notes,

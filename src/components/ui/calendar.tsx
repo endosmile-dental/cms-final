@@ -17,7 +17,6 @@ function Calendar({
 }: CalendarProps) {
   return (
     <DayPicker
-      defaultMonth={new Date("2025-03-01")} // For testing: display March 2025.
       {...props}
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}

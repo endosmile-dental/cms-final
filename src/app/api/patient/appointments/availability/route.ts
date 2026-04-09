@@ -25,12 +25,14 @@ export async function GET(request: Request) {
       return errorResponse(400, "Missing required parameters");
     }
 
-    // Convert date to local time range (avoid UTC offset issues)
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
+    // Parse date as local date (YYYY-MM-DD format) to avoid timezone issues
+    // Split the date string and create date with local timezone
+    const [year, month, day] = date.split('-').map(Number);
+    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
 
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
+    console.log('[AVAILABILITY API] Query params:', { doctorId, date });
+    console.log('[AVAILABILITY API] Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });
 
     const appointments = await AppointmentModel.find({
       doctor: new mongoose.Types.ObjectId(doctorId),
@@ -42,6 +44,9 @@ export async function GET(request: Request) {
     }).select("timeSlot appointmentDate");
 
     const bookedSlots = [...new Set(appointments.map((appt) => appt.timeSlot))];
+
+    console.log('[AVAILABILITY API] Found appointments:', appointments.length);
+    console.log('[AVAILABILITY API] Booked slots:', bookedSlots);
 
     return successResponse({ bookedSlots });
   } catch (error) {

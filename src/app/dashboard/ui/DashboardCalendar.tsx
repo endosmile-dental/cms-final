@@ -28,6 +28,7 @@ export interface AppointmentDateDetailed {
     timeSlot: string;
     treatments: string[];
     teeth: string[];
+    consultationType?: string;
   }[];
 }
 

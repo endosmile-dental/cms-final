@@ -36,7 +36,11 @@ interface Patient {
   email?: string;
   gender: string;
 }
-import { selectAppointments } from "@/app/redux/slices/appointmentSlice";
+import {
+  selectBookedSlots,
+  fetchAvailability,
+} from "@/app/redux/slices/appointmentSlice";
+import { selectProfile, type DoctorProfile } from "../redux/slices/profileSlice";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { useRouter } from "next/navigation";
 import {
@@ -56,7 +60,6 @@ import type {
   AppointmentStatus,
 } from "@/app/redux/slices/appointmentSlice";
 import { PreviewDialog } from "./PreviewDialog";
-import { selectDoctors } from "../redux/slices/doctorSlice";
 import { selectActiveTreatments } from "@/app/redux/slices/treatmentSlice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -254,38 +257,67 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
 
   const { data: session } = useSession();
   const doctorId = session?.user?.id;
-  const appointments = useAppSelector(selectAppointments);
-  const doctors = useAppSelector(selectDoctors);
+  const dispatch = useAppDispatch();
+  const bookedSlots = useAppSelector(selectBookedSlots);
+  const profile = useAppSelector(selectProfile);
   const activeTreatments = useAppSelector(selectActiveTreatments);
 
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
-  const currentDoctor = useMemo(
-    () => doctors.find((d) => d.userId === session?.user?.id),
-    [doctors, session?.user?.id]
-  );
+  // Use profile data directly - the profile contains the current doctor's information
+  const currentDoctor = useMemo(() => {
+    // Check if profile exists and has doctor-specific fields
+    const isDoctorProfile = profile && 'specialization' in profile;
+    if (isDoctorProfile && profile._id && profile.fullName) {
+      const doctorProfile = profile as DoctorProfile;
+      return {
+        _id: doctorProfile._id,
+        fullName: doctorProfile.fullName,
+        specialization: doctorProfile.specialization,
+      };
+    }
+    return null;
+  }, [profile]);
 
-  const bookedSlots = useMemo(() => {
-    if (!currentDoctor?._id || !appointmentData.appointmentDate) return [];
-    const selectedDate = format(appointmentData.appointmentDate, "yyyy-MM-dd");
+  // Fetch availability when doctor or date changes
+  useEffect(() => {
+    if (currentDoctor?._id && appointmentData.appointmentDate) {
+      setAvailabilityLoading(true);
+      setAvailabilityError(null);
+      
+      const formattedDate = format(appointmentData.appointmentDate, "yyyy-MM-dd");
 
-    return appointments
-      .filter(
-        (appt) =>
-          appt.doctor === currentDoctor._id &&
-          format(new Date(appt.appointmentDate), "yyyy-MM-dd") === selectedDate
+      dispatch(
+        fetchAvailability({
+          doctorId: currentDoctor._id,
+          date: formattedDate,
+        })
       )
-      .map((appt) => appt.timeSlot);
-  }, [appointments, appointmentData.appointmentDate, currentDoctor?._id]);
+        .unwrap()
+        .then(() => {
+          setAvailabilityError(null);
+        })
+        .catch(() => {
+          setAvailabilityError('Failed to load available slots. Please try again.');
+        })
+        .finally(() => {
+          setAvailabilityLoading(false);
+        });
+    }
+  }, [currentDoctor?._id, appointmentData.appointmentDate, dispatch]);
 
   const availableSlots = useMemo(() => {
+    // Defensive check: ensure bookedSlots is an array
+    const slots = Array.isArray(bookedSlots) ? bookedSlots : [];
+    
     return timeSlots.map((slot) => ({
       time: slot,
-      booked: bookedSlots.includes(slot),
+      booked: slots.includes(slot),
       popular: ["10:00 AM", "02:00 PM", "04:00 PM"].includes(slot),
     }));
   }, [bookedSlots]);
@@ -681,6 +713,27 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
                   <Clock className="w-4 h-4 mr-2" />
                   Available Time Slots
                 </Label>
+                
+                {availabilityLoading && (
+                  <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Loading available slots...
+                  </div>
+                )}
+                
+                {availabilityError && (
+                  <div className="p-3 mb-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-center">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    {availabilityError}
+                  </div>
+                )}
+                
+                {!availabilityLoading && !availabilityError && bookedSlots.length === 0 && appointmentData.appointmentDate && (
+                  <div className="p-3 mb-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                    All time slots are available for the selected date.
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {availableSlots.map(({ time, booked, popular }) => (
                     <TooltipProvider key={time}>

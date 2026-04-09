@@ -244,8 +244,13 @@ export default function PatientRegistrationForm() {
       const result = await res.json();
 
       if (!res.ok) {
-        setFormError(result.error || "An error occurred during registration");
-        console.error("Error registering patient:", result.error);
+        // Extract error message from the response
+        const errorMessage = result.error || result.message || "An error occurred during registration";
+        setFormError(errorMessage);
+        console.error("Error registering patient:", errorMessage);
+        
+        // Don't close the preview modal on error so user can try again
+        return;
       } else {
         console.log("Patient registration successful", result);
         dispatch(addPatient(result.patient));

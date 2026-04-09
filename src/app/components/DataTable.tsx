@@ -14,13 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useDebounce } from "@/app/hooks/useOptimizedRender";
 import { useMemoizedCalculations } from "@/app/hooks/useMemoizedCalculations";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DateRangeFilter } from "@/app/components/DateRangeFilter";
 
 export type ColumnDef<T, K extends keyof T = keyof T> = {
   header: string;
@@ -40,6 +34,10 @@ type DataTableProps<T> = {
   dateField?: keyof T;
   filterMode?: "this month" | "this year" | "past year" | "all";
   onRowClick?: (row: T, event?: React.MouseEvent) => void;
+  startDate?: Date | undefined;
+  endDate?: Date | undefined;
+  onStartDateChange?: (date: Date | undefined) => void;
+  onEndDateChange?: (date: Date | undefined) => void;
 };
 
 const DataTable = <T extends object>({
@@ -52,15 +50,28 @@ const DataTable = <T extends object>({
   onRowClick,
   enableDateFilter = false,
   dateField,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
 }: DataTableProps<T>) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortKey, setSortKey] = useState<keyof T | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [filterMode, setFilterMode] = useState<
+  const [filterMode] = useState<
     "this month" | "this year" | "past year" | "all"
   >("all");
+
+  // Use internal state if callbacks not provided
+  const [internalStartDate, setInternalStartDate] = useState<Date | undefined>(undefined);
+  const [internalEndDate, setInternalEndDate] = useState<Date | undefined>(undefined);
+  
+  const effectiveStartDate = onStartDateChange ? startDate : internalStartDate;
+  const effectiveEndDate = onEndDateChange ? endDate : internalEndDate;
+  const handleStartDateChange = onStartDateChange || setInternalStartDate;
+  const handleEndDateChange = onEndDateChange || setInternalEndDate;
 
   const debouncedSetSearch = useDebounce((value: string) => {
     setSearch(value);
@@ -101,6 +112,8 @@ const DataTable = <T extends object>({
       enableDateFilter,
       dateField,
       filterMode,
+      effectiveStartDate,
+      effectiveEndDate,
     ],
     () => {
     let result = [...data];
@@ -117,28 +130,51 @@ const DataTable = <T extends object>({
 
     // Date filtering implementation
     if (enableDateFilter && dateField) {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth(); // 0-indexed (0 = January)
+      // First apply custom date range filter if dates are selected
+      if (effectiveStartDate || effectiveEndDate) {
+        result = result.filter((item) => {
+          const itemDate = parseDate(item[dateField]);
+          if (!itemDate) return false; // Exclude items without date when filtering
 
-      result = result.filter((item) => {
-        const itemDate = parseDate(item[dateField]);
-        if (!itemDate) return filterMode === "all"; // Include if no date and filter is "all"
+          const itemDateTime = itemDate.setHours(0, 0, 0, 0);
+          
+          if (effectiveStartDate) {
+            const startDateTime = effectiveStartDate.setHours(0, 0, 0, 0);
+            if (itemDateTime < startDateTime) return false;
+          }
+          
+          if (effectiveEndDate) {
+            const endDateTime = effectiveEndDate.setHours(0, 0, 0, 0);
+            if (itemDateTime > endDateTime) return false;
+          }
+          
+          return true;
+        });
+      } else {
+        // Fall back to preset filter modes
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed (0 = January)
 
-        const itemYear = itemDate.getFullYear();
-        const itemMonth = itemDate.getMonth();
+        result = result.filter((item) => {
+          const itemDate = parseDate(item[dateField]);
+          if (!itemDate) return filterMode === "all"; // Include if no date and filter is "all"
 
-        if (filterMode === "this month") {
-          return itemMonth === currentMonth && itemYear === currentYear;
-        }
-        if (filterMode === "this year") {
-          return itemYear === currentYear;
-        }
-        if (filterMode === "past year") {
-          return itemYear === currentYear - 1;
-        }
-        return true; // "all"
-      });
+          const itemYear = itemDate.getFullYear();
+          const itemMonth = itemDate.getMonth();
+
+          if (filterMode === "this month") {
+            return itemMonth === currentMonth && itemYear === currentYear;
+          }
+          if (filterMode === "this year") {
+            return itemYear === currentYear;
+          }
+          if (filterMode === "past year") {
+            return itemYear === currentYear - 1;
+          }
+          return true; // "all"
+        });
+      }
     }
 
     // Sorting implementation
@@ -196,45 +232,42 @@ const DataTable = <T extends object>({
 
   return (
     <div className="space-y-4 bg-card border-border shadow-sm rounded-lg">
-      <div className="flex justify-between items-center gap-x-2 p-4 border-b border-border">
-        {/* Conditionally render search bar */}
-        <div className="flex gap-x-1">
-          {showSearch && (
-            <Input
-              placeholder="Search..."
-              value={searchInput}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSearchInput(value);
-                debouncedSetSearch(value);
-              }}
-              className="w-full max-w-sm"
-            />
-          )}
-          {enableDateFilter && (
-            <Select
-              value={filterMode}
-              onValueChange={(
-                v: "this month" | "this year" | "past year" | "all"
-              ) => setFilterMode(v)}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Filter by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="this month">This Month</SelectItem>
-                <SelectItem value="this year">This Year</SelectItem>
-                <SelectItem value="past year">Past Year</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="flex flex-col gap-4 p-4 border-b border-border">
+        {/* Top row: Search and Title */}
+        <div className="flex justify-between items-center gap-x-2 flex-wrap">
+          <div className="flex gap-x-1 flex-1">
+            {showSearch && (
+              <Input
+                placeholder="Search..."
+                value={searchInput}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchInput(value);
+                  debouncedSetSearch(value);
+                }}
+                className="w-full max-w-sm"
+              />
+            )}
+          </div>
+
+          {title && (
+            <h2 className="text-base md:text-xl font-semibold text-foreground shrink-0">
+              {title}
+            </h2>
           )}
         </div>
 
-        {title && (
-          <h2 className="text-base md:text-xl font-semibold text-foreground">
-            {title}
-          </h2>
+        {/* Bottom row: Date Range Filter */}
+        {enableDateFilter && (
+          <div className="flex items-center gap-4 flex-wrap">
+            <DateRangeFilter
+              startDate={effectiveStartDate}
+              endDate={effectiveEndDate}
+              onStartDateChange={handleStartDateChange}
+              onEndDateChange={handleEndDateChange}
+              label="Date Range:"
+            />
+          </div>
         )}
       </div>
 

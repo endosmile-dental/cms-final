@@ -37,6 +37,55 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Check for duplicate appointment if timeSlot or appointmentDate is being changed
+    const currentAppointment = await AppointmentModel.findById(appointmentId);
+    if (!currentAppointment) {
+      return errorResponse(404, "Appointment not found");
+    }
+
+    const isDateChanged = body.appointmentDate !== currentAppointment.appointmentDate;
+    const isTimeSlotChanged = body.timeSlot !== currentAppointment.timeSlot;
+
+    if (isDateChanged || isTimeSlotChanged) {
+      // Get doctor ID for the duplicate check
+      const doctorForCheck = await DoctorModel.findById(currentAppointment.doctor).select("_id");
+      if (!doctorForCheck) {
+        return errorResponse(404, "Doctor not found");
+      }
+
+      // Calculate the date range for the new appointment date
+      const newAppointmentDateObj = new Date(body.appointmentDate);
+      const newAppointmentStartOfDay = new Date(
+        newAppointmentDateObj.getFullYear(),
+        newAppointmentDateObj.getMonth(),
+        newAppointmentDateObj.getDate()
+      );
+
+      // Check for existing appointment with the same doctor, date, and timeSlot
+      const conflictingAppointment = await AppointmentModel.findOne({
+        doctor: doctorForCheck._id,
+        appointmentDate: {
+          $gte: newAppointmentStartOfDay,
+          $lte: new Date(
+            newAppointmentDateObj.getFullYear(),
+            newAppointmentDateObj.getMonth(),
+            newAppointmentDateObj.getDate(),
+            23,
+            59,
+            59,
+            999
+          ),
+        },
+        timeSlot: body.timeSlot,
+        status: { $ne: "Cancelled" },
+        _id: { $ne: appointmentId }, // Exclude current appointment
+      });
+
+      if (conflictingAppointment) {
+        return errorResponse(409, "This time slot is already booked for the selected date");
+      }
+    }
+
     // Update the appointment document with the provided body fields; { new: true } returns the updated document.
     const updatedAppointment = await AppointmentModel.findByIdAndUpdate(
       appointmentId,

@@ -22,6 +22,11 @@ import DataTable from "@/app/components/DataTable";
 import IconButtonWithTooltip from "@/app/components/IconButtonWithTooltip";
 import { useRouter } from "next/navigation";
 import { DoctorDashboardDTO } from "@/app/types/dashboard/doctor/doctorDashboard";
+import { useAppDispatch } from "@/app/redux/store/hooks";
+import { fetchAppointments } from "@/app/redux/slices/appointmentSlice";
+import { fetchBillings } from "@/app/redux/slices/billingSlice";
+import { fetchLabWorks } from "@/app/redux/slices/labWorkSlice";
+import { useSession } from "next-auth/react";
 
 export default function DoctorDashboardClient({
   data,
@@ -29,6 +34,8 @@ export default function DoctorDashboardClient({
   data: DoctorDashboardDTO | null;
 }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { data: session } = useSession();
   const [timeOfDay, setTimeOfDay] = useState<string>("morning");
   console.log("data?.calendar", data?.calendar);
 
@@ -36,6 +43,15 @@ export default function DoctorDashboardClient({
     const hour = new Date().getHours();
     setTimeOfDay(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
   }, []);
+
+  // Preload all appointments, billings and labworks when doctor dashboard loads
+  useEffect(() => {
+    if (session?.user.id) {
+      dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+      dispatch(fetchBillings({ userId: session.user.id, role: "Doctor" }));
+      dispatch(fetchLabWorks({ userId: session.user.id, role: "Doctor" }));
+    }
+  }, [session?.user.id, dispatch]);
 
 
   if (!data) {

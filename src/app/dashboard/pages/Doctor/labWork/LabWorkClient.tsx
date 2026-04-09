@@ -43,10 +43,12 @@ import { Attachment } from "@/app/model/LabWork.model";
 import ViewAttachment from "@/app/components/doctor/ViewAttachment";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import { DateRangeFilter } from "@/app/components/DateRangeFilter";
 
 // Update interface to match actual data structure
 export interface LabWorkItem {
   id: string;
+  patientId: string;
   patientName: string;
   orderType: string;
   labName: string;
@@ -92,6 +94,24 @@ const STATUS_PRIORITY: Record<LabWorkStatus, number> = {
 const isCompleted = (status: LabWorkItem["status"]) =>
   status === "Fitted" || status === "Cancelled";
 
+// Helper to get the most relevant date for a given status (for within-group sorting)
+const getRelevantDateForStatus = (item: LabWorkItem): number => {
+  switch (item.status) {
+    case 'Fitted':
+      return new Date(item.fittedOn ?? item.receivedFromLabOn ?? item.sentToLabOn ?? 0).getTime();
+    case 'Cancelled':
+      return new Date(item.fittedOn ?? item.receivedFromLabOn ?? item.sentToLabOn ?? 0).getTime();
+    case 'Pending':
+      return new Date(item.sentToLabOn ?? item.impressionsTakenOn ?? 0).getTime();
+    case 'Received':
+      return new Date(item.receivedFromLabOn ?? item.sentToLabOn ?? 0).getTime();
+    case 'Rework':
+      return new Date(item.reWorkSentDate ?? item.sentToLabOn ?? 0).getTime();
+    default:
+      return new Date(item.sentToLabOn ?? 0).getTime();
+  }
+};
+
 const advancedSortFn = (a: LabWorkItem, b: LabWorkItem): number => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -136,7 +156,14 @@ const advancedSortFn = (a: LabWorkItem, b: LabWorkItem): number => {
 
   if (statusDiff !== 0) return statusDiff;
 
-  // 6️⃣ Final fallback → most recent activity
+  // 6️⃣ Within same status group → sort by relevant date descending (latest first)
+  const aRelevantDate = getRelevantDateForStatus(a);
+  const bRelevantDate = getRelevantDateForStatus(b);
+  if (aRelevantDate !== bRelevantDate) {
+    return bRelevantDate - aRelevantDate; // Descending: latest first
+  }
+
+  // 7️⃣ Final fallback → most recent sentToLabOn
   return (
     new Date(b.sentToLabOn ?? 0).getTime() -
     new Date(a.sentToLabOn ?? 0).getTime()
@@ -181,6 +208,10 @@ const LabWork: React.FC<{
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [isDeletingAttachment, setIsDeletingAttachment] = useState(false);
 
+  // Add state for date range filter
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+
   // Get actual data from Redux store
   const labWorks = useAppSelector(selectAllLabWorks);
 
@@ -221,20 +252,23 @@ const LabWork: React.FC<{
     console.log("7. labWorks length:", labWorks?.length);
     console.log("8. searchTerm:", searchTerm);
     console.log("9. statusFilter:", statusFilter);
-
+    console.log("10. startDate:", startDate);
+    console.log("11. endDate:", endDate);
+    
     if (!labWorks || labWorks.length === 0) {
-      console.log("10. NO LABWORKS - returning empty array");
+      console.log("12. NO LABWORKS - returning empty array");
       return [];
     }
-
+    
     const mapped = labWorks.map((work, index) => {
-      console.log(`11. Mapping work ${index}:`, work);
-      console.log(`12. work._id:`, work._id);
-      console.log(`13. work.patientId:`, work.patientId);
-      console.log(`14. work.patientId.fullName:`, work.patientId?.fullName);
-
+      console.log(`13. Mapping work ${index}:`, work);
+      console.log(`14. work._id:`, work._id);
+      console.log(`15. work.patientId:`, work.patientId);
+      console.log(`16. work.patientId.fullName:`, work.patientId?.fullName);
+      
       return {
         id: work._id.toString(), // Convert ObjectId to string
+        patientId: work.patientId?._id || "",
         patientName: work.patientId?.fullName || "Unknown",
         orderType: work.orderType,
         labName: work.labName,
@@ -252,22 +286,48 @@ const LabWork: React.FC<{
         attachments: work?.attachments,
       };
     });
-
-    console.log("15. Mapped data:", mapped);
-
+    
+    console.log("17. Mapped data:", mapped);
+    
     const filteredBySearch = mapped.filter((item) =>
       item.patientName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    console.log("16. After search filter:", filteredBySearch);
-
+    console.log("18. After search filter:", filteredBySearch);
+    
     const filteredByStatus = filteredBySearch.filter((item) => statusFilter === "All" || item.status === statusFilter);
-    console.log("17. After status filter:", filteredByStatus);
-
-    const sorted = filteredByStatus.sort(advancedSortFn);
-    console.log("18. Final filteredData:", sorted);
-
+    console.log("19. After status filter:", filteredByStatus);
+    
+    // Apply date range filter on impressionsTakenOn
+    const filteredByDate = filteredByStatus.filter((item) => {
+      // If no date filters are set, include all items
+      if (!startDate && !endDate) return true;
+      
+      // If item has no impressionsTakenOn date, exclude it when date filter is active
+      if (!item.impressionsTakenOn) return false;
+      
+      const itemDate = new Date(item.impressionsTakenOn).setHours(0, 0, 0, 0);
+      
+      // Check start date (inclusive)
+      if (startDate) {
+        const startDateTime = new Date(startDate).setHours(0, 0, 0, 0);
+        if (itemDate < startDateTime) return false;
+      }
+      
+      // Check end date (inclusive)
+      if (endDate) {
+        const endDateTime = new Date(endDate).setHours(0, 0, 0, 0);
+        if (itemDate > endDateTime) return false;
+      }
+      
+      return true;
+    });
+    console.log("20. After date filter:", filteredByDate);
+    
+    const sorted = filteredByDate.sort(advancedSortFn);
+    console.log("21. Final filteredData:", sorted);
+    
     return sorted;
-  }, [labWorks, searchTerm, statusFilter]);
+  }, [labWorks, searchTerm, statusFilter, startDate, endDate]);
 
   // Calculate pagination
   const totalItems = filteredData.length;
@@ -337,8 +397,13 @@ const LabWork: React.FC<{
   };
 
   const handleCardClick = (item: Omit<LabWorkItem, "attachments">) => {
-    setSelectedLabWork(item);
-    setIsModalOpen(true);
+    // Find the full labwork item with attachments from currentItems
+    const fullItem = currentItems.find(lw => lw.id === item.id);
+    if (fullItem) {
+      setSelectedLabWork(fullItem);
+      setIsModalOpen(true);
+      setIsEditMode(false);
+    }
   };
 
   const handleEdit = () => {
@@ -452,14 +517,6 @@ const LabWork: React.FC<{
               <AddLabWorkForm
                 onClose={() => setIsAddModalOpen(false)}
                 onSuccess={() => {
-                  if (session) {
-                    const { id, role } = session.user;
-                    if (role === "Doctor" || role === "Patient") {
-                      dispatch(fetchLabWorks({ userId: id, role }));
-                    } else {
-                      console.warn("Unsupported role:", role);
-                    }
-                  }
                   setIsAddModalOpen(false);
                 }}
               />
@@ -467,60 +524,72 @@ const LabWork: React.FC<{
           </Modal>
         </div>
 
-        {/* Search Bar */}
-        <div className="w-full px-5 md:px-0 flex flex-col space-y-2 md:space-y-0 md:flex-row items-start md:items-center justify-between">
-          <div className="w-full md:w-1/2 flex gap-2 items-center">
-            <Search size={18} />
-            <Input
-              placeholder="Search by patient name"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <Label>Status:</Label>
-              <Select
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value)}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Received">Received</SelectItem>
-                  <SelectItem value="Fitted">Fitted</SelectItem>
-                  <SelectItem value="Rework">Rework</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Search Bar and Filters */}
+        <div className="w-full px-5 md:px-0 flex flex-col space-y-4">
+          {/* First row: Search */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="w-full md:w-1/2 flex gap-2 items-center">
+              <Search size={18} />
+              <Input
+                placeholder="Search by patient name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-md"
+              />
             </div>
-            {/* Items per page selector */}
-            <div className="flex items-center gap-2">
-              <Label>Items per page:</Label>
-              <Select
-                value={itemsPerPage.toString()}
-                onValueChange={(value) => {
-                  setItemsPerPage(Number(value));
-                  setCurrentPage(1);
-                }}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6">6</SelectItem>
-                  <SelectItem value="12">12</SelectItem>
-                  <SelectItem value="18">18</SelectItem>
-                  <SelectItem value="24">24</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <Label>Status:</Label>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value)}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Received">Received</SelectItem>
+                    <SelectItem value="Fitted">Fitted</SelectItem>
+                    <SelectItem value="Rework">Rework</SelectItem>
+                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Items per page selector */}
+              <div className="flex items-center gap-2">
+                <Label>Items per page:</Label>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6</SelectItem>
+                    <SelectItem value="12">12</SelectItem>
+                    <SelectItem value="18">18</SelectItem>
+                    <SelectItem value="24">24</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
+
+          {/* Second row: Date Range Filter */}
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            label="Impressions Date:"
+          />
         </div>
 
         {/* Lab Work Cards */}
@@ -636,24 +705,22 @@ const LabWork: React.FC<{
       >
         <div className="p-2 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
           {isEditMode ? (
-            <EditLabWorkForm
-              labWork={selectedLabWork}
-              onCancel={() => setIsEditMode(false)}
-              onSuccess={() => {
-                if (session) {
-                  const { id, role } = session.user;
-                  if (role === "Doctor" || role === "Patient") {
-                    dispatch(fetchLabWorks({ userId: id, role }));
-                  } else {
-                    console.warn("Unsupported role:", role);
-                  }
+          <EditLabWorkForm
+            labWork={selectedLabWork}
+            onCancel={() => setIsEditMode(false)}
+            onSuccess={() => {
+              setIsEditMode(false);
+              setIsModalOpen(false);
+              setSelectedLabWork(null);
+              // Fetch fresh data to ensure UI is updated
+              if (session?.user) {
+                const { id, role } = session.user;
+                if (role === "Doctor" || role === "Patient") {
+                  dispatch(fetchLabWorks({ userId: id, role }));
                 }
-                // dispatch(fetchLabWorks());
-                setIsEditMode(false);
-                setIsModalOpen(false);
-                setSelectedLabWork(null);
-              }}
-            />
+              }
+            }}
+          />
           ) : (
             <>
               <div className="flex justify-between items-center mb-4">

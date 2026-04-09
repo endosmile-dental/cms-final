@@ -220,15 +220,22 @@ const EditLabWorkForm: React.FC<EditLabWorkFormProps> = ({
       // Append JSON data
       formDataToSend.append("updates", JSON.stringify(updates));
 
-      // Dispatch update action
-      await dispatch(
+      // Dispatch update action - use labWork.id which is the string ID
+      const result = await dispatch(
         updateLabWork({
           id: labWork.id,
           updates: formDataToSend,
         })
-      ).unwrap();
+      );
+      
+      if (updateLabWork.fulfilled.match(result)) {
+        // Update was successful, Redux state is already updated by the fulfilled action
+        // Close the modal by calling onSuccess
+        onSuccess();
+      } else {
+        console.error("Failed to update lab work:", result.error.message);
+      }
 
-      onSuccess();
     } catch (error) {
       console.error("Failed to update lab work:", error);
     } finally {

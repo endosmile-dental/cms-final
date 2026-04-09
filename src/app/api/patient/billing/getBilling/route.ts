@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     }
 
     // Fetch billing records associated with the found patient's _id.
-    const billings = await BillingModel.find({ patientId: patient.PatientId });
+    const billings = await BillingModel.find({ patientId: patient._id });
 
     return successResponse({ billings });
   } catch (error: unknown) {

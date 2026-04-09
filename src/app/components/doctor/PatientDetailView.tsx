@@ -22,11 +22,13 @@ import {
   ArrowDownCircle,
   Calendar,
   CalendarDays,
+  CalendarPlus,
   ClipboardList,
   Clock,
   CreditCard,
   Edit,
   FileClock,
+  FilePlus,
   FileText,
   FlaskConical,
   Hash,
@@ -36,8 +38,10 @@ import {
   MapPin,
   Percent,
   Pill,
+  PlusCircle,
   Printer,
   ReceiptText,
+  Repeat,
   Smile,
   Stethoscope,
   StickyNote,
@@ -79,6 +83,12 @@ import DeleteAppointmentModal from "./DeleteAppointmentModal";
 import EditLabWorkDialog from "./EditLabWorkDialog";
 import DeleteLabWorkModal from "./DeleteLabWorkModal";
 import { Trash2 } from "lucide-react";
+import Modal from "../Modal";
+import AddLabWorkForm from "./AddLabWorkForm";
+import CreateAppointmentModalForm from "./CreateAppointmentModalForm";
+import CreateBillingModalForm from "./CreateBillingModalForm";
+import CreateFollowUpModalForm from "./CreateFollowUpModalForm";
+import PatientNotesSection from "./PatientNotesSection";
 
 // ... existing imports ...
 interface PatientDetailViewProps {
@@ -117,6 +127,12 @@ const PatientDetailView = ({
   const [selectedLabwork, setSelectedLabwork] = useState<ILabWork | null>(null);
   const [openSelectedLabwork, setOpenSelectedLabwork] = useState(false);
   const [openStatDialog, setOpenStatDialog] = useState<null | string>(null);
+
+  // State for "Create" modals
+  const [isAddAppointmentModalOpen, setIsAddAppointmentModalOpen] = useState(false);
+  const [isAddBillingModalOpen, setIsAddBillingModalOpen] = useState(false);
+  const [isAddLabWorkModalOpen, setIsAddLabWorkModalOpen] = useState(false);
+  const [isAddFollowUpModalOpen, setIsAddFollowUpModalOpen] = useState(false);
 
   const { data: session } = useSession();
   const dispatch = useAppDispatch();
@@ -280,6 +296,19 @@ const PatientDetailView = ({
   };
   const closeDeleteModal = () => setIsDeleteModalOpen(false);
 
+  // Handlers for "Create" modals
+  const openAddAppointmentModal = () => setIsAddAppointmentModalOpen(true);
+  const closeAddAppointmentModal = () => setIsAddAppointmentModalOpen(false);
+
+  const openAddBillingModal = () => setIsAddBillingModalOpen(true);
+  const closeAddBillingModal = () => setIsAddBillingModalOpen(false);
+
+  const openAddLabWorkModal = () => setIsAddLabWorkModalOpen(true);
+  const closeAddLabWorkModal = () => setIsAddLabWorkModalOpen(false);
+
+  const openAddFollowUpModal = () => setIsAddFollowUpModalOpen(true);
+  const closeAddFollowUpModal = () => setIsAddFollowUpModalOpen(false);
+
   return (
     <>
       {/* Patient Header Section */}
@@ -289,6 +318,42 @@ const PatientDetailView = ({
             {patient.fullName}
           </h1>
           <div className="flex gap-3">
+            <div onClick={openAddAppointmentModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="bg-green-500"
+                tooltip="Create Appointment"
+                icon={<CalendarPlus size={16} />}
+              />
+            </div>
+
+            <div onClick={openAddBillingModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="bg-emerald-500"
+                tooltip="Create Billing"
+                icon={<FilePlus size={16} />}
+              />
+            </div>
+
+            <div onClick={openAddLabWorkModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="bg-orange-500"
+                tooltip="Create Lab Work"
+                icon={<PlusCircle size={16} />}
+              />
+            </div>
+
+            <div onClick={openAddFollowUpModal}>
+              <IconButtonWithTooltip
+                href="#"
+                hoverBgColor="bg-purple-500"
+                tooltip="Create Follow Up"
+                icon={<Repeat size={16} />}
+              />
+            </div>
+
             <div onClick={openEditModal}>
               <IconButtonWithTooltip
                 href="#"
@@ -594,7 +659,7 @@ const PatientDetailView = ({
       {/* Labworks Section */}
       <div className="bg-card border-border p-6 rounded-lg shadow-sm">
         <SectionHeader
-          icon={<FlaskConical className="text-orange-500" size={20} />} // or Beaker / TestTube from lucide-react
+          icon={<FlaskConical className="text-orange-500" size={20} />}
           title="Labworks"
         />
 
@@ -716,6 +781,13 @@ const PatientDetailView = ({
         />
       </div>
 
+      {/* Patient Notes Section */}
+      <PatientNotesSection
+        patientId={patient._id}
+        doctorId={session?.user?.id || ""}
+        clinicId="" // TODO: Get clinicId from doctor profile
+      />
+
       {/* Delete Patient Modal */}
       <DeletePatientModal
         isOpen={isDeleteModalOpen}
@@ -790,9 +862,10 @@ const PatientDetailView = ({
                   <div>
                     <p className="text-muted-foreground">Date</p>
                     <p className="font-medium">
-                      {new Date(
-                        selectedAppointment.appointmentDate
-                      ).toLocaleDateString()}
+                      {(() => {
+                        const date = new Date(selectedAppointment.appointmentDate);
+                        return isNaN(date.getTime()) ? "N/A" : date.toLocaleDateString();
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -890,7 +963,10 @@ const PatientDetailView = ({
                   <div>
                     <p className="text-muted-foreground">Created At</p>
                     <p className="font-medium">
-                      {new Date(selectedAppointment.createdAt).toLocaleString()}
+                      {(() => {
+                        const date = new Date(selectedAppointment.createdAt);
+                        return isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -901,7 +977,10 @@ const PatientDetailView = ({
                   <div>
                     <p className="text-muted-foreground">Updated At</p>
                     <p className="font-medium">
-                      {new Date(selectedAppointment.updatedAt).toLocaleString()}
+                      {(() => {
+                        const date = new Date(selectedAppointment.updatedAt);
+                        return isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -1554,6 +1633,87 @@ const PatientDetailView = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Create Appointment Modal */}
+      <Modal
+        isOpen={isAddAppointmentModalOpen}
+        onClose={closeAddAppointmentModal}
+      >
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Create Appointment</h2>
+          <CreateAppointmentModalForm
+            patientId={patient._id}
+            patientName={patient.fullName}
+            patientContact={patient.contactNumber}
+            onClose={closeAddAppointmentModal}
+            onSuccess={() => {
+              if (session?.user?.id) {
+                dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+              }
+              closeAddAppointmentModal();
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* Create Billing Modal */}
+      <Modal
+        isOpen={isAddBillingModalOpen}
+        onClose={closeAddBillingModal}
+      >
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Create Billing</h2>
+          <CreateBillingModalForm
+            patient={patient}
+            onClose={closeAddBillingModal}
+            onSuccess={() => {
+              if (session?.user?.id) {
+                dispatch(fetchBillings({ userId: session.user.id, role: "Doctor" }));
+              }
+              closeAddBillingModal();
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* Create Lab Work Modal */}
+      <Modal
+        isOpen={isAddLabWorkModalOpen}
+        onClose={closeAddLabWorkModal}
+      >
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Create Lab Work for {patient.fullName}</h2>
+          <AddLabWorkForm
+            patient={patient}
+            onClose={closeAddLabWorkModal}
+            onSuccess={() => {
+              closeAddLabWorkModal();
+            }}
+          />
+        </div>
+      </Modal>
+
+      {/* Create Follow-Up Modal */}
+      <Modal
+        isOpen={isAddFollowUpModalOpen}
+        onClose={closeAddFollowUpModal}
+      >
+        <div className="space-y-4">
+          <CreateFollowUpModalForm
+            patientId={patient._id}
+            patientName={patient.fullName}
+            patientContact={patient.contactNumber}
+            patientAppointments={patientAppointments}
+            onClose={closeAddFollowUpModal}
+            onSuccess={() => {
+              if (session?.user?.id) {
+                dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+              }
+              closeAddFollowUpModal();
+            }}
+          />
+        </div>
+      </Modal>
     </>
   );
 };

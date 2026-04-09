@@ -59,16 +59,16 @@ function getDoctorRouteQueryNeeds(pathname: string): QueryNeeds {
   const isProfile = pathname.includes("/profile");
 
   return {
-    // Doctor appointments views depend on treatment + patient data for edit/forms.
-    treatments: isAppointments,
+    // Doctor appointments views and patient records (which has appointment creation) depend on treatment data.
+    treatments: isAppointments || isPatientRecords,
     // Revenue + billing pages require billings.
     billings: isRevenue || isPatientBilling,
     // Appointments route needs appointment list hydration.
     appointments: isAppointments,
     // Keep lab work query only on lab work route.
     labworks: isLabWork,
-    // Profile route needs profile hydration.
-    profile: isProfile,
+    // Profile route needs profile hydration. Also needed by appointments and patient records (for appointment creation).
+    profile: isProfile || isAppointments || isPatientRecords,
     // Doctor pages generally do not need full doctors list from layout.
     doctors: false,
     // Patients are needed by records, appointments, billing, and lab work route features.

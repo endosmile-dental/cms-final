@@ -17,7 +17,7 @@ export async function getDoctorLabWorks(doctorUserId: string) {
     const doctor = await DoctorModel.findOne({ userId: doctorUserId })
       .select("_id fullName specialization")
       .lean<{ _id: string; fullName: string; specialization: string } | null>();
-
+    
     if (!doctor || Array.isArray(doctor) || !doctor._id) {
       throw new Error("Doctor not found");
     }
@@ -31,68 +31,44 @@ export async function getDoctorLabWorks(doctorUserId: string) {
     // Convert to plain objects to avoid circular reference issues in SSR
     return labWorks.map((labWork) => {
       const plainObj = { ...labWork };
-
+      
       // Remove any Buffer objects and convert to plain strings
       if (plainObj._id && plainObj._id.toString) {
         plainObj._id = plainObj._id.toString();
       }
-
+      
       // Convert doctorId to object format matching Redux slice expectations
       plainObj.doctorId = {
         _id: doctor._id.toString(),
         fullName: doctor.fullName,
         specialization: doctor.specialization,
       };
-
+      
       // Convert patientId to object format matching Redux slice expectations
-      if (
-        plainObj.patientId &&
-        typeof plainObj.patientId === "object" &&
-        "_id" in plainObj.patientId
-      ) {
-        const patient = plainObj.patientId as {
-          _id: unknown;
-          fullName?: string;
-          contactNumber?: string;
-          PatientId?: string;
-        };
+      if (plainObj.patientId && typeof plainObj.patientId === 'object' && '_id' in plainObj.patientId) {
+        const patient = plainObj.patientId as { _id: unknown; fullName?: string; contactNumber?: string; PatientId?: string };
         plainObj.patientId = {
-          _id: patient._id?.toString() || "",
-          fullName: patient.fullName || "",
-          contactNumber: patient.contactNumber || "",
+          _id: patient._id?.toString() || '',
+          fullName: patient.fullName || '',
+          contactNumber: patient.contactNumber || '',
         };
       }
-
+      
       // Convert Date objects to strings for Redux compatibility
-      if (
-        plainObj.impressionsTakenOn &&
-        plainObj.impressionsTakenOn instanceof Date
-      ) {
-        plainObj.impressionsTakenOn = formatDateForServer(
-          plainObj.impressionsTakenOn,
-        );
+      if (plainObj.impressionsTakenOn && plainObj.impressionsTakenOn instanceof Date) {
+        plainObj.impressionsTakenOn = formatDateForServer(plainObj.impressionsTakenOn);
       }
       if (plainObj.sentToLabOn && plainObj.sentToLabOn instanceof Date) {
         plainObj.sentToLabOn = formatDateForServer(plainObj.sentToLabOn);
       }
-      if (
-        plainObj.receivedFromLabOn &&
-        plainObj.receivedFromLabOn instanceof Date
-      ) {
-        plainObj.receivedFromLabOn = formatDateForServer(
-          plainObj.receivedFromLabOn,
-        );
+      if (plainObj.receivedFromLabOn && plainObj.receivedFromLabOn instanceof Date) {
+        plainObj.receivedFromLabOn = formatDateForServer(plainObj.receivedFromLabOn);
       }
       if (plainObj.fittedOn && plainObj.fittedOn instanceof Date) {
         plainObj.fittedOn = formatDateForServer(plainObj.fittedOn);
       }
-      if (
-        plainObj.expectedDeliveryDate &&
-        plainObj.expectedDeliveryDate instanceof Date
-      ) {
-        plainObj.expectedDeliveryDate = formatDateForServer(
-          plainObj.expectedDeliveryDate,
-        );
+      if (plainObj.expectedDeliveryDate && plainObj.expectedDeliveryDate instanceof Date) {
+        plainObj.expectedDeliveryDate = formatDateForServer(plainObj.expectedDeliveryDate);
       }
       if (plainObj.reWorkSentDate && plainObj.reWorkSentDate instanceof Date) {
         plainObj.reWorkSentDate = formatDateForServer(plainObj.reWorkSentDate);
@@ -103,7 +79,7 @@ export async function getDoctorLabWorks(doctorUserId: string) {
       if (plainObj.updatedAt && plainObj.updatedAt instanceof Date) {
         plainObj.updatedAt = formatDateForServer(plainObj.updatedAt);
       }
-
+      
       return plainObj;
     });
   } catch (error: unknown) {
@@ -137,36 +113,21 @@ export async function getPatientLabWorks(patientUserId: string) {
       .lean(); // Use lean() to get plain objects instead of Mongoose documents
 
     // Convert Date objects to strings for Redux compatibility
-    return labWorks.map((labWork) => {
-      if (
-        labWork.impressionsTakenOn &&
-        labWork.impressionsTakenOn instanceof Date
-      ) {
-        labWork.impressionsTakenOn = formatDateForServer(
-          labWork.impressionsTakenOn,
-        );
+    return labWorks.map(labWork => {
+      if (labWork.impressionsTakenOn && labWork.impressionsTakenOn instanceof Date) {
+        labWork.impressionsTakenOn = formatDateForServer(labWork.impressionsTakenOn);
       }
       if (labWork.sentToLabOn && labWork.sentToLabOn instanceof Date) {
         labWork.sentToLabOn = formatDateForServer(labWork.sentToLabOn);
       }
-      if (
-        labWork.receivedFromLabOn &&
-        labWork.receivedFromLabOn instanceof Date
-      ) {
-        labWork.receivedFromLabOn = formatDateForServer(
-          labWork.receivedFromLabOn,
-        );
+      if (labWork.receivedFromLabOn && labWork.receivedFromLabOn instanceof Date) {
+        labWork.receivedFromLabOn = formatDateForServer(labWork.receivedFromLabOn);
       }
       if (labWork.fittedOn && labWork.fittedOn instanceof Date) {
         labWork.fittedOn = formatDateForServer(labWork.fittedOn);
       }
-      if (
-        labWork.expectedDeliveryDate &&
-        labWork.expectedDeliveryDate instanceof Date
-      ) {
-        labWork.expectedDeliveryDate = formatDateForServer(
-          labWork.expectedDeliveryDate,
-        );
+      if (labWork.expectedDeliveryDate && labWork.expectedDeliveryDate instanceof Date) {
+        labWork.expectedDeliveryDate = formatDateForServer(labWork.expectedDeliveryDate);
       }
       if (labWork.reWorkSentDate && labWork.reWorkSentDate instanceof Date) {
         labWork.reWorkSentDate = formatDateForServer(labWork.reWorkSentDate);
@@ -266,24 +227,17 @@ export async function getDoctorLabWorkAnalytics(doctorUserId: string) {
       monthlyLabWorks[month] = (monthlyLabWorks[month] || 0) + 1;
 
       // Calculate turnaround time for completed lab works
-      if (
-        labWork.status === "Fitted" &&
-        labWork.sentToLabOn &&
-        labWork.fittedOn
-      ) {
+      if (labWork.status === "Fitted" && labWork.sentToLabOn && labWork.fittedOn) {
         const sentDate = new Date(labWork.sentToLabOn);
         const fittedDate = new Date(labWork.fittedOn);
-        const turnaroundTime = Math.ceil(
-          (fittedDate.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
+        const turnaroundTime = Math.ceil((fittedDate.getTime() - sentDate.getTime()) / (1000 * 60 * 60 * 24));
         totalTurnaroundTime += turnaroundTime;
         completedLabWorks += 1;
       }
     });
 
     // Calculate average turnaround time
-    const averageTurnaroundTime =
-      completedLabWorks > 0 ? totalTurnaroundTime / completedLabWorks : 0;
+    const averageTurnaroundTime = completedLabWorks > 0 ? totalTurnaroundTime / completedLabWorks : 0;
 
     return {
       totalLabWorks,
@@ -316,7 +270,7 @@ export async function getDoctorLabWorkAnalytics(doctorUserId: string) {
 export async function getLabWorksByDateRange(
   doctorUserId: string,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ) {
   try {
     await dbConnect();
@@ -340,36 +294,21 @@ export async function getLabWorksByDateRange(
       .lean(); // Use lean() to get plain objects instead of Mongoose documents
 
     // Convert Date objects to strings for Redux compatibility
-    return labWorks.map((labWork) => {
-      if (
-        labWork.impressionsTakenOn &&
-        labWork.impressionsTakenOn instanceof Date
-      ) {
-        labWork.impressionsTakenOn = formatDateForServer(
-          labWork.impressionsTakenOn,
-        );
+    return labWorks.map(labWork => {
+      if (labWork.impressionsTakenOn && labWork.impressionsTakenOn instanceof Date) {
+        labWork.impressionsTakenOn = formatDateForServer(labWork.impressionsTakenOn);
       }
       if (labWork.sentToLabOn && labWork.sentToLabOn instanceof Date) {
         labWork.sentToLabOn = formatDateForServer(labWork.sentToLabOn);
       }
-      if (
-        labWork.receivedFromLabOn &&
-        labWork.receivedFromLabOn instanceof Date
-      ) {
-        labWork.receivedFromLabOn = formatDateForServer(
-          labWork.receivedFromLabOn,
-        );
+      if (labWork.receivedFromLabOn && labWork.receivedFromLabOn instanceof Date) {
+        labWork.receivedFromLabOn = formatDateForServer(labWork.receivedFromLabOn);
       }
       if (labWork.fittedOn && labWork.fittedOn instanceof Date) {
         labWork.fittedOn = formatDateForServer(labWork.fittedOn);
       }
-      if (
-        labWork.expectedDeliveryDate &&
-        labWork.expectedDeliveryDate instanceof Date
-      ) {
-        labWork.expectedDeliveryDate = formatDateForServer(
-          labWork.expectedDeliveryDate,
-        );
+      if (labWork.expectedDeliveryDate && labWork.expectedDeliveryDate instanceof Date) {
+        labWork.expectedDeliveryDate = formatDateForServer(labWork.expectedDeliveryDate);
       }
       if (labWork.reWorkSentDate && labWork.reWorkSentDate instanceof Date) {
         labWork.reWorkSentDate = formatDateForServer(labWork.reWorkSentDate);
@@ -380,11 +319,11 @@ export async function getLabWorksByDateRange(
     console.error("Error fetching lab works by date range:", error);
     if (error instanceof Error) {
       throw new Error(
-        `Failed to fetch lab works by date range: ${error.message}`,
+        `Failed to fetch lab works by date range: ${error.message}`
       );
     }
     throw new Error(
-      "Unknown error occurred while fetching lab works by date range",
+      "Unknown error occurred while fetching lab works by date range"
     );
   }
 }

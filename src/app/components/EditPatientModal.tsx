@@ -65,7 +65,15 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
   // Reset form when patient changes
   useEffect(() => {
     if (patient) {
-      reset({ ...(patient as Patient & { password?: string }), password: "" });
+      // Format dateOfBirth to YYYY-MM-DD for the date input
+      let formattedDateOfBirth = "";
+      if (patient.dateOfBirth) {
+        const date = new Date(patient.dateOfBirth);
+        if (!isNaN(date.getTime())) {
+          formattedDateOfBirth = date.toISOString().split("T")[0];
+        }
+      }
+      reset({ ...(patient as Patient & { password?: string }), dateOfBirth: formattedDateOfBirth, password: "" });
     }
   }, [patient, reset]);
 

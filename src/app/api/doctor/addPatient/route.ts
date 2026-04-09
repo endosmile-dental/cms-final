@@ -48,6 +48,12 @@ export async function POST(request: Request) {
     if ("error" in parsed) return parsed.error;
     const data = parsed.data;
 
+    // Trim leading '0' from contact numbers if present
+    data.contactNumber = data.contactNumber.replace(/^0+/, "");
+    if (data.emergencyContact?.contactNumber) {
+      data.emergencyContact.contactNumber = data.emergencyContact.contactNumber.replace(/^0+/, "");
+    }
+
     // Retrieve the doctor id from the custom header (provided via session)
     const doctorIdResult = resolveUserIdFromHeader(
       request,
@@ -63,13 +69,19 @@ export async function POST(request: Request) {
       return errorResponse(404, "Doctor not found.");
     }
 
-    // Create a new user for the patient.
-    // NOTE: In a production system, hash the password before storing.
+    // Check if a user with this email already exists
+    const existingUser = await UserModel.findOne({ email: data.email });
+    if (existingUser) {
+      return errorResponse(409, "A user with this email already exists");
+    }
+
+    // Create a new user for the patient
+    // Note: The User model has a pre-save hook that automatically hashes the password
     const newUser = await UserModel.create({
       email: data.email,
       password: data.password,
       role: "Patient",
-      status: "Active", // or your desired default status
+      status: "Active",
     });
 
     // Count how many patients exist already

@@ -3,9 +3,9 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 // import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards"; // kept for future static cards edits
-import { useAppSelector } from "@/app/redux/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { store } from "@/app/redux/store/store";
-import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
+import { fetchProfile, updateProfile, ProfileData, DoctorProfile } from "@/app/redux/slices/profileSlice";
 import { useSession } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -46,15 +46,19 @@ const mapProfileToForm = (profileData: ProfileData) => ({
 
 export default function ProfileSettings() {
   const { data: session } = useSession();
+  const dispatch = useAppDispatch();
 
   const userProfile = useAppSelector(
-    (state) => state?.profile?.profile as ProfileData
+    (state) => state?.profile?.profile as DoctorProfile
   );
+  const isUpdating = useAppSelector((state) => state?.profile?.loading);
+  const updateError = useAppSelector((state) => state?.profile?.error);
 
   const [profile, setProfile] = useState(() => mapProfileToForm(userProfile));
   const [hasEditedProfile, setHasEditedProfile] = useState(false);
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupStatus, setBackupStatus] = useState<"idle" | "success" | "error">(
@@ -79,6 +83,20 @@ export default function ProfileSettings() {
       return () => clearTimeout(timer);
     }
   }, [showSuccess]);
+
+  useEffect(() => {
+    if (showError) {
+      const timer = setTimeout(() => setShowError(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showError]);
+
+  // Clear error when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clear error on unmount
+    };
+  }, []);
 
   useEffect(() => {
     if (!userProfile && session?.user?.id) {
@@ -112,9 +130,42 @@ export default function ProfileSettings() {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setShowSuccess(true);
+
+    if (!userProfile?._id) {
+      setShowError(true);
+      return;
+    }
+
+    // Build the update payload with the full profile data
+    const updatedProfile: DoctorProfile = {
+      ...userProfile,
+      fullName: profile.name,
+      contactNumber: profile.phone,
+      address: {
+        street: profile.address.street,
+        city: profile.address.city,
+        state: profile.address.state,
+        postalCode: profile.address.postalCode,
+      },
+    };
+
+    try {
+      const result = await dispatch(
+        updateProfile({ profile: updatedProfile, role: "Doctor" })
+      ).unwrap();
+
+      if (result) {
+        setShowSuccess(true);
+        setHasEditedProfile(false);
+        // Update local state with the returned profile
+        setProfile(mapProfileToForm(result as DoctorProfile));
+      }
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      setShowError(true);
+    }
   };
 
   /*
@@ -314,6 +365,12 @@ export default function ProfileSettings() {
                   </div>
                 )}
 
+                {showError && (
+                  <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+                    {updateError || "Failed to update profile. Please try again."}
+                  </div>
+                )}
+
                 <form
                   onSubmit={handleSubmit}
                   className="grid grid-cols-1 gap-4 md:grid-cols-2"
@@ -399,15 +456,16 @@ export default function ProfileSettings() {
                     />
                   </div>
 
-                  <div className="md:col-span-2 flex justify-end">
-                    <Button
-                      type="submit"
-                      className="gap-2 bg-gradient-to-r from-sky-500 to-cyan-500 text-white hover:from-sky-600 hover:to-cyan-600"
-                    >
-                      <Save className="h-4 w-4" />
-                      Save Profile
-                    </Button>
-                  </div>
+                    <div className="md:col-span-2 flex justify-end">
+                      <Button
+                        type="submit"
+                        disabled={isUpdating}
+                        className="gap-2 bg-gradient-to-r from-sky-500 to-cyan-500 text-white hover:from-sky-600 hover:to-cyan-600 disabled:opacity-50"
+                      >
+                        <Save className="h-4 w-4" />
+                        {isUpdating ? "Saving..." : "Save Profile"}
+                      </Button>
+                    </div>
                 </form>
               </CardContent>
             </Card>

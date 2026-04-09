@@ -30,6 +30,8 @@ interface Patient {
 interface AddLabWorkFormProps {
   onClose: () => void;
   onSuccess?: () => void;
+  /** Pre-selected patient (when opening from patient detail view) */
+  patient?: Patient;
 }
 
 const orderTypes = [
@@ -91,6 +93,7 @@ const materialByOrderType: Record<string, string[]> = {
 const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
   onClose,
   onSuccess,
+  patient: preSelectedPatient,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -115,7 +118,20 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
   const [searchResults, setSearchResults] = useState<Patient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  // Initialize selectedPatient with pre-selected patient if provided
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
+    preSelectedPatient || null
+  );
+
+  // Set patientId in formData when pre-selected patient is provided
+  useEffect(() => {
+    if (preSelectedPatient && !formData.patientId) {
+      setFormData((prev) => ({
+        ...prev,
+        patientId: preSelectedPatient._id,
+      }));
+    }
+  }, [preSelectedPatient, formData.patientId]);
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -290,116 +306,118 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Search Section - Similar to Billing Page */}
-      <div className="border rounded-lg p-4 bg-card">
-        <Label className="text-base font-semibold">Search Patient</Label>
-        <div className="relative mt-2">
-          <Search
-            className="absolute left-3 top-3 text-muted-foreground"
-            size={18}
-          />
-          <Input
-            type="text"
-            placeholder="Search patients by name, ID, or phone..."
-            value={patientQuery}
-            onChange={handlePatientChange}
-            className="pl-10 pr-4 py-2 w-full"
-            disabled={!!selectedPatient}
-          />
+      {/* Search Section - Only show if no pre-selected patient */}
+      {!preSelectedPatient && (
+        <div className="border rounded-lg p-4 bg-card">
+          <Label className="text-base font-semibold">Search Patient</Label>
+          <div className="relative mt-2">
+            <Search
+              className="absolute left-3 top-3 text-muted-foreground"
+              size={18}
+            />
+            <Input
+              type="text"
+              placeholder="Search patients by name, ID, or phone..."
+              value={patientQuery}
+              onChange={handlePatientChange}
+              className="pl-10 pr-4 py-2 w-full"
+              disabled={!!selectedPatient}
+            />
 
-          {isSearching && (
-            <div className="absolute right-10 top-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* Search Results Dropdown */}
-          {hasSearched && !selectedPatient && (
-            <ul className="absolute z-10 w-full bg-background border rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
-              <li className="px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground">
-                {isSearching ? (
-                  'Searching...'
-                ) : filteredSuggestions.length === 0 ? (
-                  'No patients found'
-                ) : (
-                  `Showing ${filteredSuggestions.length} result${filteredSuggestions.length !== 1 ? 's' : ''}`
-                )}
-              </li>
-              {filteredSuggestions.map((patient) => (
-                <li
-                  key={patient._id}
-                  className="px-4 py-3 hover:bg-accent border-b last:border-b-0 cursor-pointer transition-colors"
-                  onClick={() => handleSelectSuggestion(patient)}
-                >
-                  <div className="font-medium">{patient.fullName}</div>
-                  <div className="text-sm text-muted-foreground">
-                    ID: {patient.PatientId}
-                    {patient.contactNumber && ` • ${patient.contactNumber}`}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* No Results Fallback */}
-          {!selectedPatient &&
-            hasSearched &&
-            filteredSuggestions.length === 0 &&
-            !isSearching &&
-            patientQuery.trim() !== "" && (
-              <div className="mt-2 border border-dashed rounded-lg p-4 text-center">
-                <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 bg-muted/50 rounded-full">
-                  <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                  </svg>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">Patient not found</p>
-                <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
-                  <Button
-                    type="button"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                  >
-                    Register New Patient
-                  </Button>
-                </Link>
+            {isSearching && (
+              <div className="absolute right-10 top-3">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>
             )}
-        </div>
 
-        {/* Selected Patient Display */}
-        {selectedPatient && (
-          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium text-blue-800 dark:text-blue-200">
-                  Selected: {selectedPatient.fullName}
-                </p>
-                <p className="text-sm text-blue-600 dark:text-blue-300">
-                  ID: {selectedPatient.PatientId}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedPatient(null);
-                  setPatientQuery("");
-                  setFormData((prev) => ({
-                    ...prev,
-                    patientId: "",
-                  }));
-                }}
-              >
-                Change
-              </Button>
-            </div>
+            {/* Search Results Dropdown */}
+            {hasSearched && !selectedPatient && (
+              <ul className="absolute z-10 w-full bg-background border rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
+                <li className="px-4 py-2 border-b bg-muted/50 text-sm text-muted-foreground">
+                  {isSearching ? (
+                    'Searching...'
+                  ) : filteredSuggestions.length === 0 ? (
+                    'No patients found'
+                  ) : (
+                    `Showing ${filteredSuggestions.length} result${filteredSuggestions.length !== 1 ? 's' : ''}`
+                  )}
+                </li>
+                {filteredSuggestions.map((patient) => (
+                  <li
+                    key={patient._id}
+                    className="px-4 py-3 hover:bg-accent border-b last:border-b-0 cursor-pointer transition-colors"
+                    onClick={() => handleSelectSuggestion(patient)}
+                  >
+                    <div className="font-medium">{patient.fullName}</div>
+                    <div className="text-sm text-muted-foreground">
+                      ID: {patient.PatientId}
+                      {patient.contactNumber && ` • ${patient.contactNumber}`}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* No Results Fallback */}
+            {!selectedPatient &&
+              hasSearched &&
+              filteredSuggestions.length === 0 &&
+              !isSearching &&
+              patientQuery.trim() !== "" && (
+                <div className="mt-2 border border-dashed rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center w-8 h-8 mx-auto mb-2 bg-muted/50 rounded-full">
+                    <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">Patient not found</p>
+                  <Link href="/dashboard/pages/Doctor/patientRecords/patientRegistrationForm">
+                    <Button
+                      type="button"
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    >
+                      Register New Patient
+                    </Button>
+                  </Link>
+                </div>
+              )}
           </div>
-        )}
-      </div>
+
+          {/* Selected Patient Display */}
+          {selectedPatient && (
+            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-blue-800 dark:text-blue-200">
+                    Selected: {selectedPatient.fullName}
+                  </p>
+                  <p className="text-sm text-blue-600 dark:text-blue-300">
+                    ID: {selectedPatient.PatientId}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    setPatientQuery("");
+                    setFormData((prev) => ({
+                      ...prev,
+                      patientId: "",
+                    }));
+                  }}
+                >
+                  Change
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Lab Work Form - Only show when patient is selected */}
-      {selectedPatient && (
+      {(selectedPatient || preSelectedPatient) && (
         <form
           onSubmit={handleSubmit}
           className="space-y-4 max-h-[380px] overflow-y-auto pb-8"
@@ -621,7 +639,7 @@ const AddLabWorkForm: React.FC<AddLabWorkFormProps> = ({
       )}
 
       {/* Show message if no patient selected */}
-      {!selectedPatient && (
+      {!selectedPatient && !preSelectedPatient && (
         <div className="text-center py-8 text-muted-foreground">
           <p>Please search and select a patient to add lab work.</p>
         </div>

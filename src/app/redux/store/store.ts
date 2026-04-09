@@ -9,6 +9,7 @@ import labWorkReducer from "../slices/labWorkSlice";
 import treatmentReducer from "../slices/treatmentSlice";
 import themeReducer from "../slices/themeSlice";
 import hydrationReducer from "../slices/hydrationSlice";
+import notesReducer from "../slices/noteSlice";
 
 export const store = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const store = configureStore({
     treatment: treatmentReducer,
     theme: themeReducer,
     hydration: hydrationReducer,
+    notes: notesReducer,
 
     // doctor: doctorReducer,
     // clinic: clinicReducer,

@@ -281,12 +281,19 @@ const appointmentSlice = createSlice({
         state.error =
           (action.payload as string) || "Failed to delete appointment";
       })
+      // Availability fetch cases
+      .addCase(fetchAvailability.pending, (state) => {
+        state.bookedSlots = []; // Clear old slots when fetching new date
+      })
       .addCase(
         fetchAvailability.fulfilled,
         (state, action: PayloadAction<string[]>) => {
           state.bookedSlots = action.payload; // Store only time slots here
         }
-      );
+      )
+      .addCase(fetchAvailability.rejected, (state) => {
+        state.bookedSlots = []; // Clear slots on error
+      });
   },
 });
 
