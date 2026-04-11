@@ -17,10 +17,11 @@ const TIMEZONE = "Asia/Kolkata";
 /* -------------------------------------------------------------------------- */
 
 /**
- * Format date to yyyy-MM-dd (IST)
+ * Format date to ISO string with explicit IST timezone offset
+ * THIS IS THE ONLY SAFE WAY - prevents NodeJS from auto-converting to UTC midnight
  */
 export const formatDateForServer = (date: Date): string => {
-  return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd");
+  return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd'T'HH:mm:ssXXX");
 };
 
 /**
