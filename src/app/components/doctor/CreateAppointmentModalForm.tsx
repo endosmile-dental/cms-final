@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import {
   selectBookedSlots,
@@ -123,8 +124,8 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
   useEffect(() => {
     if (currentDoctor?._id && formData.appointmentDate) {
       setAvailabilityLoading(true);
-      const formattedDate = format(formData.appointmentDate, "yyyy-MM-dd");
-      
+      const formattedDate = formatDateForServer(formData.appointmentDate);
+
       dispatch(fetchAvailability({
         doctorId: currentDoctor._id,
         date: formattedDate,
@@ -180,7 +181,7 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
       const payload = {
         doctor: doctorId,
         patient: patientId,
-        appointmentDate: format(formData.appointmentDate, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+        appointmentDate: formatDateForServer(formData.appointmentDate),
         status: "Scheduled" as AppointmentStatus,
         consultationType: formData.consultationType,
         timeSlot: formData.timeSlot,
@@ -310,7 +311,7 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                     Loading slots...
                   </div>
                 )}
-                <div 
+                <div
                   className="grid grid-cols-3 gap-2 overflow-y-auto"
                   style={{ maxHeight: '300px' }}
                 >
@@ -321,9 +322,8 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                       variant={formData.timeSlot === time ? "default" : "outline"}
                       disabled={booked}
                       onClick={() => handleTimeSlotSelect(time)}
-                      className={`h-8 text-xs ${
-                        booked ? "opacity-50 cursor-not-allowed" : ""
-                      } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
+                      className={`h-8 text-xs ${booked ? "opacity-50 cursor-not-allowed" : ""
+                        } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
                     >
                       {time}
                       {popular && !booked && (
