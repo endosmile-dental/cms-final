@@ -474,12 +474,12 @@ const PatientDetailView = ({
             {
               header: "Type",
               accessorKey: "consultationType",
-              render: (v) => v || "N/A",
+              render: (v) => String(v || "N/A"),
             },
             {
               header: "Status",
               accessorKey: "status",
-              render: (v) => v || "N/A",
+              render: (v) => String(v || "N/A"),
             },
             {
               header: "Actions",
