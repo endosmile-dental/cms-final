@@ -7,7 +7,7 @@ import BillingModel from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 
 import { format } from "date-fns";
-import { formatDateForServer, getLocalDate } from "@/app/utils/dateUtils";
+import { formatDateForServer, getLocalDate, startOfDayIST } from "@/app/utils/dateUtils";
 import { DoctorDashboardDTO } from "@/app/types/dashboard/doctor/doctorDashboard";
 import { requireAuth } from "@/app/utils/authz";
 import { successResponse } from "@/app/utils/api";
@@ -259,6 +259,7 @@ export async function getDoctorDashboardData(
   const appointmentsForCalendar = await AppointmentModel.find({
     doctor: doctorObjectId,
     status: { $ne: "Cancelled" },
+    appointmentDate: { $gte: startOfDayIST(new Date()) }
   })
     .populate("patient", "fullName contactNumber")
     .sort({ appointmentDate: 1, timeSlot: 1 });

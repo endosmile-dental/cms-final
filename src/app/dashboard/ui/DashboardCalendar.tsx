@@ -10,7 +10,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { formatDateForServer } from "@/app/utils/dateUtils";
+import { formatDateForServer, formatForInput, isSameDayIST } from "@/app/utils/dateUtils";
 
 import AppointmentDetailsModal from "@/app/components/doctor/AppointmentDetailsModal";
 
@@ -37,7 +37,7 @@ export default function DashboardCalendar({
   appointmentDetails = [],
 }: DashboardCalendarProps) {
   const dateToDetailsMap = new Map(
-    appointmentDetails.map((item) => [item.date, item])
+    appointmentDetails.map((item) => [formatForInput(new Date(item.date)), item])
   );
 
   const selectedDates = appointmentDetails.map((item) => {
@@ -56,7 +56,7 @@ export default function DashboardCalendar({
 
   const handleDateClick = (date: Date) => {
     // Use local date to match server-side date formatting
-    const dateStr = formatDateForServer(date);
+    const dateStr = formatForInput(date);
     const detail = dateToDetailsMap.get(dateStr);
 
     // helper: returns minutes since midnight or Infinity if unparsable
@@ -90,7 +90,7 @@ export default function DashboardCalendar({
 
   const CustomDay = ({ date }: { date: Date }) => {
     // Use local date to match server-side date formatting
-    const dateStr = formatDateForServer(date);
+    const dateStr = formatForInput(date);
     const detail = dateToDetailsMap.get(dateStr);
     
     // Check if today using local date comparison

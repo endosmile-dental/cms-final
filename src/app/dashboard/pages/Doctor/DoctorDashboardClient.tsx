@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";
@@ -52,6 +52,18 @@ export default function DoctorDashboardClient({
       dispatch(fetchLabWorks({ userId: session.user.id, role: "Doctor" }));
     }
   }, [session?.user.id, dispatch]);
+
+  // Auto-refresh data every 30 seconds to update calendar
+  useEffect(() => {
+    if (!session?.user.id) return;
+    
+    const refreshInterval = setInterval(() => {
+      router.refresh(); // Refresh server components to get latest calendar data
+      dispatch(fetchAppointments({ userId: session.user.id, role: "Doctor" }));
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [session?.user.id, dispatch, router]);
 
 
   if (!data) {
