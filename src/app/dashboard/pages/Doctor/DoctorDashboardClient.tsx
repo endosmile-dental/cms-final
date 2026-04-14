@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/app/dashboard/layout/DashboardLayout";
 import DashboardCards, { Stat } from "@/app/dashboard/ui/DashboardCards";
 import DashboardChart from "@/app/dashboard/ui/DashboardChart";

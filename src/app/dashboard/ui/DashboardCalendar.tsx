@@ -10,7 +10,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { formatDateForServer, formatForInput, isSameDayIST } from "@/app/utils/dateUtils";
+import { formatForInput } from "@/app/utils/dateUtils";
 
 import AppointmentDetailsModal from "@/app/components/doctor/AppointmentDetailsModal";
 
@@ -92,13 +92,13 @@ export default function DashboardCalendar({
     // Use local date to match server-side date formatting
     const dateStr = formatForInput(date);
     const detail = dateToDetailsMap.get(dateStr);
-    
+
     // Check if today using local date comparison
     const isToday = (() => {
       const today = new Date();
       return date.toDateString() === today.toDateString();
     })();
-    
+
     const dayNum = date.getDate();
 
     const baseStyle =
