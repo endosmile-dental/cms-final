@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { formatForDisplay, parseDateFromServer } from "@/app/utils/dateUtils";
+import { parseDateFromServer } from "@/app/utils/dateUtils";
 import {
   Table,
   TableHeader,
@@ -41,23 +41,23 @@ const AppointmentDetailsModal = ({
   const safeDate = (() => {
     try {
       console.log("[MODAL DEBUG] Raw date input:", date, typeof date);
-      
+
       // Already a valid Date object
       if (date instanceof Date && !isNaN(date.getTime())) {
         return date;
       }
-      
+
       // String input
       const dateString = String(date).trim();
       console.log("[MODAL DEBUG] Processing string date:", dateString);
-      
+
       // First try direct parse
       let parsed = new Date(dateString);
       if (!isNaN(parsed.getTime())) {
         console.log("[MODAL DEBUG] Direct parse success:", parsed);
         return parsed;
       }
-      
+
       // Try using parseDateFromServer utility
       try {
         parsed = parseDateFromServer(dateString);
@@ -66,7 +66,7 @@ const AppointmentDetailsModal = ({
       } catch (e) {
         console.log("[MODAL DEBUG] parseDateFromServer failed:", e);
       }
-      
+
       // Fallback 1: try yyyy-MM-dd format
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         const [y, m, d] = dateString.split('-').map(Number);
@@ -74,11 +74,11 @@ const AppointmentDetailsModal = ({
         console.log("[MODAL DEBUG] yyyy-MM-dd parse success:", parsed);
         return parsed;
       }
-      
+
     } catch (e) {
       console.error("[MODAL DEBUG] Date parsing completely failed:", e);
     }
-    
+
     // Absolute last resort fallback
     console.log("[MODAL DEBUG] Using fallback date: today");
     return new Date();
@@ -220,11 +220,10 @@ const AppointmentDetailsModal = ({
 
                       <TableCell className="text-sm">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            appointment.consultationType === "Follow-up"
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${appointment.consultationType === "Follow-up"
                               ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
                               : "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300"
-                          }`}
+                            }`}
                         >
                           {appointment.consultationType === "Follow-up" ? (
                             <>
