@@ -169,9 +169,14 @@ const PatientDetailView = ({
     useMemoizedCalculations(
       [appointments, billings, labWorks, patient],
       () => {
-      const patientAppointments = appointments.filter(
-        (appointment) => appointment.patient === patient._id
-      );
+      const patientAppointments = appointments.filter((appointment) => {
+        if (typeof appointment.patient === "string") {
+          return appointment.patient === patient._id;
+        } else if (typeof appointment.patient === "object" && appointment.patient) {
+          return appointment.patient._id === patient._id || appointment.patient.PatientId === patient.PatientId;
+        }
+        return false;
+      });
 
       const patientBillings = billings.filter(
         (billing) => billing.patientId === patient._id
