@@ -5,6 +5,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
+import { formatForDisplay, parseDateFromServer } from "@/app/utils/dateUtils";
 import {
   Table,
   TableHeader,
@@ -26,7 +27,7 @@ interface Appointment {
 }
 
 interface AppointmentDetailsModalProps {
-  date: Date;
+  date: Date | string;
   appointments: Appointment[];
   onClose: () => void;
 }
@@ -36,6 +37,53 @@ const AppointmentDetailsModal = ({
   appointments,
   onClose,
 }: AppointmentDetailsModalProps) => {
+  // Safe date parsing with fallback (FINAL FIX)
+  const safeDate = (() => {
+    try {
+      console.log("[MODAL DEBUG] Raw date input:", date, typeof date);
+      
+      // Already a valid Date object
+      if (date instanceof Date && !isNaN(date.getTime())) {
+        return date;
+      }
+      
+      // String input
+      const dateString = String(date).trim();
+      console.log("[MODAL DEBUG] Processing string date:", dateString);
+      
+      // First try direct parse
+      let parsed = new Date(dateString);
+      if (!isNaN(parsed.getTime())) {
+        console.log("[MODAL DEBUG] Direct parse success:", parsed);
+        return parsed;
+      }
+      
+      // Try using parseDateFromServer utility
+      try {
+        parsed = parseDateFromServer(dateString);
+        console.log("[MODAL DEBUG] parseDateFromServer success:", parsed);
+        return parsed;
+      } catch (e) {
+        console.log("[MODAL DEBUG] parseDateFromServer failed:", e);
+      }
+      
+      // Fallback 1: try yyyy-MM-dd format
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [y, m, d] = dateString.split('-').map(Number);
+        parsed = new Date(y, m - 1, d, 12, 0, 0); // Noon to avoid timezone issues
+        console.log("[MODAL DEBUG] yyyy-MM-dd parse success:", parsed);
+        return parsed;
+      }
+      
+    } catch (e) {
+      console.error("[MODAL DEBUG] Date parsing completely failed:", e);
+    }
+    
+    // Absolute last resort fallback
+    console.log("[MODAL DEBUG] Using fallback date: today");
+    return new Date();
+  })();
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-full p-0 rounded-xl bg-card border-border shadow-2xl overflow-hidden">
@@ -48,7 +96,7 @@ const AppointmentDetailsModal = ({
               </div>
               <div>
                 <DialogTitle className="text-2xl font-bold text-foreground">
-                  Appointments for {format(date, "PPP")}
+                  Appointments for {format(safeDate, "PPP")}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-muted-foreground mt-1">
                   {appointments.length} appointment{appointments.length !== 1 ? 's' : ''} scheduled on this date

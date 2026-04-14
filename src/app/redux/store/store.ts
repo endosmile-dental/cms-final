@@ -28,7 +28,14 @@ export const store = configureStore({
     // clinic: clinicReducer,
     // auth: authReducer,
   },
-  // Redux Toolkit automatically sets up the Redux DevTools extension and middleware.
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: process.env.NODE_ENV === 'production' 
+        ? false 
+        : {
+            warnAfter: 120, // Increase threshold from 32ms to 120ms for large datasets
+          },
+    }),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself.

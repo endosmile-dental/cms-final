@@ -10,7 +10,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { formatForInput } from "@/app/utils/dateUtils";
+import { formatForInput, formatDateForServer } from "@/app/utils/dateUtils";
 
 import AppointmentDetailsModal from "@/app/components/doctor/AppointmentDetailsModal";
 
@@ -48,7 +48,7 @@ export default function DashboardCalendar({
     return date;
   });
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | Date | null>(null);
   const [selectedAppointments, setSelectedAppointments] = useState<
     AppointmentDateDetailed["appointments"]
   >([]);
@@ -58,6 +58,7 @@ export default function DashboardCalendar({
     // Use local date to match server-side date formatting
     const dateStr = formatForInput(date);
     const detail = dateToDetailsMap.get(dateStr);
+    const safeDateString = formatDateForServer(date);
 
     // helper: returns minutes since midnight or Infinity if unparsable
     const parseTimeToMinutes = (time?: string) => {
@@ -76,7 +77,7 @@ export default function DashboardCalendar({
       console.log("Clicked date with appointments:", detail.appointments);
       console.log("Detail:", detail.date);
 
-      setSelectedDate(date);
+      setSelectedDate(safeDateString);
       // use a copy to avoid mutating original array
       setSelectedAppointments(
         [...detail.appointments].sort(
