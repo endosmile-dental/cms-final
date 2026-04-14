@@ -75,5 +75,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
   },
+  session: {
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+    strategy: "jwt"
+  },
   secret: process.env.NEXTAUTH_SECRET,
 });

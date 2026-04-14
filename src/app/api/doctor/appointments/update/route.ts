@@ -5,6 +5,7 @@ import { requireAuth } from "@/app/utils/authz";
 import DoctorModel from "@/app/model/Doctor.model";
 import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
 import { updateAppointmentSchema } from "@/app/schemas/api";
+import { parseDateFromServer } from "@/app/utils/dateUtils";
 
 export async function PUT(request: Request) {
   try {
@@ -53,13 +54,13 @@ export async function PUT(request: Request) {
         return errorResponse(404, "Doctor not found");
       }
 
-      // Calculate the date range for the new appointment date
-      const newAppointmentDateObj = new Date(body.appointmentDate);
-      const newAppointmentStartOfDay = new Date(
-        newAppointmentDateObj.getFullYear(),
-        newAppointmentDateObj.getMonth(),
-        newAppointmentDateObj.getDate()
-      );
+// Calculate the date range for the new appointment date
+    const newAppointmentDateObj = parseDateFromServer(body.appointmentDate);
+    const newAppointmentStartOfDay = new Date(
+      newAppointmentDateObj.getFullYear(),
+      newAppointmentDateObj.getMonth(),
+      newAppointmentDateObj.getDate()
+    );
 
       // Check for existing appointment with the same doctor, date, and timeSlot
       const conflictingAppointment = await AppointmentModel.findOne({

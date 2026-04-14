@@ -53,7 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { createAppointment } from "@/app/redux/slices/appointmentSlice";
 import { useSession } from "next-auth/react";
-import { format } from "date-fns";
+import { formatForInput, formatForDisplay, startOfDayIST, getLocalDate } from "@/app/utils/dateUtils";
 import { MultiSelect } from "@/components/ui/multi-select";
 import type {
   ConsultationType,
@@ -289,8 +289,8 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
     if (currentDoctor?._id && appointmentData.appointmentDate) {
       setAvailabilityLoading(true);
       setAvailabilityError(null);
-      
-      const formattedDate = format(appointmentData.appointmentDate, "yyyy-MM-dd");
+
+      const formattedDate = formatForInput(appointmentData.appointmentDate);
 
       dispatch(
         fetchAvailability({
@@ -314,7 +314,7 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
   const availableSlots = useMemo(() => {
     // Defensive check: ensure bookedSlots is an array
     const slots = Array.isArray(bookedSlots) ? bookedSlots : [];
-    
+
     return timeSlots.map((slot) => ({
       time: slot,
       booked: slots.includes(slot),
@@ -406,6 +406,8 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
       setShowRegisterPatient(true);
       return;
     }
+    console.log("appointmentData", appointmentData);
+
     setPreviewData(appointmentData);
     setShowPreviewModal(true);
   };
@@ -413,14 +415,16 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
   const handleConfirm = async () => {
     if (!previewData) return;
 
+    if (!previewData.timeSlot) {
+      setModalError("Please select a time slot");
+      return;
+    }
+
     try {
       const payload = {
         doctor: doctorId,
         patient: previewData.patient,
-        appointmentDate: format(
-          previewData.appointmentDate,
-          "yyyy-MM-dd'T'HH:mm:ssXXX"
-        ),
+        appointmentDate: formatForInput(previewData.appointmentDate),
         status: "Scheduled" as AppointmentStatus,
         consultationType: previewData.consultationType,
         timeSlot: previewData.timeSlot,
@@ -429,6 +433,8 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
         notes: previewData.notes,
         createdBy: doctorId,
       };
+
+      console.log("payload", payload);
 
       const result = await dispatch(createAppointment(payload));
       if (createAppointment.fulfilled.match(result)) {
@@ -439,9 +445,8 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
         try {
           const smsPayload = {
             phoneNumber: `+91${previewData.contactNumber}`,
-            message: `Your appointment is confirmed for ${format(
-              previewData.appointmentDate,
-              "MMM dd, yyyy 'at' hh:mm a"
+            message: `Your appointment is confirmed for ${formatForDisplay(
+              previewData.appointmentDate
             )}. Clinic: EndoSmile Dental Care, Iteda, Greater Noida(W)`,
           };
 
@@ -595,7 +600,7 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
                   )}
                 </div>
 
-                  {hasSearched && (
+                {hasSearched && (
                   <div className="absolute z-10 w-full mt-2 bg-card border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     <div className="px-3 py-2 border-b border-border bg-muted/50 text-sm text-muted-foreground">
                       {searchLoading ? (
@@ -696,13 +701,13 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
                       if (date) {
                         setAppointmentData((prev) => ({
                           ...prev,
-                          appointmentDate: date,
+                          appointmentDate: startOfDayIST(date),
                         }));
                         setCurrentStep(2);
                       }
                     }}
                     defaultMonth={new Date()}
-                    disabled={{ before: new Date() }}
+                    disabled={{ before: startOfDayIST(getLocalDate()) }}
                     className="rounded-md border"
                   />
                 </Card>
@@ -713,27 +718,27 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
                   <Clock className="w-4 h-4 mr-2" />
                   Available Time Slots
                 </Label>
-                
+
                 {availabilityLoading && (
                   <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
                     Loading available slots...
                   </div>
                 )}
-                
+
                 {availabilityError && (
                   <div className="p-3 mb-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-center">
                     <AlertCircle className="w-4 h-4 mr-2" />
                     {availabilityError}
                   </div>
                 )}
-                
+
                 {!availabilityLoading && !availabilityError && bookedSlots.length === 0 && appointmentData.appointmentDate && (
                   <div className="p-3 mb-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
                     All time slots are available for the selected date.
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {availableSlots.map(({ time, booked, popular }) => (
                     <TooltipProvider key={time}>
@@ -1047,7 +1052,7 @@ export default function BookAppointmentForm({ onCancel = () => { } }) {
                   <dt className="text-sm text-muted-foreground">Date</dt>
                   <dd className="font-medium">
                     {previewData?.appointmentDate &&
-                      format(previewData.appointmentDate, "PPP")}
+                      formatForDisplay(previewData.appointmentDate)}
                   </dd>
                 </div>
                 <div>

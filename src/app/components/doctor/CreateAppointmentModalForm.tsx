@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { format } from "date-fns";
-import { formatDateForServer } from "@/app/utils/dateUtils";
+import { formatForInput, startOfDayIST, getLocalDate } from "@/app/utils/dateUtils";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import {
   selectBookedSlots,
@@ -124,8 +124,8 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
   useEffect(() => {
     if (currentDoctor?._id && formData.appointmentDate) {
       setAvailabilityLoading(true);
-      const formattedDate = formatDateForServer(formData.appointmentDate);
-
+      const formattedDate = formatForInput(formData.appointmentDate);
+      
       dispatch(fetchAvailability({
         doctorId: currentDoctor._id,
         date: formattedDate,
@@ -169,10 +169,6 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
       setErrorMessage("Please select a time slot");
       return;
     }
-    if (formData.treatments.length === 0) {
-      setErrorMessage("Please select at least one treatment");
-      return;
-    }
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -181,7 +177,7 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
       const payload = {
         doctor: doctorId,
         patient: patientId,
-        appointmentDate: formatDateForServer(formData.appointmentDate),
+        appointmentDate: formatForInput(formData.appointmentDate),
         status: "Scheduled" as AppointmentStatus,
         consultationType: formData.consultationType,
         timeSlot: formData.timeSlot,
@@ -291,9 +287,9 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                     mode="single"
                     selected={formData.appointmentDate}
                     onSelect={(date) => {
-                      if (date) setFormData((prev) => ({ ...prev, appointmentDate: date }));
+                      if (date) setFormData((prev) => ({ ...prev, appointmentDate: startOfDayIST(date) }));
                     }}
-                    disabled={{ before: new Date() }}
+                     disabled={{ before: startOfDayIST(getLocalDate()) }}
                     className="rounded-md border p-3"
                   />
                 </div>
@@ -311,7 +307,7 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                     Loading slots...
                   </div>
                 )}
-                <div
+                <div 
                   className="grid grid-cols-3 gap-2 overflow-y-auto"
                   style={{ maxHeight: '300px' }}
                 >
@@ -322,8 +318,9 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                       variant={formData.timeSlot === time ? "default" : "outline"}
                       disabled={booked}
                       onClick={() => handleTimeSlotSelect(time)}
-                      className={`h-8 text-xs ${booked ? "opacity-50 cursor-not-allowed" : ""
-                        } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
+                      className={`h-8 text-xs ${
+                        booked ? "opacity-50 cursor-not-allowed" : ""
+                      } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
                     >
                       {time}
                       {popular && !booked && (
@@ -425,39 +422,37 @@ const CreateAppointmentModalForm: React.FC<CreateAppointmentModalFormProps> = ({
                 {errorMessage}
               </div>
             )}
-          </form>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="bg-muted/50 border-t border-border p-6">
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-6 py-3 text-foreground bg-muted rounded-lg hover:bg-muted/80 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              onClick={handleSubmit}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Creating...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <span>Create Appointment</span>
-                </div>
-              )}
-            </button>
-          </div>
-        </div>
+         {/* Modal Footer */}
+         <div className="bg-muted/50 border-t border-border p-6">
+           <div className="flex justify-end space-x-4">
+             <button
+               type="button"
+               onClick={onClose}
+               disabled={isSubmitting}
+               className="px-6 py-3 text-foreground bg-muted rounded-lg hover:bg-muted/80 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+             >
+               Cancel
+             </button>
+             <button
+               type="submit"
+               disabled={isSubmitting}
+               className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+             >
+               {isSubmitting ? (
+                 <div className="flex items-center space-x-2">
+                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                   <span>Creating...</span>
+                 </div>
+               ) : (
+                 <div className="flex items-center space-x-2">
+                   <span>Create Appointment</span>
+                 </div>
+               )}
+             </button>
+           </div>
+         </div>
+         </form>
+       </div>
       </div>
     </div>
   );

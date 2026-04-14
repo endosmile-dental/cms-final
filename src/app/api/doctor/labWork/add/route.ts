@@ -6,7 +6,6 @@ import dbConnect from "@/app/utils/dbConnect";
 import { labWorkSchema } from "@/schemas/zobLabWorkSchema";
 import { z } from "zod";
 import { uploadToCloudinary } from "@/app/utils/cloudinaryUpload";
-import { formatDateForServer } from "@/app/utils/dateUtils";
 import { requireAuth } from "@/app/utils/authz";
 import { errorResponse, successResponse } from "@/app/utils/api";
 
@@ -89,7 +88,7 @@ async function createLabWork(req: NextRequest, userId: string) {
       doctorId: doctor._id, // Use Doctor model's _id, not User model's _id
       toothNumbers: JSON.parse(formObject.toothNumbers as string),
       attachments,
-      sentToLabOn: formatDateForServer(new Date()),
+      sentToLabOn: new Date().toISOString().split('T')[0], // yyyy-MM-dd format
     };
 
     // Validate with Zod

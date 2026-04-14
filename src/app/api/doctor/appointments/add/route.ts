@@ -4,6 +4,11 @@ import dbConnect from "@/app/utils/dbConnect";
 import { isElevatedRole, requireAuth } from "@/app/utils/authz";
 import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
 import { addAppointmentSchema } from "@/app/schemas/api";
+import {
+  startOfDayIST,
+  endOfDayIST,
+  parseDateFromServer,
+} from "@/app/utils/dateUtils";
 
 export async function POST(request: Request) {
   try {
@@ -31,38 +36,21 @@ export async function POST(request: Request) {
       return errorResponse(403, "Forbidden");
     }
 
-    // Parse the date and normalize to local midnight for consistent querying
-    const appointmentDateObj = new Date(appointmentDate);
-    // Extract year, month, day in local timezone
-    const localYear = appointmentDateObj.getFullYear();
-    const localMonth = appointmentDateObj.getMonth();
-    const localDay = appointmentDateObj.getDate();
-    
-    // Create a date at local midnight (00:00:00)
-    const normalizedAppointmentDate = new Date(localYear, localMonth, localDay, 0, 0, 0, 0);
-    
-    console.log("appointmentDate (from client)", appointmentDate);
-    console.log("normalizedAppointmentDate (local midnight)", normalizedAppointmentDate);
-    console.log("Current date", new Date());
-    
+    // Parse date as simple yyyy-MM-dd format
+    const appointmentDateObj = parseDateFromServer(appointmentDate);
+    if (!appointmentDateObj) {
+      return errorResponse(400, "Invalid date format. Use yyyy-MM-dd");
+    }
+    const normalizedAppointmentDate = startOfDayIST(appointmentDateObj);
+
     const now = new Date();
-    const nowStartOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const appointmentStartOfDay = new Date(
-      normalizedAppointmentDate.getFullYear(),
-      normalizedAppointmentDate.getMonth(),
-      normalizedAppointmentDate.getDate()
-    );
+    const nowStartOfDay = startOfDayIST(now);
 
-    console.log("nowStartOfDay", nowStartOfDay);
-    console.log("appointmentStartOfDay", appointmentStartOfDay);
-    
-
-    if (appointmentStartOfDay < nowStartOfDay) {
-      return errorResponse(400, "Appointment date must be today or in the future");
+    if (normalizedAppointmentDate < nowStartOfDay) {
+      return errorResponse(
+        400,
+        "Appointment date must be today or in the future",
+      );
     }
 
     // Fetch doctor info to extract internal ID and clinic ID
@@ -72,26 +60,23 @@ export async function POST(request: Request) {
     }
 
     // Check for duplicate appointment (same doctor, date, and timeSlot)
+    const appointmentEndOfDay = endOfDayIST(normalizedAppointmentDate);
+
     const existingAppointment = await AppointmentModel.findOne({
       doctor: doctorInfo._id,
       appointmentDate: {
-        $gte: appointmentStartOfDay,
-        $lte: new Date(
-          normalizedAppointmentDate.getFullYear(),
-          normalizedAppointmentDate.getMonth(),
-          normalizedAppointmentDate.getDate(),
-          23,
-          59,
-          59,
-          999
-        ),
+        $gte: normalizedAppointmentDate,
+        $lte: appointmentEndOfDay,
       },
       timeSlot: timeSlot,
       status: { $ne: "Cancelled" },
     });
 
     if (existingAppointment) {
-      return errorResponse(409, "This time slot is already booked for the selected date");
+      return errorResponse(
+        409,
+        "This time slot is already booked for the selected date",
+      );
     }
 
     const appointment = new AppointmentModel({
@@ -117,7 +102,7 @@ export async function POST(request: Request) {
     console.error("Error creating appointment:", error);
     return errorResponse(
       500,
-      error instanceof Error ? error.message : "Internal Server Error"
+      error instanceof Error ? error.message : "Internal Server Error",
     );
   }
 }

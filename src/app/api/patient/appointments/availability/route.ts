@@ -4,6 +4,7 @@ import AppointmentModel from "@/app/model/Appointment.model";
 import mongoose from "mongoose";
 import { requireAuth } from "@/app/utils/authz";
 import { errorResponse, successResponse } from "@/app/utils/api";
+import { parseDateFromServer } from "@/app/utils/dateUtils";
 
 export async function GET(request: Request) {
   try {
@@ -26,10 +27,16 @@ export async function GET(request: Request) {
     }
 
     // Parse date as local date (YYYY-MM-DD format) to avoid timezone issues
-    // Split the date string and create date with local timezone
-    const [year, month, day] = date.split('-').map(Number);
-    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const endDate = new Date(year, month - 1, day, 23, 59, 59, 999);
+    const startDate = parseDateFromServer(date);
+    const endDate = new Date(
+      startDate.getFullYear(),
+      startDate.getMonth(),
+      startDate.getDate(),
+      23,
+      59,
+      59,
+      999
+    );
 
     console.log('[AVAILABILITY API] Query params:', { doctorId, date });
     console.log('[AVAILABILITY API] Date range:', { startDate: startDate.toISOString(), endDate: endDate.toISOString() });

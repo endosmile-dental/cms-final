@@ -2,6 +2,7 @@ import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
 import type { ApiResponse } from "@/app/types/api";
 import { unwrapApiResponse } from "@/app/utils/apiClient";
+import { formatDateForServer } from "@/app/utils/dateUtils";
 
 export type ConsultationType = "New" | "Follow-up";
 export type AppointmentStatus = "Scheduled" | "Completed" | "Cancelled";
@@ -38,10 +39,10 @@ interface AppointmentState {
 const normalizeDate = (value: unknown): string | undefined => {
   if (!value) return undefined;
   if (typeof value === "string") return value;
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return formatDateForServer(value);
   if (typeof value === "object" && "toISOString" in value) {
     try {
-      return (value as Date).toISOString();
+      return formatDateForServer(value as Date);
     } catch {
       return undefined;
     }

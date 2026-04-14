@@ -51,6 +51,34 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
   { timestamps: true }
 );
 
+import { startOfDayIST } from "../utils/dateUtils";
+
+// ✅ GLOBAL DATE NORMALIZATION - RUNS BEFORE EVERY SAVE
+// This guarantees NO BAD DATES WILL EVER BE SAVED AGAIN
+AppointmentSchema.pre('save', function(next) {
+  if (this.isModified('appointmentDate')) {
+    this.appointmentDate = startOfDayIST(this.appointmentDate);
+  }
+  next();
+});
+
+import type { UpdateQuery } from 'mongoose';
+
+// Also normalize on update operations
+AppointmentSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate() as UpdateQuery<IAppointment>;
+  
+  if (update) {
+    if ('$set' in update && update.$set?.appointmentDate) {
+      update.$set.appointmentDate = startOfDayIST(new Date(update.$set.appointmentDate));
+    } else if ('appointmentDate' in update) {
+      update.appointmentDate = startOfDayIST(new Date(update.appointmentDate!));
+    }
+  }
+  
+  next();
+});
+
 AppointmentSchema.index({ doctor: 1, appointmentDate: 1, timeSlot: 1 });
 
 export default mongoose.models.Appointment ||

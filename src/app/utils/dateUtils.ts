@@ -55,7 +55,7 @@ export const parseDateFromServer = (dateString: string): Date => {
   }
 
   // ISO string
-  return fromZonedTime(new Date(dateString), TIMEZONE);
+  return toZonedTime(new Date(dateString), TIMEZONE);
 };
 
 /* -------------------------------------------------------------------------- */
@@ -142,7 +142,7 @@ export const dateToUTC = (localDate: Date): Date => {
  * Convert UTC (DB) → IST (UI)
  */
 export const dateToIST = (utcDate: Date): Date => {
-  return fromZonedTime(utcDate, TIMEZONE);
+  return toZonedTime(utcDate, TIMEZONE);
 };
 
 /* -------------------------------------------------------------------------- */

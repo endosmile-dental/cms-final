@@ -19,6 +19,7 @@ import {
 import { useSession } from "next-auth/react";
 import { ProfileData } from "../redux/slices/profileSlice";
 import { format } from "date-fns";
+import { formatForInput, startOfDayIST, getLocalDate } from "@/app/utils/dateUtils";
 import { PreviewDialog } from "./PreviewDialog";
 import { selectBookedSlots } from "@/app/redux/slices/appointmentSlice"; // Updated import
 
@@ -80,14 +81,14 @@ export default function AppointmentBookingFromPatient({
       dispatch(
         fetchAvailability({
           doctorId: selectedDoctor._id,
-          date: format(formData.appointmentDate, "yyyy-MM-dd"),
+          date: formatForInput(formData.appointmentDate),
         })
       )
         .unwrap()
         .catch(() => setModalError("Failed to fetch availability"))
         .finally(() => setLocalLoading(false));
     }
-  }, [selectedDoctor?._id, formData.appointmentDate, dispatch]); // Added toISOString()
+  }, [selectedDoctor?._id, formData.appointmentDate, dispatch]);
 
   useEffect(() => {
     setFormData((prev) => ({ ...prev, timeSlot: "" }));
@@ -131,7 +132,7 @@ export default function AppointmentBookingFromPatient({
     const payload = {
       doctor: selectedDoctor._id,
       patient: profile._id,
-      appointmentDate: formData.appointmentDate.toISOString(),
+      appointmentDate: formatForInput(formData.appointmentDate),
       timeSlot: formData.timeSlot,
       status: "Scheduled" as const,
       consultationType: "New" as const,
@@ -189,11 +190,11 @@ export default function AppointmentBookingFromPatient({
             mode="single"
             selected={formData.appointmentDate}
             month={formData.appointmentDate}
-            onSelect={(date) =>
-              date &&
-              setFormData((prev) => ({ ...prev, appointmentDate: date }))
-            }
-            disabled={(date) => date < new Date()}
+             onSelect={(date) =>
+               date &&
+               setFormData((prev) => ({ ...prev, appointmentDate: startOfDayIST(date) }))
+             }
+             disabled={(date) => date < startOfDayIST(getLocalDate())}
           />
         </div>
 
