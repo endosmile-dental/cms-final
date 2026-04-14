@@ -125,101 +125,101 @@ export default function DoctorAppointmentsClient({
   const appointmentStats = useMemoizedCalculations(
     [filteredAppointments],
     () => {
-    const statusCounts = {
-      Scheduled: 0,
-      Completed: 0,
-      Cancelled: 0,
-    };
+      const statusCounts = {
+        Scheduled: 0,
+        Completed: 0,
+        Cancelled: 0,
+      };
 
-    // NEW: Time-based status counters
-    const now = new Date();
-    const weeklyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
-    const monthlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
-    const yearlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+      // NEW: Time-based status counters
+      const now = new Date();
+      const weeklyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+      const monthlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
+      const yearlyCounts = { Scheduled: 0, Completed: 0, Cancelled: 0 };
 
-    const treatmentCounts: Record<string, number> = {};
-    const timeSlotCounts: Record<string, number> = {};
+      const treatmentCounts: Record<string, number> = {};
+      const timeSlotCounts: Record<string, number> = {};
 
-    // Process appointment data for charts
-    filteredAppointments.forEach((appointment) => {
-      const appDate = new Date(appointment.appointmentDate);
+      // Process appointment data for charts
+      filteredAppointments.forEach((appointment) => {
+        const appDate = new Date(appointment.appointmentDate);
 
-      // Update overall status counts
-      statusCounts[appointment.status] =
-        (statusCounts[appointment.status] || 0) + 1;
+        // Update overall status counts
+        statusCounts[appointment.status] =
+          (statusCounts[appointment.status] || 0) + 1;
 
-      // NEW: Update time-based status counts
-      // Weekly (last 7 days)
-      if (appDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
-        weeklyCounts[appointment.status]++;
-      }
+        // NEW: Update time-based status counts
+        // Weekly (last 7 days)
+        if (appDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
+          weeklyCounts[appointment.status]++;
+        }
 
-      // Monthly (last 30 days)
-      if (appDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)) {
-        monthlyCounts[appointment.status]++;
-      }
+        // Monthly (last 30 days)
+        if (appDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)) {
+          monthlyCounts[appointment.status]++;
+        }
 
-      // Yearly (current year)
-      if (appDate.getFullYear() === now.getFullYear()) {
-        yearlyCounts[appointment.status]++;
-      }
+        // Yearly (current year)
+        if (appDate.getFullYear() === now.getFullYear()) {
+          yearlyCounts[appointment.status]++;
+        }
 
-      // Count treatments
-      appointment.treatments?.forEach((treatment) => {
-        treatmentCounts[treatment] = (treatmentCounts[treatment] || 0) + 1;
+        // Count treatments
+        appointment.treatments?.forEach((treatment) => {
+          treatmentCounts[treatment] = (treatmentCounts[treatment] || 0) + 1;
+        });
+
+        // Count time slots
+        if (appointment.timeSlot) {
+          timeSlotCounts[appointment.timeSlot] =
+            (timeSlotCounts[appointment.timeSlot] || 0) + 1;
+        }
       });
 
-      // Count time slots
-      if (appointment.timeSlot) {
-        timeSlotCounts[appointment.timeSlot] =
-          (timeSlotCounts[appointment.timeSlot] || 0) + 1;
-      }
-    });
-
-    // Format data for pie chart (status distribution)
-    const statusData = Object.entries(statusCounts).map(([name, value]) => ({
-      name,
-      value,
-    }));
-
-    // NEW: Format time-based status data
-    const statusByTime = {
-      weekly: Object.entries(weeklyCounts).map(([name, value]) => ({
-        name,
-        value,
-      })),
-      monthly: Object.entries(monthlyCounts).map(([name, value]) => ({
-        name,
-        value,
-      })),
-      yearly: Object.entries(yearlyCounts).map(([name, value]) => ({
-        name,
-        value,
-      })),
-    };
-
-    // Format data for bar chart (treatment popularity)
-    const treatmentData = Object.entries(treatmentCounts)
-      .sort((a, b) => b[1] - a[1])
-      .map(([name, value]) => ({
+      // Format data for pie chart (status distribution)
+      const statusData = Object.entries(statusCounts).map(([name, value]) => ({
         name,
         value,
       }));
 
-    // Format data for time slot heatmap
-    const timeSlotData = Object.entries(timeSlotCounts)
-      .map(([name, value]) => ({
-        time: name,
-        appointments: value,
-      }))
-      .sort((a, b) => timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time));
+      // NEW: Format time-based status data
+      const statusByTime = {
+        weekly: Object.entries(weeklyCounts).map(([name, value]) => ({
+          name,
+          value,
+        })),
+        monthly: Object.entries(monthlyCounts).map(([name, value]) => ({
+          name,
+          value,
+        })),
+        yearly: Object.entries(yearlyCounts).map(([name, value]) => ({
+          name,
+          value,
+        })),
+      };
 
-    return {
-      statusData, // Overall status data
-      statusByTime, // NEW: Time-based status data
-      treatmentData,
-      timeSlotData,
-    };
+      // Format data for bar chart (treatment popularity)
+      const treatmentData = Object.entries(treatmentCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, value]) => ({
+          name,
+          value,
+        }));
+
+      // Format data for time slot heatmap
+      const timeSlotData = Object.entries(timeSlotCounts)
+        .map(([name, value]) => ({
+          time: name,
+          appointments: value,
+        }))
+        .sort((a, b) => timeSlots.indexOf(a.time) - timeSlots.indexOf(b.time));
+
+      return {
+        statusData, // Overall status data
+        statusByTime, // NEW: Time-based status data
+        treatmentData,
+        timeSlotData,
+      };
     }
   );
 
@@ -316,19 +316,20 @@ export default function DoctorAppointmentsClient({
     if (normalizedInitialAppointments.length > 0) {
       // Hydrate appointments
       dispatch(hydrateAppointments(normalizedInitialAppointments));
-      
+
       // If we have patient IDs, we need to fetch patient details
       // For now, we'll hydrate with empty patients array and let the component handle patient fetching
       dispatch(hydratePatients([]));
-      
+
       // Mark store as hydrated
       dispatch(hydrateStore());
     }
   }, [normalizedInitialAppointments, dispatch]);
 
   useEffect(() => {
-    // Debugging appointments data
-  }, [pastAppointments, upcomingAppointments, appointments, initialAppointments]);
+    // Optional: Uncomment for debugging
+    // console.log("Appointments loaded:", appointments.length);
+  }, [appointments]);
 
   const transformData = (
     appointments: Appointment[]
@@ -433,7 +434,7 @@ export default function DoctorAppointmentsClient({
           treatments: editForm.treatments,
           teeth: editForm.teeth,
         };
-        
+
         // Dispatch the editAppointment action to update the Redux store
         await dispatch(editAppointment(updatedAppointment));
         setIsEditModalOpen(false);
@@ -535,9 +536,9 @@ export default function DoctorAppointmentsClient({
   };
 
   const treatmentOptionsForSelect = useMemo(
-    () => activeTreatments.map((treatment) => ({ 
-      label: treatment.name, 
-      value: treatment.name 
+    () => activeTreatments.map((treatment) => ({
+      label: treatment.name,
+      value: treatment.name
     })),
     [activeTreatments]
   );
@@ -909,7 +910,7 @@ export default function DoctorAppointmentsClient({
                 <div>
                   <p className="text-muted-foreground">Date</p>
                   <p className="font-bold">
-                    {new Date(selectedAppointment.date).toLocaleDateString()}
+                    {selectedAppointment.date}
                   </p>
                 </div>
 
@@ -937,9 +938,9 @@ export default function DoctorAppointmentsClient({
                   <p className="text-muted-foreground">Treatments</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedAppointment.treatments?.length > 0 ? (
-                      selectedAppointment.treatments.map((t) => (
+                      selectedAppointment.treatments.map((t, idx) => (
                         <p key={t} className="font-bold">
-                          {t},
+                          {t}{idx < selectedAppointment.treatments.length - 1 ? ', ' : ''}
                         </p>
                       ))
                     ) : (
@@ -952,9 +953,9 @@ export default function DoctorAppointmentsClient({
                   <p className="text-muted-foreground">Teeth</p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedAppointment.teeth?.length > 0 ? (
-                      selectedAppointment.teeth.map((tooth) => (
+                      selectedAppointment.teeth.map((tooth, idx) => (
                         <p key={tooth} className="font-bold">
-                          {tooth},
+                          {tooth}{idx < selectedAppointment.teeth.length - 1 ? ', ' : ''}
                         </p>
                       ))
                     ) : (

@@ -33,9 +33,9 @@ const doctor = await DoctorModel.findOne({ userId: doctorUserId })
 
     // Indexed lookup by doctor (see Appointment model index), lean for smaller overhead.
     const appointments = await AppointmentModel.find({ doctor: doctor._id })
-      .populate("patient", "fullName contactNumber patientId")
+      .populate("patient", "fullName contactNumber PatientId")
       .sort({ appointmentDate: 1, timeSlot: 1 })
-      .lean<{ _id: string; patient: { fullName: string; contactNumber: string; patientId: string }; doctor: string; appointmentDate: Date; timeSlot: string; status: string; reason: string; createdAt: Date; updatedAt: Date }[]>();
+      .lean<{ _id: string; patient: { _id?: string; PatientId: string; fullName: string; contactNumber: string }; doctor: string; appointmentDate: Date; timeSlot: string; status: string; reason: string; createdAt: Date; updatedAt: Date }[]>();
 
     if (process.env.NODE_ENV !== "production") {
       console.log(

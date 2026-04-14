@@ -30,9 +30,10 @@ export default async function RootLayout({
   const session = await auth(); // Get server-side session
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen overflow-x-hidden`}
+        suppressHydrationWarning
       >
         <SessionProvider session={session}>
           <ReactQueryProvider>

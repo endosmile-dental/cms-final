@@ -11,7 +11,7 @@ export type PaymentStatus = "Pending" | "Paid" | "Partial" | "Refunded";
 export interface Appointment {
   _id: string;
   doctor: string | undefined;
-  patient: string | undefined;
+  patient: string | { _id?: string; PatientId: string; fullName: string; contactNumber: string } | undefined;
   clinic?: string;
   appointmentDate: string;
   status: AppointmentStatus;
