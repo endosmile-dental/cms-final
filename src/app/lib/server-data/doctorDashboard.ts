@@ -7,7 +7,7 @@ import BillingModel from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 
 import { format } from "date-fns";
-import { formatDateForServer, formatForInput, getLocalDate, startOfDayIST } from "@/app/utils/dateUtils";
+import { formatForInput, getLocalDate, startOfDayIST } from "@/app/utils/dateUtils";
 import { DoctorDashboardDTO } from "@/app/types/dashboard/doctor/doctorDashboard";
 import { requireAuth } from "@/app/utils/authz";
 import { successResponse } from "@/app/utils/api";
