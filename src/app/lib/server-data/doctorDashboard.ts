@@ -7,7 +7,7 @@ import BillingModel from "@/app/model/Billing.model";
 import DoctorModel from "@/app/model/Doctor.model";
 
 import { format } from "date-fns";
-import { formatDateForServer, getLocalDate, startOfDayIST } from "@/app/utils/dateUtils";
+import { formatDateForServer, formatForInput, getLocalDate, startOfDayIST } from "@/app/utils/dateUtils";
 import { DoctorDashboardDTO } from "@/app/types/dashboard/doctor/doctorDashboard";
 import { requireAuth } from "@/app/utils/authz";
 import { successResponse } from "@/app/utils/api";
@@ -284,8 +284,8 @@ export async function getDoctorDashboardData(
   appointmentsForCalendar.forEach((appointment) => {
     // Parse the appointment date - ensure consistent date handling across environments
     const appointmentDate = new Date(appointment.appointmentDate);
-    // Use the local date components to avoid timezone conversion issues
-    const dateStr = formatDateForServer(appointmentDate);
+    // Use formatForInput to group by date only (yyyy-MM-dd), not time
+    const dateStr = formatForInput(appointmentDate);
 
     if (!calendarMap.has(dateStr)) {
       calendarMap.set(dateStr, {

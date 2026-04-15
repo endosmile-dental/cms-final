@@ -22,6 +22,7 @@ import {
   FileText,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatForInput } from "@/app/utils/dateUtils";
 import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import {
   selectBookedSlots,
@@ -112,7 +113,7 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
   useEffect(() => {
     if (currentDoctor?._id && formData.appointmentDate) {
       setAvailabilityLoading(true);
-      const formattedDate = format(formData.appointmentDate, "yyyy-MM-dd");
+      const formattedDate = formatForInput(formData.appointmentDate);
       
       dispatch(fetchAvailability({
         doctorId: currentDoctor._id,
@@ -191,7 +192,7 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
       const payload = {
         doctor: doctorId,
         patient: patientId,
-        appointmentDate: format(formData.appointmentDate, "yyyy-MM-dd'T'HH:mm:ssXXX"),
+        appointmentDate: formatForInput(formData.appointmentDate),
         status: "Scheduled" as AppointmentStatus,
         consultationType: "Follow-up" as ConsultationType,
         timeSlot: formData.timeSlot,
