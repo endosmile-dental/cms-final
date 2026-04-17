@@ -20,7 +20,6 @@ import {
   Trash,
 } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 import {
   selectAppointments,
   editAppointment,
@@ -36,19 +35,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  teethOptions,
   timeSlots,
 } from "@/app/components/BookAppointmentForm";
-import {
-  selectActiveTreatments,
-} from "@/app/redux/slices/treatmentSlice";
-import { MultiSelect } from "@/components/ui/multi-select";
 import DataTable from "@/app/components/DataTable";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import DashboardPieChart from "@/app/dashboard/ui/DashboardPieChart";
 import FrequencyCard from "@/app/components/FrequencyCard";
 import { DialogFooterActions } from "@/app/components/DialogFooterActions";
 import Modal from "@/app/components/Modal";
+import EditAppointmentDialog from "@/app/components/doctor/EditAppointmentDialog";
 
 interface TransformedAppointment {
   _id: string;
@@ -75,15 +70,7 @@ export default function DoctorAppointmentsClient({
   const appointments = useAppSelector(selectAppointments);
   const patients = useAppSelector(selectPatients);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState<{
-    _id: string;
-    appointmentDate: string;
-    status: "Scheduled" | "Completed" | "Cancelled";
-    consultationType: "New" | "Follow-up";
-    timeSlot: string;
-    treatments: string[];
-    teeth: string[];
-  } | null>(null);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -101,7 +88,6 @@ export default function DoctorAppointmentsClient({
   const [openAppointmentDialog, setOpenAppointmentDialog] = useState(false);
   const [selectedAppointment, setSelectedAppointment] =
     useState<TransformedAppointment | null>(null);
-  const activeTreatments = useAppSelector(selectActiveTreatments);
 
   const getPatientInfo = (patientId: string) => {
     return patients.find((p) => p._id === patientId) || null;
@@ -388,59 +374,34 @@ export default function DoctorAppointmentsClient({
   // Open modal with appointment data to edit
   const handleEditAppointment = useCallback(
     (appointmentId: string) => {
-      const appointmentToEdit = appointments.find(
+      const selectedAppointment = appointments.find(
         (appointment) => appointment._id === appointmentId
       );
-      if (appointmentToEdit) {
-        setEditForm({
-          _id: appointmentToEdit._id,
-          appointmentDate: appointmentToEdit.appointmentDate,
-          status: appointmentToEdit.status,
-          consultationType: appointmentToEdit.consultationType,
-          timeSlot: appointmentToEdit.timeSlot || "",
-          treatments: appointmentToEdit.treatments || [],
-          teeth: appointmentToEdit.teeth || [],
-        });
-
+      if (selectedAppointment) {
+        setAppointmentToEdit(selectedAppointment);
         setIsEditModalOpen(true);
       }
     },
     [appointments]
   );
 
-  // Handle form field changes in the edit modal
-  const handleEditFormChange = (field: string, value: string | string[]) => {
-    if (editForm) {
-      setEditForm({
-        ...editForm,
-        [field]: value,
-      });
-    }
-  };
-
-  // Submit the edit form and dispatch updated data with appointmentId
-  const handleEditSubmit = async () => {
-    if (editForm) {
-      const appointmentToEdit = appointments.find(
-        (appointment) => appointment._id === editForm._id
-      );
-      if (appointmentToEdit) {
-        const updatedAppointment: Appointment = {
-          ...appointmentToEdit,
-          appointmentDate: editForm.appointmentDate,
-          status: editForm.status,
-          consultationType: editForm.consultationType,
-          timeSlot: editForm.timeSlot,
-          treatments: editForm.treatments,
-          teeth: editForm.teeth,
-        };
-
-        // Dispatch the editAppointment action to update the Redux store
-        await dispatch(editAppointment(updatedAppointment));
-        setIsEditModalOpen(false);
+  const handleEditSave = useCallback(
+    async (updatedFields: Partial<Appointment>) => {
+      if (!appointmentToEdit) {
+        return;
       }
-    }
-  };
+
+      const updatedAppointment: Appointment = {
+        ...appointmentToEdit,
+        ...updatedFields,
+      };
+
+      await dispatch(editAppointment(updatedAppointment));
+      setIsEditModalOpen(false);
+      setAppointmentToEdit(null);
+    },
+    [appointmentToEdit, dispatch]
+  );
 
   // Open delete confirmation modal
   const handleDeleteAppointment = useCallback((appointmentId: string) => {
@@ -524,27 +485,6 @@ export default function DoctorAppointmentsClient({
         },
       ] as ColumnDef<TransformedAppointment>[],
     [handleEditAppointment, handleDeleteAppointment]
-  );
-
-  const handleMultiSelectChange = (field: string, values: string[]) => {
-    if (editForm) {
-      setEditForm({
-        ...editForm,
-        [field]: values,
-      });
-    }
-  };
-
-  const treatmentOptionsForSelect = useMemo(
-    () => activeTreatments.map((treatment) => ({
-      label: treatment.name,
-      value: treatment.name
-    })),
-    [activeTreatments]
-  );
-  const teethOptionsForSelect = useMemo(
-    () => teethOptions.map((option) => ({ label: option, value: option })),
-    []
   );
 
   function interpolateColor(
@@ -751,122 +691,17 @@ export default function DoctorAppointmentsClient({
           </div>
         </div>
 
-        {/* Edit and Delete Modals remain unchanged */}
       </div>
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
-        <h2 className="text-xl font-bold mb-4">Edit Appointment</h2>
-        {editForm && (
-          <div className="space-y-4">
-            <div>
-              <label className="block mb-1 text-sm font-medium">Date</label>
-              <Input
-                type="date"
-                value={format(new Date(editForm.appointmentDate), "yyyy-MM-dd")}
-                onChange={(e) =>
-                  handleEditFormChange("appointmentDate", e.target.value)
-                }
-                className="w-full"
-              />
-            </div>
-
-            {/* Time Slot */}
-            <div>
-              <label className="block mb-1 text-sm font-medium">Time Slot</label>
-              <Select
-                onValueChange={(value) =>
-                  handleEditFormChange("timeSlot", value)
-                }
-                value={editForm.timeSlot}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Time Slot" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((slot) => (
-                    <SelectItem key={slot} value={slot}>
-                      {slot}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Treatments */}
-            <div>
-              <label className="block mb-1 text-sm font-medium">Treatments</label>
-              <MultiSelect
-                options={treatmentOptionsForSelect}
-                onValueChange={(values) =>
-                  handleMultiSelectChange("treatments", values)
-                }
-                defaultValue={editForm?.treatments}
-                placeholder="Select treatments"
-                variant="secondary"
-                maxCount={3}
-              />
-            </div>
-
-            {/* Teeth */}
-            <div>
-              <label className="block mb-1 text-sm font-medium">Teeth</label>
-              <MultiSelect
-                options={teethOptionsForSelect}
-                onValueChange={(values) =>
-                  handleMultiSelectChange("teeth", values)
-                }
-                defaultValue={editForm?.teeth}
-                placeholder="Select teeth"
-                variant="secondary"
-                maxCount={5}
-              />
-            </div>
-
-            <div>
-              <label className="block mb-1 text-sm font-medium">Status</label>
-              <Select
-                onValueChange={(value) => handleEditFormChange("status", value)}
-                value={editForm.status}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Scheduled">Scheduled</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block mb-1 text-sm font-medium">
-                Consultation Type
-              </label>
-              <Select
-                onValueChange={(value) =>
-                  handleEditFormChange("consultationType", value)
-                }
-                value={editForm.consultationType}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Follow-up">Follow-up</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={handleEditSubmit} className="mr-2">
-                Save
-              </Button>
-              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      <EditAppointmentDialog
+        open={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setAppointmentToEdit(null);
+        }}
+        appointment={appointmentToEdit}
+        onSave={handleEditSave}
+        onDelete={handleDeleteAppointment}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal isOpen={isDeleteModalOpen} onClose={cancelDelete}>

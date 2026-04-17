@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -10,11 +9,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Trash2, X, CalendarClock, Edit3 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Trash2,
+  X,
+  Edit3,
+  CalendarIcon,
+  Clock,
+  Loader2,
+  AlertCircle,
+  MessageCircle,
+  Stethoscope,
+} from "lucide-react";
 import { Appointment } from "@/app/redux/slices/appointmentSlice";
-import { useAppSelector } from "@/app/redux/store/hooks";
+import {
+  fetchAvailability,
+  selectBookedSlots,
+} from "@/app/redux/slices/appointmentSlice";
+import { useAppDispatch, useAppSelector } from "@/app/redux/store/hooks";
 import { selectActiveTreatments } from "@/app/redux/slices/treatmentSlice";
+import { selectProfile, type DoctorProfile } from "@/app/redux/slices/profileSlice";
+import {
+  formatForInput,
+  getLocalDate,
+  parseDateFromServer,
+  startOfDayIST,
+} from "@/app/utils/dateUtils";
+import { timeSlots, teethOptions as appointmentTeethOptions } from "./CreateAppointmentModalForm";
 
 interface EditAppointmentDialogProps {
   open: boolean;
@@ -31,16 +54,59 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
   onSave,
   onDelete,
 }) => {
+  const dispatch = useAppDispatch();
   const [form, setForm] = useState<Appointment | null>(null);
   const [initialForm, setInitialForm] = useState<Appointment | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const bookedSlots = useAppSelector(selectBookedSlots);
+  const profile = useAppSelector(selectProfile);
   const activeTreatments = useAppSelector(selectActiveTreatments);
 
   useEffect(() => {
     if (appointment) {
-      setForm(appointment);
-      setInitialForm(appointment);
+      const normalizedAppointment = {
+        ...appointment,
+        appointmentDate: formatForInput(parseDateFromServer(appointment.appointmentDate)),
+      };
+      setForm(normalizedAppointment);
+      setInitialForm(normalizedAppointment);
     }
   }, [appointment]);
+
+  const currentDoctor = useMemo(() => {
+    if (profile && typeof profile === "object" && "_id" in profile) {
+      const doctorProfile = profile as DoctorProfile;
+      if (doctorProfile._id) {
+        return doctorProfile._id;
+      }
+    }
+
+    return typeof appointment?.doctor === "string" ? appointment.doctor : null;
+  }, [appointment?.doctor, profile]);
+
+  useEffect(() => {
+    if (!open || !currentDoctor || !form?.appointmentDate) {
+      return;
+    }
+
+    setAvailabilityLoading(true);
+    setErrorMessage(null);
+
+    dispatch(
+      fetchAvailability({
+        doctorId: currentDoctor,
+        date: form.appointmentDate,
+      })
+    )
+      .unwrap()
+      .catch(() => {
+        setErrorMessage("Failed to load available slots. Please try again.");
+      })
+      .finally(() => {
+        setAvailabilityLoading(false);
+      });
+  }, [currentDoctor, dispatch, form?.appointmentDate, open]);
 
   // Treatment options for MultiSelect
   const treatmentOptions = useMemo(
@@ -53,18 +119,50 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
 
   // Teeth options for MultiSelect
   const teethOptions = useMemo(
-    () => [
-      "11", "12", "13", "14", "15", "16", "17", "18",
-      "21", "22", "23", "24", "25", "26", "27", "28",
-      "31", "32", "33", "34", "35", "36", "37", "38",
-      "41", "42", "43", "44", "45", "46", "47", "48",
-      "51", "52", "53", "54", "55",
-      "61", "62", "63", "64", "65",
-      "71", "72", "73", "74", "75",
-      "81", "82", "83", "84", "85"
-    ].map(option => ({ label: option, value: option })),
+    () => appointmentTeethOptions.map((option) => ({ label: option, value: option })),
     []
   );
+
+  const getCalendarDateFromInput = (dateValue: string): Date | undefined => {
+    if (!dateValue) {
+      return undefined;
+    }
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateValue);
+    if (!match) {
+      return undefined;
+    }
+
+    const [, year, month, day] = match;
+    return new Date(Number(year), Number(month) - 1, Number(day), 12);
+  };
+
+  const availableSlots = useMemo(() => {
+    const slots = Array.isArray(bookedSlots) ? bookedSlots : [];
+    const isOriginalDate =
+      initialForm?.appointmentDate && form?.appointmentDate
+        ? initialForm.appointmentDate === form.appointmentDate
+        : false;
+
+    return timeSlots.map((slot) => {
+      const isOriginalSlot =
+        isOriginalDate && initialForm?.timeSlot === slot;
+
+      return {
+        time: slot,
+        booked: slots.includes(slot) && !isOriginalSlot,
+        popular: ["10:00 AM", "02:00 PM", "04:00 PM"].includes(slot),
+      };
+    });
+  }, [bookedSlots, form?.appointmentDate, initialForm?.appointmentDate, initialForm?.timeSlot]);
+
+  const selectedAppointmentDate = useMemo(() => {
+    if (!form?.appointmentDate) {
+      return undefined;
+    }
+
+    return getCalendarDateFromInput(form.appointmentDate);
+  }, [form?.appointmentDate]);
 
   const handleMultiSelectChange = (field: keyof Appointment, values: string[]) => {
     setForm((prev) => (prev ? { ...prev, [field]: values } : null));
@@ -75,6 +173,11 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
     value: Appointment[K]
   ) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : null));
+  };
+
+  const handleTimeSlotSelect = (slot: string) => {
+    setErrorMessage(null);
+    setForm((prev) => (prev ? { ...prev, timeSlot: slot } : null));
   };
 
   const getUpdatedFields = (): Appointment => {
@@ -116,6 +219,11 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
 
   const handleSubmit = () => {
     if (form && initialForm) {
+      if (!form.timeSlot) {
+        setErrorMessage("Please select a time slot");
+        return;
+      }
+
       const updatedFields = getUpdatedFields();
       const hasChanges = Object.keys(form).some(key => {
         const k = key as keyof Appointment;
@@ -185,44 +293,96 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
 
         {/* Modal Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
-          {/* Time Slot & Consultation Type */}
+          {/* Date & Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm font-medium text-foreground">
-                <CalendarClock className="h-4 w-4" />
-                <span>Time Slot</span>
+                <CalendarIcon className="h-4 w-4" />
+                <span>Appointment Date</span>
               </label>
-              <Input
-                value={form.timeSlot || ""}
-                onChange={(e) => handleChange("timeSlot", e.target.value)}
-                placeholder="Time Slot (e.g., 10:00 AM - 10:30 AM)"
-                className="w-full"
+              <Calendar
+                mode="single"
+                selected={selectedAppointmentDate}
+                month={selectedAppointmentDate}
+                onSelect={(date) => {
+                  if (!date) return;
+                  handleChange(
+                    "appointmentDate",
+                    formatForInput(startOfDayIST(date))
+                  );
+                }}
+                disabled={{ before: startOfDayIST(getLocalDate()) }}
+                className="rounded-md border p-3"
               />
             </div>
 
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm font-medium text-foreground">
-                <span>Consultation Type</span>
+                <Clock className="h-4 w-4" />
+                <span>Time Slot</span>
               </label>
-              <Select
-                value={form.consultationType || ""}
-                onValueChange={(value) => handleChange("consultationType", value as Appointment["consultationType"])}
+              {availabilityLoading && (
+                <div className="flex items-center justify-center py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Loading slots...
+                </div>
+              )}
+              <div
+                className="grid grid-cols-3 gap-2 overflow-y-auto"
+                style={{ maxHeight: "300px" }}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select consultation type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Follow-up">Follow-up</SelectItem>
-                </SelectContent>
-              </Select>
+                {availableSlots.map(({ time, booked, popular }) => (
+                  <Button
+                    key={time}
+                    type="button"
+                    variant={form.timeSlot === time ? "default" : "outline"}
+                    disabled={booked}
+                    onClick={() => handleTimeSlotSelect(time)}
+                    className={`relative h-8 text-xs ${
+                      booked ? "opacity-50 cursor-not-allowed" : ""
+                    } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
+                  >
+                    {time}
+                    {popular && !booked && (
+                      <Badge
+                        variant="secondary"
+                        className="absolute -top-1.5 -right-1 text-[8px] px-1 py-0 h-auto bg-orange-500"
+                      >
+                        ★
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Consultation Type */}
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2 text-sm font-medium text-foreground">
+              <MessageCircle className="h-4 w-4" />
+              <span>Consultation Type</span>
+            </label>
+            <Select
+              value={form.consultationType || ""}
+              onValueChange={(value) =>
+                handleChange("consultationType", value as Appointment["consultationType"])
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select consultation type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New">New Consultation</SelectItem>
+                <SelectItem value="Follow-up">Follow-up Visit</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Teeth & Treatments */}
           <div className="border-t border-border pt-6">
             <div className="flex items-center space-x-3 mb-4">
-              <CalendarClock className="h-5 w-5 text-purple-500" />
+              <Stethoscope className="h-5 w-5 text-purple-500" />
               <h3 className="text-lg font-semibold text-foreground">Treatment Details</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -307,17 +467,25 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm flex items-center">
+              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+              {errorMessage}
+            </div>
+          )}
+
           {/* Notes */}
           <div className="border-t border-border pt-6">
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm font-medium text-foreground">
                 <span>Notes</span>
               </label>
-              <Input
+              <textarea
                 value={form.notes || ""}
                 onChange={(e) => handleChange("notes", e.target.value)}
                 placeholder="Additional notes"
-                className="w-full"
+                className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                rows={2}
               />
             </div>
           </div>
