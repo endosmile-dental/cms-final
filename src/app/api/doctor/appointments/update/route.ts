@@ -5,7 +5,12 @@ import { requireAuth } from "@/app/utils/authz";
 import DoctorModel from "@/app/model/Doctor.model";
 import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
 import { updateAppointmentSchema } from "@/app/schemas/api";
-import { parseDateFromServer } from "@/app/utils/dateUtils";
+import {
+  endOfDayIST,
+  formatForInput,
+  parseDateFromServer,
+  startOfDayIST,
+} from "@/app/utils/dateUtils";
 
 export async function PUT(request: Request) {
   try {
@@ -44,7 +49,17 @@ export async function PUT(request: Request) {
       return errorResponse(404, "Appointment not found");
     }
 
-    const isDateChanged = body.appointmentDate !== currentAppointment.appointmentDate;
+    const newAppointmentDateObj = parseDateFromServer(body.appointmentDate);
+    if (!newAppointmentDateObj) {
+      return errorResponse(400, "Invalid date format. Use yyyy-MM-dd");
+    }
+
+    const normalizedAppointmentDate = startOfDayIST(newAppointmentDateObj);
+    const currentAppointmentDate = formatForInput(
+      new Date(currentAppointment.appointmentDate),
+    );
+
+    const isDateChanged = body.appointmentDate !== currentAppointmentDate;
     const isTimeSlotChanged = body.timeSlot !== currentAppointment.timeSlot;
 
     if (isDateChanged || isTimeSlotChanged) {
@@ -54,28 +69,12 @@ export async function PUT(request: Request) {
         return errorResponse(404, "Doctor not found");
       }
 
-// Calculate the date range for the new appointment date
-    const newAppointmentDateObj = parseDateFromServer(body.appointmentDate);
-    const newAppointmentStartOfDay = new Date(
-      newAppointmentDateObj.getFullYear(),
-      newAppointmentDateObj.getMonth(),
-      newAppointmentDateObj.getDate()
-    );
-
       // Check for existing appointment with the same doctor, date, and timeSlot
       const conflictingAppointment = await AppointmentModel.findOne({
         doctor: doctorForCheck._id,
         appointmentDate: {
-          $gte: newAppointmentStartOfDay,
-          $lte: new Date(
-            newAppointmentDateObj.getFullYear(),
-            newAppointmentDateObj.getMonth(),
-            newAppointmentDateObj.getDate(),
-            23,
-            59,
-            59,
-            999
-          ),
+          $gte: normalizedAppointmentDate,
+          $lte: endOfDayIST(normalizedAppointmentDate),
         },
         timeSlot: body.timeSlot,
         status: { $ne: "Cancelled" },
@@ -92,7 +91,7 @@ export async function PUT(request: Request) {
       appointmentId,
       {
         $set: {
-          appointmentDate: body.appointmentDate,
+          appointmentDate: normalizedAppointmentDate,
           status: body.status,
           consultationType: body.consultationType,
           timeSlot: body.timeSlot,

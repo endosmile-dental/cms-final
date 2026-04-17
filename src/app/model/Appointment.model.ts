@@ -51,7 +51,7 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
   { timestamps: true }
 );
 
-import { startOfDayIST } from "../utils/dateUtils";
+import { parseDateFromServer, startOfDayIST } from "../utils/dateUtils";
 
 // ✅ GLOBAL DATE NORMALIZATION - RUNS BEFORE EVERY SAVE
 // This guarantees NO BAD DATES WILL EVER BE SAVED AGAIN
@@ -67,12 +67,18 @@ import type { UpdateQuery } from 'mongoose';
 // Also normalize on update operations
 AppointmentSchema.pre('findOneAndUpdate', function(next) {
   const update = this.getUpdate() as UpdateQuery<IAppointment>;
+
+  const normalizeAppointmentDate = (value: Date | string) => {
+    const parsedDate =
+      typeof value === "string" ? parseDateFromServer(value) : value;
+    return startOfDayIST(parsedDate);
+  };
   
   if (update) {
     if ('$set' in update && update.$set?.appointmentDate) {
-      update.$set.appointmentDate = startOfDayIST(new Date(update.$set.appointmentDate));
+      update.$set.appointmentDate = normalizeAppointmentDate(update.$set.appointmentDate);
     } else if ('appointmentDate' in update) {
-      update.appointmentDate = startOfDayIST(new Date(update.appointmentDate!));
+      update.appointmentDate = normalizeAppointmentDate(update.appointmentDate!);
     }
   }
   
