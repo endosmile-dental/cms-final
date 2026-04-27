@@ -19,6 +19,7 @@ import {
   BadgePercent,
   FlaskConical,
   IndianRupee,
+  Sparkles,
 } from "lucide-react";
 import { SignOut } from "@/app/components/auth/signout-button";
 import { useSession } from "next-auth/react";
@@ -34,7 +35,7 @@ const allMenuItems = [
       "Admin",
       "clientAdmin",
       "Doctor",
-      "Receptionist",
+      "Assistant",
       "Patient",
     ],
   },
@@ -60,13 +61,13 @@ const allMenuItems = [
     name: "Appointments",
     icon: <Calendar size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/appointments`,
-    roles: ["Doctor", "Receptionist", "Admin", "Patient"],
+    roles: ["Doctor", "Assistant", "Admin", "Patient"],
   },
   {
     name: "Medical Records",
     icon: <ClipboardList size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/patientRecords`,
-    roles: ["Doctor", "Receptionist", "Patient"],
+    roles: ["Doctor", "Assistant", "Patient"],
   },
   {
     name: "Billing",
@@ -84,6 +85,12 @@ const allMenuItems = [
     name: "Lab Work",
     icon: <FlaskConical size={20} />,
     path: (role: string) => `/dashboard/pages/${role}/labWork`,
+    roles: ["Doctor"],
+  },
+  {
+    name: "Assistant",
+    icon: <Sparkles size={20} />,
+    path: (role: string) => `/dashboard/pages/${role}/assistant`,
     roles: ["Doctor"],
   },
   {

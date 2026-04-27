@@ -4,11 +4,12 @@ import dbConnect from "@/app/utils/dbConnect";
 import AppointmentModel from "@/app/model/Appointment.model";
 import { requireAuth } from "@/app/utils/authz";
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
 import { errorResponse, successResponse } from "@/app/utils/api";
 
 export async function DELETE(request: NextRequest) {
   try {
-    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    const authResult = await requireAuth(["Doctor", "Assistant", "Admin", "SuperAdmin"]);
     if ("error" in authResult) return authResult.error;
     const { user } = authResult;
 
@@ -40,6 +41,20 @@ export async function DELETE(request: NextRequest) {
       }
 
       if (existingAppointment.doctor.toString() !== doctor._id.toString()) {
+        return errorResponse(403, "Forbidden");
+      }
+    } else if (user.role === "Assistant") {
+      const assistant = await AssistantModel.findOne({ userId: user.id }).select("clinicId");
+      if (!assistant) {
+        return errorResponse(404, "Assistant not found");
+      }
+
+      const appointmentDoctor = await DoctorModel.findById(existingAppointment.doctor).select("clinicId");
+      if (!appointmentDoctor) {
+        return errorResponse(404, "Doctor not found");
+      }
+
+      if (appointmentDoctor.clinicId.toString() !== assistant.clinicId.toString()) {
         return errorResponse(403, "Forbidden");
       }
     }

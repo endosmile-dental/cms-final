@@ -6,6 +6,7 @@ import { getDoctorPatients } from "@/app/lib/server-data/patients";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import { ILabWork, LabWorkPatient } from "@/app/redux/slices/labWorkSlice";
+import Loading from "@/app/components/loading/Loading";
 
 export default async function LabWorkPage() {
   const session = await auth();
@@ -38,7 +39,7 @@ export default async function LabWorkPage() {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div>Loading lab work dashboard...</div>}>
+      <Suspense fallback={<Loading />}>
         <LabWorkClient
           initialLabWorks={labWorks}
           initialAnalytics={analytics}

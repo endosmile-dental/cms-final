@@ -9,7 +9,7 @@ export interface IUser extends Document {
     | "Admin"
     | "clientAdmin"
     | "Doctor"
-    | "Receptionist"
+    | "Assistant"
     | "Patient";
   profileImageUrl?: string;
   registrationDate?: Date;
@@ -41,7 +41,7 @@ const userSchema: Schema<IUser> = new Schema(
         "Admin",
         "clientAdmin",
         "Doctor",
-        "Receptionist",
+        "Assistant",
         "Patient",
       ],
       required: true,

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 // Import your models (adjust the paths as needed)
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
 import UserModel from "@/app/model/User.model";
 import PatientModel from "@/app/model/Patient.model";
 import dbConnect from "@/app/utils/dbConnect";
@@ -39,7 +40,7 @@ const patientRegistrationSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    const authResult = await requireAuth(["Doctor", "Assistant", "Admin", "SuperAdmin"]);
     if ("error" in authResult) return authResult.error;
     const { user } = authResult;
 
@@ -54,17 +55,31 @@ export async function POST(request: Request) {
       data.emergencyContact.contactNumber = data.emergencyContact.contactNumber.replace(/^0+/, "");
     }
 
-    // Retrieve the doctor id from the custom header (provided via session)
-    const doctorIdResult = resolveUserIdFromHeader(
-      request,
-      user,
-      "x-doctor-id"
-    );
-    if ("error" in doctorIdResult) return doctorIdResult.error;
-    const { userId: doctorId } = doctorIdResult;
-
-    // Find the doctor record (to later retrieve ClinicId)
-    const doctor = await DoctorModel.findOne({ userId: doctorId });
+    // Determine the doctor ID based on user role
+    let doctor;
+    
+    if (user.role === "Assistant") {
+      // For Assistants, get their assigned doctor
+      const assistant = await AssistantModel.findOne({ userId: user.id })
+        .select("doctorId")
+        .lean<{ doctorId: string } | null>();
+      if (!assistant?.doctorId) {
+        return errorResponse(403, "Assistant not assigned to a doctor");
+      }
+      // assistant.doctorId is the Doctor's _id, so search by _id directly
+      doctor = await DoctorModel.findById(assistant.doctorId);
+    } else {
+      // For Doctors/Admins/SuperAdmins, use header resolution
+      const doctorIdResult = resolveUserIdFromHeader(
+        request,
+        user,
+        "x-doctor-id"
+      );
+      if ("error" in doctorIdResult) return doctorIdResult.error;
+      // doctorIdResult.userId is the User's _id, so search by userId
+      doctor = await DoctorModel.findOne({ userId: doctorIdResult.userId });
+    }
+    
     if (!doctor) {
       return errorResponse(404, "Doctor not found.");
     }

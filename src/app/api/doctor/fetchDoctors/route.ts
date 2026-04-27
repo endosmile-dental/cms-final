@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import dbConnect from "@/app/utils/dbConnect";
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
 import PatientModel from "@/app/model/Patient.model";
 import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
 import { errorResponse, successResponse } from "@/app/utils/api";
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest) {
     const authResult = await requireAuth([
       "Doctor",
       "Patient",
+      "Assistant",
       "Admin",
       "SuperAdmin",
     ]);
@@ -21,9 +23,17 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const userIdResult = resolveUserIdFromHeader(request, user, "x-user-id");
-    if ("error" in userIdResult) return userIdResult.error;
-    const { userId } = userIdResult;
+    let userId: string;
+
+    // For Assistants, use their own userId from session
+    if (user.role === "Assistant") {
+      userId = user.id;
+    } else {
+      // For other roles, check header
+      const userIdResult = resolveUserIdFromHeader(request, user, "x-user-id");
+      if ("error" in userIdResult) return userIdResult.error;
+      userId = userIdResult.userId;
+    }
 
     let clinicId: string | null = null;
 
@@ -37,10 +47,15 @@ export async function GET(request: NextRequest) {
         .select("ClinicId")
         .lean<{ ClinicId: string } | null>();
       clinicId = patient?.ClinicId?.toString() || null;
+    } else if (user.role === "Assistant") {
+      const assistant = await AssistantModel.findOne({ userId })
+        .select("clinicId")
+        .lean<{ clinicId: string } | null>();
+      clinicId = assistant?.clinicId?.toString() || null;
     } else {
       return errorResponse(
         403,
-        "Access denied. Only Doctors and Patients are allowed.",
+        "Access denied. Only Doctors, Patients, and Assistants are allowed.",
       );
     }
 

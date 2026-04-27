@@ -5,6 +5,7 @@ import { getDoctorAppointments } from "@/app/lib/server-data/appointments";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
 import type { Appointment } from "@/app/redux/slices/appointmentSlice";
+import Loading from "@/app/components/loading/Loading";
 
 export default async function DoctorAppointments() {
   const session = await auth();
@@ -27,7 +28,7 @@ export default async function DoctorAppointments() {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div>Loading appointments...</div>}>
+      <Suspense fallback={<Loading />}>
         <DoctorAppointmentsClient initialAppointments={typedAppointments} />
       </Suspense>
     </ErrorBoundary>

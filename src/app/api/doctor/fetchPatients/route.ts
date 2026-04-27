@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import PatientModel from "@/app/model/Patient.model";
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { requireAuth, resolveUserIdFromHeader } from "@/app/utils/authz";
 import { errorResponse } from "@/app/utils/api";
@@ -9,19 +10,34 @@ export async function GET(request: Request) {
   const startedAt = Date.now();
 
   try {
-    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    const authResult = await requireAuth(["Doctor", "Assistant", "Admin", "SuperAdmin"]);
     if ("error" in authResult) return authResult.error;
     const { user } = authResult;
 
     await dbConnect();
 
-    const userIdResult = resolveUserIdFromHeader(
-      request,
-      user,
-      "x-doctor-user-id",
-    );
-    if ("error" in userIdResult) return userIdResult.error;
-    const { userId: doctorUserId } = userIdResult;
+    let doctorUserId: string;
+
+    // For Assistants, get their assigned doctor's userId
+    if (user.role === "Assistant") {
+      const assistant = await AssistantModel.findOne({ userId: user.id }).select("doctorId");
+      if (!assistant) {
+        return errorResponse(404, "Assistant not found");
+      }
+      const doctorRecord = await DoctorModel.findById(assistant.doctorId).select("userId");
+      if (!doctorRecord) {
+        return errorResponse(404, "Assigned doctor not found");
+      }
+      doctorUserId = doctorRecord.userId.toString();
+    } else {
+      const userIdResult = resolveUserIdFromHeader(
+        request,
+        user,
+        "x-doctor-user-id",
+      );
+      if ("error" in userIdResult) return userIdResult.error;
+      doctorUserId = userIdResult.userId;
+    }
 
     const doctor = await DoctorModel.findOne({ userId: doctorUserId })
       .select("_id")

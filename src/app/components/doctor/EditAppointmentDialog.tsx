@@ -110,9 +110,9 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
 
   // Treatment options for MultiSelect
   const treatmentOptions = useMemo(
-    () => activeTreatments.map((treatment) => ({ 
-      label: treatment.name, 
-      value: treatment.name 
+    () => activeTreatments.map((treatment) => ({
+      label: treatment.name,
+      value: treatment.name
     })),
     [activeTreatments]
   );
@@ -229,7 +229,7 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
         const k = key as keyof Appointment;
         return JSON.stringify(form[k]) !== JSON.stringify(initialForm[k]);
       });
-      
+
       if (hasChanges) {
         onSave(updatedFields);
       }
@@ -338,9 +338,8 @@ const EditAppointmentDialog: React.FC<EditAppointmentDialogProps> = ({
                     variant={form.timeSlot === time ? "default" : "outline"}
                     disabled={booked}
                     onClick={() => handleTimeSlotSelect(time)}
-                    className={`relative h-8 text-xs ${
-                      booked ? "opacity-50 cursor-not-allowed" : ""
-                    } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
+                    className={`relative h-8 text-xs ${booked ? "opacity-50 cursor-not-allowed" : ""
+                      } ${popular && !booked ? "border-2 border-orange-200" : ""}`}
                   >
                     {time}
                     {popular && !booked && (

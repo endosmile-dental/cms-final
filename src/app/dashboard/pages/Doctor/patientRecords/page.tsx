@@ -4,6 +4,7 @@ import PatientRecordsClient from "./PatientRecordsClient";
 import { getDoctorPatients } from "@/app/lib/server-data/patients";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
+import Loading from "@/app/components/loading/Loading";
 
 export default async function PatientRecords() {
   const session = await auth();
@@ -17,7 +18,7 @@ export default async function PatientRecords() {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div>Loading patient records...</div>}>
+      <Suspense fallback={<Loading />}>
         <PatientRecordsClient initialPatients={patients} />
       </Suspense>
     </ErrorBoundary>

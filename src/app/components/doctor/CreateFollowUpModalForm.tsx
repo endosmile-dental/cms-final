@@ -114,7 +114,7 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
     if (currentDoctor?._id && formData.appointmentDate) {
       setAvailabilityLoading(true);
       const formattedDate = formatForInput(formData.appointmentDate);
-      
+
       dispatch(fetchAvailability({
         doctorId: currentDoctor._id,
         date: formattedDate,
@@ -143,7 +143,7 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
     const timeStr = appointment.timeSlot || "";
     const statusStr = appointment.status || "";
     const treatmentsStr = appointment.treatments?.join(", ") || "No treatments";
-    
+
     return `${dateStr}, ${timeStr} | ${statusStr} | ${treatmentsStr}`;
   };
 
@@ -357,7 +357,7 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
                       Loading slots...
                     </div>
                   )}
-                  <div 
+                  <div
                     className="grid grid-cols-3 gap-2 overflow-y-auto"
                     style={{ maxHeight: '300px' }}
                   >
@@ -368,9 +368,8 @@ const CreateFollowUpModalForm: React.FC<CreateFollowUpModalFormProps> = ({
                         variant={formData.timeSlot === time ? "default" : "outline"}
                         disabled={booked}
                         onClick={() => handleTimeSlotSelect(time)}
-                        className={`h-8 text-xs ${
-                          booked ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        className={`h-8 text-xs ${booked ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                       >
                         {time}
                       </Button>

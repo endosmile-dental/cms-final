@@ -1,5 +1,6 @@
 import AppointmentModel from "@/app/model/Appointment.model";
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
 import dbConnect from "@/app/utils/dbConnect";
 import { isElevatedRole, requireAuth } from "@/app/utils/authz";
 import { errorResponse, parseJson, successResponse } from "@/app/utils/api";
@@ -12,7 +13,7 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const authResult = await requireAuth(["Doctor", "Admin", "SuperAdmin"]);
+    const authResult = await requireAuth(["Doctor", "Assistant", "Admin", "SuperAdmin"]);
     if ("error" in authResult) return authResult.error;
     const { user } = authResult;
 
@@ -32,7 +33,37 @@ export async function POST(request: Request) {
       teeth,
     } = parsed.data;
 
-    if (doctor !== user.id && !isElevatedRole(user.role)) {
+    const selectedDoctor = await DoctorModel.findOne({
+      $or: [{ _id: doctor }, { userId: doctor }],
+    }).select("_id userId clinicId");
+
+    if (!selectedDoctor) {
+      return errorResponse(404, "Doctor not found");
+    }
+
+    // Authorization check
+    if (user.role === "Doctor") {
+      const currentDoctor = await DoctorModel.findOne({ userId: user.id }).select("_id userId");
+      if (
+        !currentDoctor ||
+        (selectedDoctor._id.toString() !== currentDoctor._id.toString() &&
+          selectedDoctor.userId.toString() !== currentDoctor.userId.toString() &&
+          !isElevatedRole(user.role))
+      ) {
+        return errorResponse(403, "Forbidden");
+      }
+    } else if (user.role === "Assistant") {
+      const assistant = await AssistantModel.findOne({ userId: user.id }).select("clinicId");
+      if (!assistant) {
+        return errorResponse(404, "Assistant not found");
+      }
+      if (selectedDoctor.clinicId.toString() !== assistant.clinicId.toString()) {
+        return errorResponse(
+          403,
+          "Forbidden - Assistant can only create appointments for doctors in their clinic"
+        );
+      }
+    } else if (!isElevatedRole(user.role)) {
       return errorResponse(403, "Forbidden");
     }
 
@@ -53,17 +84,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch doctor info to extract internal ID and clinic ID
-    const doctorInfo = await DoctorModel.findOne({ userId: doctor });
-    if (!doctorInfo) {
-      return errorResponse(404, "Doctor not found");
-    }
-
     // Check for duplicate appointment (same doctor, date, and timeSlot)
     const appointmentEndOfDay = endOfDayIST(normalizedAppointmentDate);
 
     const existingAppointment = await AppointmentModel.findOne({
-      doctor: doctorInfo._id,
+      doctor: selectedDoctor._id,
       appointmentDate: {
         $gte: normalizedAppointmentDate,
         $lte: appointmentEndOfDay,
@@ -80,8 +105,8 @@ export async function POST(request: Request) {
     }
 
     const appointment = new AppointmentModel({
-      doctor: doctorInfo._id,
-      clinic: doctorInfo.clinicId,
+      doctor: selectedDoctor._id,
+      clinic: selectedDoctor.clinicId,
       patient,
       appointmentDate: normalizedAppointmentDate,
       consultationType,

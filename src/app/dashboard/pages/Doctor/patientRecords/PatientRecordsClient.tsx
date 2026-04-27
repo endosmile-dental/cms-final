@@ -24,22 +24,6 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type ContactValue =
-  | string
-  | string[]
-  | {
-    fullName?: string;
-    contactNumber?: string;
-    relationship?: string;
-  }
-  | {
-    street?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-  }
-  | undefined;
-
 export default function PatientRecords({ 
   initialPatients 
 }: { 
@@ -238,7 +222,7 @@ export default function PatientRecords({
           /* Updated Patient List in Card */
           <Card className="bg-card border-border shadow-sm">
             <CardContent className="p-0">
-              <DataTable<Patient>
+              <DataTable
                 data={displayPatients}
                 title=""
                 itemsPerPage={15}
@@ -264,7 +248,7 @@ export default function PatientRecords({
                   {
                     header: "Contact",
                     accessorKey: "contactNumber",
-                    render: (value: ContactValue) => {
+                    render: (value: unknown) => {
                       let contactValue = "N/A";
 
                       if (typeof value === "string") {
@@ -291,7 +275,7 @@ export default function PatientRecords({
                   {
                     header: "Gender",
                     accessorKey: "gender",
-                    render: (value) => {
+                    render: (value: unknown) => {
                       // Handle different possible types for gender
                       const genderValue =
                         typeof value === "string" ? value : "N/A";
@@ -307,15 +291,11 @@ export default function PatientRecords({
                     header: "Date of Birth",
                     accessorKey: "dateOfBirth",
                     sortable: true,
-                    render: (value) => {
+                    render: (value: unknown) => {
                       // Handle different possible types for dateOfBirth
                       let dateValue = "N/A";
 
-                      if (
-                        typeof value === "string" ||
-                        typeof value === "number" ||
-                        value instanceof Date
-                      ) {
+                      if (typeof value === "string") {
                         try {
                           // Use a consistent date format that works on both server and client
                           const date = new Date(value);
@@ -339,7 +319,7 @@ export default function PatientRecords({
                   {
                     header: "Actions",
                     accessorKey: "_id",
-                    render: (_, row) => (
+                    render: (_value: unknown, row: Patient) => (
                       <Button
                         size="sm"
                         variant="outline"

@@ -456,9 +456,9 @@ const PatientDetailView = ({
               header: "Date",
               accessorKey: "appointmentDate",
               sortable: true,
-              render: (v) =>
-                typeof v === "string" || typeof v === "number"
-                  ? new Date(v).toLocaleDateString()
+              render: (value: unknown) =>
+                typeof value === "string" || typeof value === "number"
+                  ? new Date(value).toLocaleDateString()
                   : "N/A",
             },
             {
@@ -469,27 +469,31 @@ const PatientDetailView = ({
             {
               header: "Teeth",
               accessorKey: "teeth",
-              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+              render: (value: unknown) =>
+                Array.isArray(value) ? value.join(", ") : "N/A",
             },
             {
               header: "Treatment",
               accessorKey: "treatments",
-              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+              render: (value: unknown) =>
+                Array.isArray(value) ? value.join(", ") : "N/A",
             },
             {
               header: "Type",
               accessorKey: "consultationType",
-              render: (v) => String(v || "N/A"),
+              render: (value: unknown) =>
+                String(value || "N/A"),
             },
             {
               header: "Status",
               accessorKey: "status",
-              render: (v) => String(v || "N/A"),
+              render: (value: unknown) =>
+                String(value || "N/A"),
             },
             {
               header: "Actions",
               accessorKey: "_id",
-              render: (_, row) => (
+              render: (value: unknown, row: Appointment) => (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -554,22 +558,23 @@ const PatientDetailView = ({
               header: "Date",
               accessorKey: "date",
               sortable: true,
-              render: (v) =>
-                typeof v === "string" || typeof v === "number"
-                  ? new Date(v).toLocaleDateString()
+              render: (value: unknown) =>
+                typeof value === "string" || typeof value === "number"
+                  ? new Date(value).toLocaleDateString()
                   : "N/A",
             },
             {
               header: "Treatments",
               accessorKey: "treatments",
               sortable: true,
-              render: (v) =>
-                Array.isArray(v) ? v.map((t) => t.treatment).join(", ") : "N/A",
+              render: (value: unknown) =>
+                Array.isArray(value) ? value.map((t) => t.treatment).join(", ") : "N/A",
             },
             {
               header: "Amount Received",
               accessorKey: "amountReceived",
-              render: (v) => (typeof v === "number" ? v.toFixed(2) : "N/A"),
+              render: (value: unknown) =>
+                typeof value === "number" ? value.toFixed(2) : "N/A",
             },
             {
               header: "Discount",
@@ -582,7 +587,7 @@ const PatientDetailView = ({
             {
               header: "Actions",
               accessorKey: "_id",
-              render: (_, row) => (
+              render: (value: unknown, row: BillingRecord) => (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -697,37 +702,40 @@ const PatientDetailView = ({
             {
               header: "Tooth Numbers",
               accessorKey: "toothNumbers",
-              render: (v) => (Array.isArray(v) ? v.join(", ") : "N/A"),
+              render: (value: unknown) =>
+                Array.isArray(value) ? value.join(", ") : "N/A",
             },
             {
               header: "Impressions Taken On",
               accessorKey: "impressionsTakenOn",
               sortable: true,
-              render: (v) => safeFormatDate(v),
+              render: (value: unknown) =>
+                safeFormatDate(value),
             },
             {
               header: "Expected Delivery",
               accessorKey: "expectedDeliveryDate",
               sortable: true,
-              render: (v) => safeFormatDate(v),
+              render: (value: unknown) =>
+                safeFormatDate(value),
             },
             {
               header: "Status",
               accessorKey: "status",
-              render: (v) => {
-                const statusValue = typeof v === "string" ? v : "N/A";
+              render: (value: unknown) => {
+                const statusValue = typeof value === "string" ? value : "N/A";
                 return (
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      v === "Pending"
+                      value === "Pending"
                         ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200"
-                        : v === "Received"
+                        : value === "Received"
                         ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200"
-                        : v === "Fitted"
+                        : value === "Fitted"
                         ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
-                        : v === "Rework"
+                        : value === "Rework"
                         ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200"
-                        : v === "Cancelled"
+                        : value === "Cancelled"
                         ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
                         : "bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200"
                     }`}
@@ -740,7 +748,7 @@ const PatientDetailView = ({
             {
               header: "Actions",
               accessorKey: "_id",
-              render: (_, row) => (
+              render: (value: unknown, row: ILabWork) => (
                 <div className="flex gap-2">
                   <Button
                     variant="outline"

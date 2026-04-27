@@ -367,7 +367,7 @@ export default function RevenueDashboard({
   );
 
 
-  const billingTableColumns: ColumnDef<BillingRecord, keyof BillingRecord>[] = [
+  const billingTableColumns: ColumnDef<BillingRecord>[] = [
     {
       header: "Invoice ID",
       accessorKey: "invoiceId",

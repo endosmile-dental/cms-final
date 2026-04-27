@@ -10,6 +10,7 @@ export async function GET(request: Request) {
   try {
     const authResult = await requireAuth([
       "Patient",
+      "Assistant",
       "Doctor",
       "Admin",
       "SuperAdmin",

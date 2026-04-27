@@ -7,7 +7,7 @@ export type Role =
   | "Admin"
   | "clientAdmin"
   | "Doctor"
-  | "Receptionist"
+  | "Assistant"
   | "Patient";
 
 const elevatedRoles: Role[] = ["SuperAdmin", "Admin", "clientAdmin"];

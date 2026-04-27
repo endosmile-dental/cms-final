@@ -97,6 +97,7 @@ export const addAppointmentSchema = z.object({
 
 export const updateAppointmentSchema = z.object({
   _id: z.string().min(1, "appointment _id is required"),
+  doctor: z.string().optional(),
   appointmentDate: z.string().min(1, "appointmentDate is required"),
   status: z.enum(["Scheduled", "Completed", "Cancelled"]),
   consultationType: z.enum(["New", "Follow-up"]),

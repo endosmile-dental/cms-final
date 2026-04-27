@@ -13,6 +13,7 @@ import ReusableTable, {
 } from "@/app/dashboard/ui/DashboardTable";
 import { fetchProfile, ProfileData } from "@/app/redux/slices/profileSlice";
 import { useSession } from "next-auth/react";
+import Loading from "@/app/components/loading/Loading";
 
 interface TableData {
   doctorName: string;
@@ -94,7 +95,11 @@ export default function AppointmentsPage() {
   }, [tableData, statusFilter, sortOrder, searchQuery]);
 
   if (!profile) {
-    return <div>Loading profile...</div>;
+    return (
+      <DashboardLayout>
+        <Loading />
+      </DashboardLayout>
+    );
   }
 
   const columns: ColumnDefinition<TableData>[] = [

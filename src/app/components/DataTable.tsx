@@ -16,17 +16,19 @@ import { useDebounce } from "@/app/hooks/useOptimizedRender";
 import { useMemoizedCalculations } from "@/app/hooks/useMemoizedCalculations";
 import { DateRangeFilter } from "@/app/components/DateRangeFilter";
 
-export type ColumnDef<T, K extends keyof T = keyof T> = {
+export type ColumnDef<T, K extends string = string> = {
   header: string;
   accessorKey: K;
   sortable?: boolean;
-  render?: (value: T[K] | undefined, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
 };
+
+export type AnyColumnDef<T> = ColumnDef<T>;
 
 type DataTableProps<T> = {
   data: T[];
   title: string;
-  columns: ColumnDef<T>[];
+  columns: Array<ColumnDef<T>>;
   searchFields?: (keyof T)[];
   itemsPerPage?: number;
   showSearch?: boolean;
@@ -67,7 +69,7 @@ const DataTable = <T extends object>({
   // Use internal state if callbacks not provided
   const [internalStartDate, setInternalStartDate] = useState<Date | undefined>(undefined);
   const [internalEndDate, setInternalEndDate] = useState<Date | undefined>(undefined);
-  
+
   const effectiveStartDate = onStartDateChange ? startDate : internalStartDate;
   const effectiveEndDate = onEndDateChange ? endDate : internalEndDate;
   const handleStartDateChange = onStartDateChange || setInternalStartDate;
@@ -116,95 +118,95 @@ const DataTable = <T extends object>({
       effectiveEndDate,
     ],
     () => {
-    let result = [...data];
+      let result = [...data];
 
-    // Search implementation
-    if (search) {
-      const searchTerm = search.toLowerCase();
-      result = result.filter((item) =>
-        (searchFields ?? columns.map((c) => c.accessorKey)).some((key) =>
-          String(item[key]).toLowerCase().includes(searchTerm)
-        )
-      );
-    }
+      // Search implementation
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        result = result.filter((item) =>
+          (searchFields ?? columns.map((c) => c.accessorKey)).some((key) =>
+            String((item as Record<string, unknown>)[key as string]).toLowerCase().includes(searchTerm)
+          )
+        );
+      }
 
-    // Date filtering implementation
-    if (enableDateFilter && dateField) {
-      // First apply custom date range filter if dates are selected
-      if (effectiveStartDate || effectiveEndDate) {
-        result = result.filter((item) => {
-          const itemDate = parseDate(item[dateField]);
-          if (!itemDate) return false; // Exclude items without date when filtering
+      // Date filtering implementation
+      if (enableDateFilter && dateField) {
+        // First apply custom date range filter if dates are selected
+        if (effectiveStartDate || effectiveEndDate) {
+          result = result.filter((item) => {
+            const itemDate = parseDate(item[dateField]);
+            if (!itemDate) return false; // Exclude items without date when filtering
 
-          const itemDateTime = itemDate.setHours(0, 0, 0, 0);
-          
-          if (effectiveStartDate) {
-            const startDateTime = effectiveStartDate.setHours(0, 0, 0, 0);
-            if (itemDateTime < startDateTime) return false;
+            const itemDateTime = itemDate.setHours(0, 0, 0, 0);
+
+            if (effectiveStartDate) {
+              const startDateTime = effectiveStartDate.setHours(0, 0, 0, 0);
+              if (itemDateTime < startDateTime) return false;
+            }
+
+            if (effectiveEndDate) {
+              const endDateTime = effectiveEndDate.setHours(0, 0, 0, 0);
+              if (itemDateTime > endDateTime) return false;
+            }
+
+            return true;
+          });
+        } else {
+          // Fall back to preset filter modes
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth(); // 0-indexed (0 = January)
+
+          result = result.filter((item) => {
+            const itemDate = parseDate(item[dateField]);
+            if (!itemDate) return filterMode === "all"; // Include if no date and filter is "all"
+
+            const itemYear = itemDate.getFullYear();
+            const itemMonth = itemDate.getMonth();
+
+            if (filterMode === "this month") {
+              return itemMonth === currentMonth && itemYear === currentYear;
+            }
+            if (filterMode === "this year") {
+              return itemYear === currentYear;
+            }
+            if (filterMode === "past year") {
+              return itemYear === currentYear - 1;
+            }
+            return true; // "all"
+          });
+        }
+      }
+
+      // Sorting implementation
+      if (sortKey) {
+        result.sort((a, b) => {
+          const valA = (a as Record<string, unknown>)[sortKey as string];
+          const valB = (b as Record<string, unknown>)[sortKey as string];
+
+          // For date sorting, parse the dates
+          if (sortKey === dateField) {
+            const dateA = parseDate(valA)?.getTime() || 0;
+            const dateB = parseDate(valB)?.getTime() || 0;
+            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
           }
-          
-          if (effectiveEndDate) {
-            const endDateTime = effectiveEndDate.setHours(0, 0, 0, 0);
-            if (itemDateTime > endDateTime) return false;
-          }
-          
-          return true;
-        });
-      } else {
-        // Fall back to preset filter modes
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0-indexed (0 = January)
 
-        result = result.filter((item) => {
-          const itemDate = parseDate(item[dateField]);
-          if (!itemDate) return filterMode === "all"; // Include if no date and filter is "all"
+          // Numeric comparison
+          if (typeof valA === "number" && typeof valB === "number") {
+            return sortOrder === "asc" ? valA - valB : valB - valA;
+          }
 
-          const itemYear = itemDate.getFullYear();
-          const itemMonth = itemDate.getMonth();
-
-          if (filterMode === "this month") {
-            return itemMonth === currentMonth && itemYear === currentYear;
-          }
-          if (filterMode === "this year") {
-            return itemYear === currentYear;
-          }
-          if (filterMode === "past year") {
-            return itemYear === currentYear - 1;
-          }
-          return true; // "all"
+          // String comparison (fallback)
+          const strA = String(valA ?? "").toLowerCase();
+          const strB = String(valB ?? "").toLowerCase();
+          return sortOrder === "asc"
+            ? strA.localeCompare(strB)
+            : strB.localeCompare(strA);
         });
       }
-    }
 
-    // Sorting implementation
-    if (sortKey) {
-      result.sort((a, b) => {
-        const valA = a[sortKey];
-        const valB = b[sortKey];
-
-        // For date sorting, parse the dates
-        if (sortKey === dateField) {
-          const dateA = parseDate(valA)?.getTime() || 0;
-          const dateB = parseDate(valB)?.getTime() || 0;
-          return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-        }
-
-        // Numeric comparison
-        if (typeof valA === "number" && typeof valB === "number") {
-          return sortOrder === "asc" ? valA - valB : valB - valA;
-        }
-
-        // String comparison (fallback)
-        const strA = String(valA ?? "").toLowerCase();
-        const strB = String(valB ?? "").toLowerCase();
-        return sortOrder === "asc"
-          ? strA.localeCompare(strB)
-          : strB.localeCompare(strA);
-      });
-    }
-
-    return result;
+      return result;
     }
   );
 
@@ -280,7 +282,7 @@ const DataTable = <T extends object>({
                   key={String(column.accessorKey)}
                   className={column.sortable ? "cursor-pointer" : ""}
                   onClick={() =>
-                    column.sortable && handleSort(column.accessorKey)
+                    column.sortable && handleSort(column.accessorKey as keyof T)
                   }
                 >
                   <div className="flex items-center gap-1">
@@ -308,8 +310,8 @@ const DataTable = <T extends object>({
                     className="min-w-[120px] text-foreground"
                   >
                     {column.render
-                      ? column.render(row[column.accessorKey], row)
-                      : String(row[column.accessorKey] ?? "N/A")}
+                      ? column.render((row as Record<string, unknown>)[column.accessorKey], row)
+                      : String(((row as Record<string, unknown>)[column.accessorKey]) ?? "N/A")}
                   </TableCell>
                 ))}
               </TableRow>

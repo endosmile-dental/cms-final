@@ -1,6 +1,54 @@
 import dbConnect from "@/app/utils/dbConnect";
 import PatientModel from "@/app/model/Patient.model";
 import DoctorModel from "@/app/model/Doctor.model";
+import AssistantModel from "@/app/model/Assistant.model";
+
+/**
+ * Server-side function to fetch all patients for an assistant's clinic
+ * @param assistantUserId - The user ID of the assistant
+ * @returns Promise<Patient[]>
+ */
+export async function getAssistantPatients(assistantUserId: string) {
+  try {
+    await dbConnect();
+
+    // Find the assistant document using the assistant.userId field
+    const assistant = await AssistantModel.findOne({ userId: assistantUserId });
+    if (!assistant || Array.isArray(assistant) || !assistant._id) {
+      throw new Error("Assistant not found");
+    }
+
+    // Fetch all patients for the clinic (no DoctorId filter, so all patients in clinic)
+    const patients = await PatientModel.find({ ClinicId: assistant.clinicId })
+      .select("-permissions -__v")
+      .sort({ fullName: 1 });
+
+    // Convert to plain objects to avoid circular reference issues in SSR
+    return patients.map(patient => {
+      const plainObj = patient.toObject();
+      // Remove any Buffer objects and convert to plain strings
+      if (plainObj._id && plainObj._id.toString) {
+        plainObj._id = plainObj._id.toString();
+      }
+      if (plainObj.DoctorId && plainObj.DoctorId._id) {
+        plainObj.DoctorId = plainObj.DoctorId._id.toString();
+      }
+      if (plainObj.userId && plainObj.userId._id) {
+        plainObj.userId = plainObj.userId._id.toString();
+      }
+      if (plainObj.ClinicId && plainObj.ClinicId._id) {
+        plainObj.ClinicId = plainObj.ClinicId._id.toString();
+      }
+      return plainObj;
+    });
+  } catch (error: unknown) {
+    console.error("Error fetching assistant patients:", error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch patients: ${error.message}`);
+    }
+    throw new Error("Unknown error occurred while fetching patients");
+  }
+}
 
 /**
  * Server-side function to fetch patients for a doctor

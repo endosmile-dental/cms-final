@@ -210,10 +210,9 @@ export default function DoctorAppointmentsClient({
   );
 
   // Define the type for column definitions
-
   type ColumnDef<T> = {
     header: string;
-    accessorKey: keyof T;
+    accessorKey: string;
     sortable?: boolean;
     render?: (value: unknown, row: T) => React.ReactNode;
   };

@@ -47,7 +47,7 @@ export default function Page() {
                     redirect("/dashboard/pages/SuperAdmin");
                   case "Admin":
                     redirect("/dashboard/pages/clientAdmin");
-                  case "Receptionist":
+                  case "Assistant":
                     redirect("/dashboard/pages/Doctor");
                   default:
                     redirect("/dashboard/pages/Doctor");

@@ -48,24 +48,24 @@ const AppointmentSchema: Schema<IAppointment> = new Schema(
     },
     amount: { type: Number },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 import { parseDateFromServer, startOfDayIST } from "../utils/dateUtils";
 
 // ✅ GLOBAL DATE NORMALIZATION - RUNS BEFORE EVERY SAVE
 // This guarantees NO BAD DATES WILL EVER BE SAVED AGAIN
-AppointmentSchema.pre('save', function(next) {
-  if (this.isModified('appointmentDate')) {
+AppointmentSchema.pre("save", function (next) {
+  if (this.isModified("appointmentDate")) {
     this.appointmentDate = startOfDayIST(this.appointmentDate);
   }
   next();
 });
 
-import type { UpdateQuery } from 'mongoose';
+import type { UpdateQuery } from "mongoose";
 
 // Also normalize on update operations
-AppointmentSchema.pre('findOneAndUpdate', function(next) {
+AppointmentSchema.pre("findOneAndUpdate", function (next) {
   const update = this.getUpdate() as UpdateQuery<IAppointment>;
 
   const normalizeAppointmentDate = (value: Date | string) => {
@@ -73,15 +73,19 @@ AppointmentSchema.pre('findOneAndUpdate', function(next) {
       typeof value === "string" ? parseDateFromServer(value) : value;
     return startOfDayIST(parsedDate);
   };
-  
+
   if (update) {
-    if ('$set' in update && update.$set?.appointmentDate) {
-      update.$set.appointmentDate = normalizeAppointmentDate(update.$set.appointmentDate);
-    } else if ('appointmentDate' in update) {
-      update.appointmentDate = normalizeAppointmentDate(update.appointmentDate!);
+    if ("$set" in update && update.$set?.appointmentDate) {
+      update.$set.appointmentDate = normalizeAppointmentDate(
+        update.$set.appointmentDate,
+      );
+    } else if ("appointmentDate" in update) {
+      update.appointmentDate = normalizeAppointmentDate(
+        update.appointmentDate!,
+      );
     }
   }
-  
+
   next();
 });
 

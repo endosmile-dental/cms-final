@@ -90,15 +90,30 @@ export default function DashboardLayout({
   const userId = sessionUser?.id;
 
   const isDoctor = role === "Doctor";
+  const isAssistant = role === "Assistant";
   const isPatient = role === "Patient";
   const dashboardRole = isDoctor ? "Doctor" : isPatient ? "Patient" : undefined;
-  const canAccessDashboardData = Boolean(userId && dashboardRole);
+  const canAccessDashboardData = Boolean(userId && (dashboardRole || isAssistant));
 
   const doctorNeeds = getDoctorRouteQueryNeeds(pathname || "");
+  const isAssistantAppointmentsRoute = (pathname || "").startsWith(
+    "/dashboard/pages/Assistant/appointments"
+  );
 
-  // For non-doctor roles, keep previous behavior.
+  // For assistant appointments, hydrate treatment data so assistant edit/create
+  // forms can reuse the same treatment selectors as doctor flows.
   const queryNeeds: QueryNeeds = isDoctor
     ? doctorNeeds
+    : isAssistant
+      ? {
+          treatments: isAssistantAppointmentsRoute,
+          billings: false,
+          appointments: false,
+          labworks: false,
+          profile: false,
+          doctors: false,
+          patients: false,
+        }
     : {
         treatments: canAccessDashboardData,
         billings: canAccessDashboardData,

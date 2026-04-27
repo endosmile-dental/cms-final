@@ -39,7 +39,7 @@ const staticUsers = [
     id: 2,
     fullName: "Jane Smith",
     email: "jane.smith@example.com",
-    role: "Receptionist",
+    role: "Assistant",
   },
 ];
 
@@ -54,9 +54,9 @@ export default function ManageUsers() {
     router.push("manageUsers/addDoctor");
   };
 
-  const handleAddReceptionist = () => {
-    // Navigate to the Add Receptionist page
-    router.push("/manage-users/add-receptionist");
+  const handleAddAssistant = () => {
+    // Navigate to the Add Assistant page
+    router.push("/manage-users/add-Assistant");
   };
 
   return (
@@ -80,8 +80,8 @@ export default function ManageUsers() {
               <DialogFooter>
                 <div className="flex flex-col space-y-4">
                   <Button onClick={handleAddDoctor}>Add Doctor</Button>
-                  <Button onClick={handleAddReceptionist} variant="outline">
-                    Add Receptionist
+                  <Button onClick={handleAddAssistant} variant="outline">
+                    Add Assistant
                   </Button>
                   <Button
                     variant="destructive"

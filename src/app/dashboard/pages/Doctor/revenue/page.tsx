@@ -5,6 +5,7 @@ import { getDoctorBillingRecords, getDoctorBillingAnalytics } from "@/app/lib/se
 import { getDoctorPatients } from "@/app/lib/server-data/patients";
 import { Suspense } from "react";
 import { ErrorBoundary } from "@/app/components/ErrorBoundary";
+import Loading from "@/app/components/loading/Loading";
 
 export default async function RevenuePage() {
   const session = await auth();
@@ -22,7 +23,7 @@ export default async function RevenuePage() {
 
   return (
     <ErrorBoundary>
-      <Suspense fallback={<div>Loading revenue dashboard...</div>}>
+      <Suspense fallback={<Loading />}>
         <RevenueDashboardClient 
           initialBillings={billings} 
           initialAnalytics={analytics} 

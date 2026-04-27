@@ -167,6 +167,10 @@ export default function PatientRegistrationForm() {
     React.useState<PatientFormValues | null>(null);
   const [modalError, setModalError] = React.useState<string | null>(null);
 
+  // Dynamic redirect path based on user role
+  const userRole = session?.user?.role || "Doctor";
+  const backPath = `/dashboard/pages/${userRole}/patientRecords`;
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
@@ -254,7 +258,7 @@ export default function PatientRegistrationForm() {
       } else {
         console.log("Patient registration successful", result);
         dispatch(addPatient(result.patient));
-        router.push("/dashboard/pages/Doctor/patientRecords");
+        router.push(backPath);
         setShowPreviewModal(false); // Close modal on success
       }
     } catch (error: unknown) {
@@ -277,7 +281,7 @@ export default function PatientRegistrationForm() {
               variant="outline"
               size="icon"
               onClick={() =>
-                router.push("/dashboard/pages/Doctor/patientRecords")
+                router.push(backPath)
               }
               className="rounded-full"
             >
@@ -752,7 +756,7 @@ export default function PatientRegistrationForm() {
                 <Button
                   variant="outline"
                   onClick={() =>
-                    router.push("/dashboard/pages/Doctor/patientRecords")
+                    router.push(backPath)
                   }
                 >
                   Cancel
